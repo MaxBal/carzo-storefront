@@ -44,25 +44,24 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
       onClick={e => { if (e.target === backdropRef.current) onClose(); }}
     >
       <div
-        className="relative bg-white w-full flex flex-col rounded-t-2xl md:rounded-2xl md:w-full md:max-w-[760px] md:mx-6"
-        style={{ maxHeight: 'calc(100dvh - 56px)', height: 'calc(100dvh - 56px)' }}
+        className="modal-shell"
         onClick={e => e.stopPropagation()}
       >
         {/* Sticky header */}
-        <div className="flex-shrink-0 bg-white rounded-t-2xl">
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <h2 id="logo-modal-title" className="text-xl font-bold text-gray-900">{data.title}</h2>
+        <div className="modal-header">
+          <div className="flex items-center justify-between">
+            <h2 id="logo-modal-title" className="modal-title">{data.title}</h2>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+              className="modal-close"
               aria-label="Закрити"
             >
-              <X size={20} strokeWidth={2} />
+              <X size={16} strokeWidth={2.5} />
             </button>
           </div>
 
           {/* Tab bar */}
-          <div className="flex border-b border-gray-200 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="modal-tab-bar mt-3">
             <TabBtn id="photo" active={activeTab === 'photo'} onSelect={setActiveTab}>
               Фото лого
             </TabBtn>
@@ -76,8 +75,8 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
         </div>
 
         {/* Scrollable content */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          <div className="px-5 py-5 flex flex-col gap-5 pb-8">
+        <div ref={scrollRef} className="modal-scroll">
+          <div className="modal-content">
 
             {/* Photo tab */}
             {activeTab === 'photo' && (
@@ -87,10 +86,7 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
                 </InfoBox>
 
                 {/* Logo photo */}
-                <div
-                  className="w-full aspect-video overflow-hidden rounded-2xl"
-                  style={{ background: '#F5F5F5' }}
-                >
+                <div className="modal-image-container aspect-video">
                   <Image
                     src={data.logoImage}
                     alt={`Шильд ${data.brandName}`}
@@ -102,11 +98,11 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
                 </div>
 
                 {/* Specs */}
-                <div className="flex flex-col divide-y divide-gray-100">
-                  {data.specs.map((spec, i) => (
+                <div className="flex flex-col divide-y divide-[#f0f0f0]">
+                  {data.specs.map(spec => (
                     <div key={`${spec.label}-${spec.value}`} className="flex items-center justify-between py-3">
-                      <span className="text-sm text-gray-500">{spec.label}</span>
-                      <span className="text-sm font-semibold text-gray-900">{spec.value}</span>
+                      <span className="modal-secondary-text">{spec.label}</span>
+                      <span className="text-base font-semibold text-gray-900">{spec.value}</span>
                     </div>
                   ))}
                 </div>
@@ -115,7 +111,7 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
 
             {/* Placement tab */}
             {activeTab === 'placement' && (
-              <div className="w-full aspect-video overflow-hidden rounded-2xl" style={{ background: '#F5F5F5' }}>
+              <div className="modal-image-container aspect-video">
                 <Image
                   src={data.placementImage}
                   alt={`Розміщення логотипа ${data.brandName}`}
@@ -155,30 +151,21 @@ function TabBtn({
   return (
     <button
       onClick={() => onSelect(id)}
-      className="relative flex-shrink-0 flex items-center gap-1 pb-3 px-4 text-sm font-medium transition-colors whitespace-nowrap"
-      style={{ color: active ? '#111' : '#9ca3af' }}
+      className={`modal-tab flex flex-shrink-0 items-center gap-1 ${active ? 'modal-tab-active' : ''}`}
     >
       {children}
-      {active && (
-        <span className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full" style={{ backgroundColor: '#111' }} />
-      )}
+      {active ? <span className="modal-tab-indicator" /> : null}
     </button>
   );
 }
 
 function InfoBox({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="flex items-start gap-3 rounded-xl px-4 py-3"
-      style={{ background: '#f0fdf9', border: '1px solid #99f6e4' }}
-    >
-      <div
-        className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5"
-        style={{ background: '#2DD4BF' }}
-      >
-        <Info size={13} color="white" strokeWidth={2.5} />
+    <div className="modal-info-box">
+      <div className="modal-info-icon">
+        <Info size={14} strokeWidth={2} />
       </div>
-      <p className="text-sm text-gray-700 leading-relaxed pt-1">
+      <p className="modal-body-text pt-1">
         {children}
       </p>
     </div>
@@ -187,9 +174,9 @@ function InfoBox({ children }: { children: React.ReactNode }) {
 
 function FaqCard({ question, answer }: { question: string; answer: string }) {
   return (
-    <div className="rounded-xl px-4 py-4" style={{ border: '1.5px solid #e5e7eb' }}>
-      <p className="text-sm font-bold text-gray-900 leading-snug mb-2">{question}</p>
-      <p className="text-sm text-gray-600 leading-relaxed">{answer}</p>
+    <div className="modal-faq">
+      <p className="modal-faq-question">{question}</p>
+      <p className="modal-faq-answer">{answer}</p>
     </div>
   );
 }

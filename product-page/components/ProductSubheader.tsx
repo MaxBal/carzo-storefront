@@ -125,7 +125,7 @@ export default function ProductSubheader({
         <span className="text-white font-medium text-sm">Дизайн {versionLabel}</span>
       </div>
       <button
-        className="flex items-center gap-1.5 text-sm font-medium rounded-full px-3 py-1 transition-colors"
+        className="flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium transition-colors hover:bg-[#28c5a6]/10"
         style={{ color: '#28c5a6', border: '1px solid #28c5a6' }}
         onClick={() => setDesignModalOpen(true)}
       >

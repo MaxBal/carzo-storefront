@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Camera, ShoppingCart, Link2, Check, ArrowUpRight } from 'lucide-react';
+import { Camera, ShoppingCart, Magnet, Check, ArrowUpRight, ChevronRight, Info } from 'lucide-react';
 import BenefitCards from './BenefitCards';
 import InfoModal from './InfoModal';
 import LogoModal from './LogoModal';
@@ -16,7 +16,7 @@ import type { ProductParams, ResolvedProductContent, SizeId } from '@/lib/conten
 import { useCart } from '@/components/cart/cart-context';
 
 const selectClasses =
-  'w-full appearance-none bg-white border border-gray-200 rounded-[10px] px-4 py-3 text-sm text-gray-900 pr-10 cursor-pointer focus:outline-none focus:border-gray-400';
+  'w-full appearance-none bg-white border border-gray-200 rounded-[12px] px-4 py-3 text-sm text-gray-900 pr-10 cursor-pointer focus:outline-none focus:border-gray-400';
 
 function SelectChevron() {
   return (
@@ -92,47 +92,35 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         <h1 className="text-2xl font-bold text-gray-900 leading-tight">{productTitle}</h1>
 
         {/* Feature row */}
-        <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
-          <Link2 size={14} className="text-gray-500" />
-          <span>{siteSettings.featureMagneticText}</span>
-          <span className="text-gray-300">|</span>
-          <span>{siteSettings.featureMaterialFlag}</span>
-          <span>{siteSettings.featureMaterialText}</span>
+        <div className="mt-2 flex flex-nowrap items-center gap-[5px] text-[16px] font-normal leading-[22px] tracking-[-0.01em] text-[#5f6672] md:text-[17px] md:tracking-normal">
+          <Magnet size={14} strokeWidth={1.5} className="flex-shrink-0 text-[#5f6672]" />
+          <span className="whitespace-nowrap">{siteSettings.featureMagneticText}</span>
+          <span className="flex items-center gap-[3px] whitespace-nowrap">
+            <span>{siteSettings.featureMaterialFlag}</span>
+            <span>{siteSettings.featureMaterialText}</span>
+          </span>
         </div>
 
         {/* Price */}
-        <div className="flex items-center gap-3 mt-4 flex-wrap">
-          <span className="text-3xl font-bold text-gray-900">{currentPrice} ₴</span>
-          <div className="flex items-center gap-3">
-            <span className="text-base text-gray-400 line-through">{oldPrice} ₴</span>
-            <span
-              style={{
-                background: '#FFE3CC',
-                color: '#F97316',
-                borderRadius: 999,
-                padding: '5px 13px',
-                fontSize: 14,
-                fontWeight: 600,
-                lineHeight: 1,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              SALE {oldPrice - currentPrice}₴
-            </span>
-          </div>
+        <div className="mt-4 flex flex-wrap items-center gap-[14px]">
+          <span className="text-[26px] font-bold leading-none text-gray-900 md:text-[32px]">{currentPrice} ₴</span>
+          <span className="ml-0.5 text-base font-medium text-[#9aa1ac] line-through">{oldPrice} ₴</span>
+          <span className="ml-3 whitespace-nowrap rounded-full bg-[#ffe3cc] px-[13px] py-[5px] text-sm font-semibold leading-none text-[#f97316]">
+            SALE {oldPrice - currentPrice}₴
+          </span>
         </div>
 
         {/* Size section */}
-        <div className="mt-5">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-sm font-semibold text-gray-900">Розміри:</span>
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-base font-semibold text-gray-900">Розмір</span>
             <button
-              className="flex items-center gap-1.5 text-xs rounded-full px-2.5 py-1 transition-colors"
-              style={{ color: '#28c5a6', border: '1px solid #28c5a6', background: 'transparent' }}
+              className="overview-btn"
               onClick={() => setOpenModal('size')}
             >
-              <Camera size={12} strokeWidth={2} />
+              <Camera size={13} strokeWidth={1.7} />
               в середині
+              <ChevronRight size={13} strokeWidth={1.7} />
             </button>
           </div>
 
@@ -144,7 +132,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                 <button
                   key={s.id}
                   onClick={() => handleSizeChange(s.id)}
-                  className="relative text-left rounded-[10px] px-3.5 py-3 transition-all"
+                  className="relative rounded-[12px] px-3.5 py-3 text-left transition-all"
                   style={{
                     border: active ? '1.5px solid #1a1a1a' : '1.5px solid #e5e7eb',
                     background: active ? '#F7F7F7' : 'white',
@@ -155,7 +143,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                       <Check size={11} color="white" strokeWidth={3} />
                     </span>
                   )}
-                  <div className="text-sm font-medium text-gray-900 leading-snug">{s.label}</div>
+                  <div className="text-sm font-medium leading-snug" style={{ color: active ? '#111' : '#596170' }}>{s.label}</div>
                   <div className="flex items-baseline gap-2 mt-0.5">
                     <span className="text-sm font-semibold text-gray-900">{variant.price} ₴</span>
                     <span className="text-xs text-gray-400 line-through">{variant.oldPrice} ₴</span>
@@ -167,16 +155,16 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         </div>
 
         {/* Fixation section */}
-        <div className="mt-5">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-sm font-semibold text-gray-900">Фіксація:</span>
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-base font-semibold text-gray-900">Фіксація</span>
             <button
-              className="flex items-center gap-1.5 text-xs rounded-full px-2.5 py-1 transition-colors"
-              style={{ color: '#28c5a6', border: '1px solid #28c5a6', background: 'transparent' }}
+              className="overview-btn"
               onClick={() => setOpenModal('fixation')}
             >
-              <Camera size={12} strokeWidth={2} />
+              <Camera size={13} strokeWidth={1.7} />
               фіксації
+              <ChevronRight size={13} strokeWidth={1.7} />
             </button>
           </div>
 
@@ -197,9 +185,13 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         </div>
 
         {/* Brand selector section */}
-        <div className="mt-5">
-          <div className="mb-2.5">
-            <span className="text-sm font-semibold text-gray-900">Оберіть марку авто щоб переглянути фото:</span>
+        <div className="mt-6">
+          <div>
+            <span className="text-base font-semibold text-gray-900">Марка автомобіля</span>
+          </div>
+          <div className="mb-[11px] mt-[5px] flex items-center gap-1.5">
+            <Info size={13} strokeWidth={1.5} className="flex-shrink-0 text-[#626975]" />
+            <span className="text-[13px] font-normal leading-[18px] text-[#626975]">Оберіть марку, щоб переглянути фото лого</span>
           </div>
 
           <div className="relative">
@@ -229,7 +221,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                 height: 48,
                 background: '#F0FCF9',
                 border: '1.5px solid #28C5A6',
-                borderRadius: 10,
+                borderRadius: 12,
                 color: '#159E85',
                 padding: '0 16px',
                 fontSize: 14,
@@ -253,10 +245,10 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* CTA Button */}
         <button
           onClick={handleBuy}
-          className="mt-5 w-full bg-black text-white font-semibold text-base rounded-[10px] flex items-center justify-center gap-2.5 hover:bg-gray-900 active:bg-gray-800 transition-colors"
-          style={{ height: 52 }}
+          className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-black text-base font-semibold text-white transition-colors hover:bg-gray-900 active:bg-gray-800"
+          style={{ height: 52, fontSize: 16, fontWeight: 600 }}
         >
-          <ShoppingCart size={18} strokeWidth={2} />
+          <ShoppingCart size={19} strokeWidth={2} />
           Купити {currentPrice} ₴
         </button>
 

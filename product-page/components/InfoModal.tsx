@@ -53,92 +53,67 @@ export default function InfoModal({ data, onClose }: InfoModalProps) {
     >
       {/* Panel */}
       <div
-        className="
-          relative bg-white w-full flex flex-col
-          rounded-t-2xl
-          md:rounded-2xl md:w-full md:max-w-[760px] md:mx-6
-        "
-        style={{
-          maxHeight: 'calc(100dvh - 56px)',
-          height: 'calc(100dvh - 56px)',
-        }}
+        className="modal-shell"
         onClick={e => e.stopPropagation()}
       >
         {/* ── Sticky header ── */}
-        <div className="flex-shrink-0 bg-white rounded-t-2xl md:rounded-t-2xl">
+        <div className="modal-header">
           {/* Title row */}
-          <div className="flex items-center justify-between px-5 pt-5 pb-3">
-            <h2 id="info-modal-title" className="text-xl font-bold text-gray-900">{data.title}</h2>
+          <div className="flex items-center justify-between">
+            <h2 id="info-modal-title" className="modal-title">{data.title}</h2>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors text-gray-600"
+              className="modal-close"
               aria-label="Закрити"
             >
-              <X size={20} strokeWidth={2} />
+              <X size={16} strokeWidth={2.5} />
             </button>
           </div>
 
           {/* Tab bar */}
-          <div className="flex border-b border-gray-200 px-5 gap-6">
+          <div className="modal-tab-bar mt-3">
             {data.tabs.map((t, i) => (
               <button
                 key={t.label}
                 onClick={() => setActiveTab(i)}
-                className="relative pb-3 text-sm font-medium transition-colors whitespace-nowrap"
-                style={{ color: activeTab === i ? '#111' : '#9ca3af' }}
+                className={`modal-tab ${activeTab === i ? 'modal-tab-active' : ''}`}
               >
                 {t.label}
-                {activeTab === i && (
-                  <span
-                    className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-                    style={{ backgroundColor: '#111' }}
-                  />
-                )}
+                {activeTab === i ? <span className="modal-tab-indicator" /> : null}
               </button>
             ))}
           </div>
         </div>
 
         {/* ── Scrollable content ── */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          <div className="px-5 py-5 flex flex-col gap-6">
+        <div ref={scrollRef} className="modal-scroll">
+          <div className="modal-content">
 
             {/* Info box */}
             {tab.infoBox && (
-              <div
-                className="flex items-start gap-3 rounded-xl px-4 py-3.5"
-                style={{ background: '#f0fdf9', border: '1px solid #99f6e4' }}
-              >
-                <div
-                  className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5"
-                  style={{ background: '#2DD4BF' }}
-                >
-                  <Info size={13} color="white" strokeWidth={2.5} />
+              <div className="modal-info-box">
+                <div className="modal-info-icon">
+                  <Info size={14} strokeWidth={2} />
                 </div>
-                <p className="text-sm text-gray-700 leading-relaxed">{tab.infoBox}</p>
+                <p className="modal-body-text pt-1">{tab.infoBox}</p>
               </div>
             )}
 
             {/* FAQ cards */}
-            {tab.faqs?.map((faq, i) => (
-              <div
-                key={faq.key}
-                className="rounded-xl px-4 py-4"
-                style={{ border: '1.5px solid #e5e7eb' }}
-              >
-                <p className="text-sm font-bold text-gray-900 leading-snug mb-2">{faq.question}</p>
-                <p className="text-sm text-gray-600 leading-relaxed">{faq.answer}</p>
+            {tab.faqs?.map(faq => (
+              <div key={faq.key} className="modal-faq">
+                <p className="modal-faq-question">{faq.question}</p>
+                <p className="modal-faq-answer">{faq.answer}</p>
               </div>
             ))}
 
             {/* Content sections */}
-            {tab.sections?.map((section, i) => (
+            {tab.sections?.map(section => (
               <div key={section.key} className="flex flex-col gap-3">
                 {/* Image or safe placeholder */}
                 <div
-                  className="w-full rounded-2xl flex items-center justify-center overflow-hidden"
+                  className="modal-image-container flex items-center justify-center"
                   style={{
-                    background: '#f3f4f6',
                     aspectRatio: '16/9',
                     minHeight: 180,
                   }}
@@ -153,13 +128,13 @@ export default function InfoModal({ data, onClose }: InfoModalProps) {
                       unoptimized
                     />
                   ) : (
-                    <span className="text-sm text-gray-400">{section.imagePlaceholder || ''}</span>
+                    <span className="modal-secondary-text">{section.imagePlaceholder || ''}</span>
                   )}
                 </div>
 
                 {/* Text */}
-                <h3 className="text-base font-bold text-gray-900">{section.title}</h3>
-                <p className="text-sm text-gray-600 leading-relaxed -mt-1">{section.text}</p>
+                <h3 className="modal-card-title">{section.title}</h3>
+                <p className="modal-body-text -mt-1">{section.text}</p>
               </div>
             ))}
 

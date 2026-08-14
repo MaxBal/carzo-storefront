@@ -46,11 +46,11 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
             <button
               key={image.key}
               onClick={() => setActive(i)}
-              className="relative overflow-hidden rounded-[8px]"
+              className="relative overflow-hidden rounded-[10px]"
               style={{
                 width: 80,
                 height: 80,
-                border: i === active ? '2px solid #2DD4BF' : '2px solid #e5e7eb',
+                border: i === active ? '2px solid #858585' : '2px solid #e5e7eb',
                 flexShrink: 0,
               }}
             >
@@ -66,7 +66,7 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
         </div>
 
         {/* Main image — square */}
-        <div className="relative flex-1 rounded-[12px] overflow-hidden bg-gray-100 aspect-square">
+        <div className="relative flex-1 rounded-[16px] overflow-hidden bg-gray-100 aspect-square">
           <ManagedProductImage
             src={activeImage.src}
             fallbackSrc={activeImage.fallbackSrc}
@@ -116,7 +116,7 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
                 style={{
                   width: i === active ? 20 : 8,
                   height: 8,
-                  backgroundColor: i === active ? '#2DD4BF' : '#d1d5db',
+                  backgroundColor: i === active ? '#858585' : '#d1d5db',
                 }}
               />
             ))}
