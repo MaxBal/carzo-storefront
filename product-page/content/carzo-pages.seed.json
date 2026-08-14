@@ -1,0 +1,171 @@
+{
+  "pages": [
+    {
+      "key": "home",
+      "status": "published",
+      "title": "Головна",
+      "slug": "home",
+      "pageType": "landing",
+      "seoTitle": "CARZO — преміальні органайзери для автомобіля",
+      "seoDescription": "Автокейси CARZO допомагають підтримувати порядок у багажнику та доповнюють інтер'єр автомобіля.",
+      "showHeader": true,
+      "showFooter": true,
+      "noIndex": false,
+      "blocks": [
+        {
+          "key": "home-hero",
+          "status": "published",
+          "sort": 1,
+          "blockType": "hero",
+          "theme": "dark",
+          "eyebrow": "CARZO",
+          "title": "Порядок у багажнику, який виглядає преміально",
+          "subtitle": "Автомобільні органайзери з продуманою конструкцією, магнітною системою та німецькою еко-шкірою.",
+          "body": null,
+          "imageUpload": "public/rich-content/materials.jpg",
+          "imageAlt": "Матеріал автомобільного органайзера CARZO",
+          "imagePosition": "right",
+          "primaryLabel": "Обрати автокейс",
+          "primaryUrl": "/case/design/m/2-0",
+          "secondaryLabel": "Дізнатися більше",
+          "secondaryUrl": "#advantages",
+          "items": null,
+          "anchor": null
+        },
+        {
+          "key": "home-story",
+          "status": "published",
+          "sort": 2,
+          "blockType": "image_text",
+          "theme": "light",
+          "eyebrow": "Продумано до деталей",
+          "title": "Функціональність без компромісів у дизайні",
+          "subtitle": null,
+          "body": "<p>Автокейс CARZO зберігає речі на своїх місцях і допомагає підтримувати порядок у багажнику щодня.</p><p>Матеріали та фурнітура підібрані для тривалої експлуатації, а різні розміри дозволяють обрати формат під конкретний автомобіль.</p>",
+          "imageUpload": "public/rich-content/magnetic-system.jpg",
+          "imageAlt": "Магнітна система автокейсу CARZO",
+          "imagePosition": "left",
+          "primaryLabel": "Перейти до вибору",
+          "primaryUrl": "/case/design/m/2-0",
+          "secondaryLabel": null,
+          "secondaryUrl": null,
+          "items": null,
+          "anchor": "advantages"
+        },
+        {
+          "key": "home-features",
+          "status": "published",
+          "sort": 3,
+          "blockType": "feature_grid",
+          "theme": "soft",
+          "eyebrow": "Переваги",
+          "title": "Створено для щоденного використання",
+          "subtitle": "Основні характеристики, які можна редагувати безпосередньо в Directus.",
+          "body": null,
+          "imageUpload": null,
+          "imageAlt": null,
+          "imagePosition": "right",
+          "primaryLabel": null,
+          "primaryUrl": null,
+          "secondaryLabel": null,
+          "secondaryUrl": null,
+          "items": [
+            {
+              "title": "Магнітна система",
+              "text": "Кришка легко відкривається однією рукою та надійно фіксується."
+            },
+            {
+              "title": "Преміальні матеріали",
+              "text": "Автомобільна еко-шкіра та міцний корпус розраховані на тривалу експлуатацію."
+            },
+            {
+              "title": "Різні розміри",
+              "text": "Оберіть формат S, M, L або XL відповідно до простору вашого багажника."
+            }
+          ],
+          "anchor": null
+        },
+        {
+          "key": "home-cta",
+          "status": "published",
+          "sort": 4,
+          "blockType": "cta",
+          "theme": "mint",
+          "eyebrow": "Готові обрати?",
+          "title": "Знайдіть автокейс для свого автомобіля",
+          "subtitle": "Налаштуйте розмір, дизайн, фіксацію та логотип у картці товару.",
+          "body": null,
+          "imageUpload": null,
+          "imageAlt": null,
+          "imagePosition": "right",
+          "primaryLabel": "Налаштувати автокейс",
+          "primaryUrl": "/case/design/m/2-0",
+          "secondaryLabel": null,
+          "secondaryUrl": null,
+          "items": null,
+          "anchor": "contacts"
+        }
+      ]
+    },
+    {
+      "key": "public-offer",
+      "status": "draft",
+      "title": "Публічна оферта",
+      "slug": "public-offer",
+      "pageType": "legal",
+      "seoTitle": "Публічна оферта | CARZO",
+      "seoDescription": "Умови придбання товарів у CARZO.",
+      "showHeader": true,
+      "showFooter": true,
+      "noIndex": true,
+      "blocks": [
+        {
+          "key": "public-offer-draft",
+          "status": "draft",
+          "sort": 1,
+          "blockType": "rich_text",
+          "theme": "light",
+          "eyebrow": "Юридична інформація",
+          "title": "Публічна оферта",
+          "subtitle": "Чернетка сторінки створена у Directus.",
+          "body": "<p><strong>Перед публікацією додайте та перевірте юридично коректний текст оферти.</strong></p><p>Після заповнення змініть статус сторінки та її блоків на «Опубліковано», а також вимкніть параметр noindex.</p>",
+          "imageUpload": null,
+          "imageAlt": null,
+          "imagePosition": "right",
+          "primaryLabel": null,
+          "primaryUrl": null,
+          "secondaryLabel": null,
+          "secondaryUrl": null,
+          "items": null,
+          "anchor": null
+        }
+      ]
+    },
+    {
+      "key": "delivery-and-payment",
+      "status": "draft",
+      "title": "Доставка та оплата",
+      "slug": "delivery-and-payment",
+      "pageType": "legal",
+      "seoTitle": "Доставка та оплата | CARZO",
+      "seoDescription": "Умови доставки та оплати замовлень CARZO.",
+      "showHeader": true,
+      "showFooter": true,
+      "noIndex": true,
+      "blocks": []
+    },
+    {
+      "key": "privacy-policy",
+      "status": "draft",
+      "title": "Політика конфіденційності",
+      "slug": "privacy-policy",
+      "pageType": "legal",
+      "seoTitle": "Політика конфіденційності | CARZO",
+      "seoDescription": "Інформація про обробку персональних даних у CARZO.",
+      "showHeader": true,
+      "showFooter": true,
+      "noIndex": true,
+      "blocks": []
+    }
+  ]
+}

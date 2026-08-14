@@ -1,0 +1,247 @@
+{
+  "designs": [
+    { "slug": "2-0", "version": "2.0", "label": "Дизайн Carzo 2.0", "sort": 1 },
+    { "slug": "3-0", "version": "3.0", "label": "Дизайн Carzo 3.0", "sort": 2 },
+    { "slug": "4-0", "version": "4.0", "label": "Дизайн Carzo 4.0", "sort": 3 }
+  ],
+  "sizes": [
+    { "code": "S", "slug": "s", "label": "S 40×30×30 см", "widthCm": 40, "heightCm": 30, "depthCm": 30, "contentGroup": "S", "sort": 1 },
+    { "code": "M", "slug": "m", "label": "M 50×30×30 см", "widthCm": 50, "heightCm": 30, "depthCm": 30, "contentGroup": "M", "sort": 2 },
+    { "code": "L", "slug": "l", "label": "L 60×30×30 см", "widthCm": 60, "heightCm": 30, "depthCm": 30, "contentGroup": "LXL", "sort": 3 },
+    { "code": "XL", "slug": "xl", "label": "XL 80×30×30 см", "widthCm": 80, "heightCm": 30, "depthCm": 30, "contentGroup": "LXL", "sort": 4 }
+  ],
+  "brands": [
+    { "slug": "none", "name": null, "flag": "", "logoExtra": 0, "sort": 0 },
+    { "slug": "audi", "name": "Audi", "flag": "🇩🇪", "logoExtra": 290, "sort": 1 },
+    { "slug": "bmw", "name": "BMW", "flag": "🇩🇪", "logoExtra": 290, "sort": 2 },
+    { "slug": "toyota", "name": "Toyota", "flag": "🇯🇵", "logoExtra": 290, "sort": 3 },
+    { "slug": "tesla", "name": "Tesla", "flag": "🇺🇸", "logoExtra": 290, "sort": 4 },
+    { "slug": "kia", "name": "Kia", "flag": "🇰🇷", "logoExtra": 290, "sort": 5 },
+    { "slug": "rr", "name": "Range Rover", "flag": "🇬🇧", "logoExtra": 290, "sort": 6 },
+    { "slug": "renault", "name": "Renault", "flag": "🇫🇷", "logoExtra": 290, "sort": 7 },
+    { "slug": "alfa", "name": "Alfa Romeo", "flag": "🇮🇹", "logoExtra": 290, "sort": 8 },
+    { "slug": "volvo", "name": "Volvo", "flag": "🇸🇪", "logoExtra": 290, "sort": 9 }
+  ],
+  "fixations": [
+    { "key": "none", "label": "без фіксації 0 ₴", "extra": 0, "sort": 1 },
+    { "key": "bottom", "label": "фікс.на дні 0 ₴", "extra": 0, "sort": 2 },
+    { "key": "wall", "label": "фікс.на стінці 0 ₴", "extra": 0, "sort": 3 },
+    { "key": "both", "label": "фікс.дно+стінка +80 ₴", "extra": 80, "sort": 4 }
+  ],
+  "variants": [
+    { "key": "2-0:S", "design": "2-0", "size": "S", "price": 1690, "oldPrice": 2090, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "2-0:M", "design": "2-0", "size": "M", "price": 2090, "oldPrice": 2300, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "2-0:L", "design": "2-0", "size": "L", "price": 2290, "oldPrice": 2690, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "2-0:XL", "design": "2-0", "size": "XL", "price": 2790, "oldPrice": 3100, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "3-0:S", "design": "3-0", "size": "S", "price": 1790, "oldPrice": 2190, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "3-0:M", "design": "3-0", "size": "M", "price": 2190, "oldPrice": 2400, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "3-0:L", "design": "3-0", "size": "L", "price": 2390, "oldPrice": 2790, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "3-0:XL", "design": "3-0", "size": "XL", "price": 2890, "oldPrice": 3200, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "4-0:S", "design": "4-0", "size": "S", "price": 1890, "oldPrice": 2290, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "4-0:M", "design": "4-0", "size": "M", "price": 2290, "oldPrice": 2500, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "4-0:L", "design": "4-0", "size": "L", "price": 2490, "oldPrice": 2890, "inStock": true, "quantityDiscountEligible": true },
+    { "key": "4-0:XL", "design": "4-0", "size": "XL", "price": 2990, "oldPrice": 3300, "inStock": true, "quantityDiscountEligible": true }
+  ],
+  "galleryImages": [
+    { "key": "gallery-fallback-1", "design": null, "size": null, "externalUrl": "https://images.pexels.com/photos/1545743/pexels-photo-1545743.jpeg?auto=compress&cs=tinysrgb&w=800", "alt": "Автокейс — фото 1", "sort": 1 },
+    { "key": "gallery-fallback-2", "design": null, "size": null, "externalUrl": "https://images.pexels.com/photos/4491443/pexels-photo-4491443.jpeg?auto=compress&cs=tinysrgb&w=800", "alt": "Автокейс — фото 2", "sort": 2 },
+    { "key": "gallery-fallback-3", "design": null, "size": null, "externalUrl": "https://images.pexels.com/photos/3806288/pexels-photo-3806288.jpeg?auto=compress&cs=tinysrgb&w=800", "alt": "Автокейс — фото 3", "sort": 3 },
+    { "key": "gallery-fallback-4", "design": null, "size": null, "externalUrl": "https://images.pexels.com/photos/3910073/pexels-photo-3910073.jpeg?auto=compress&cs=tinysrgb&w=800", "alt": "Автокейс — фото 4", "sort": 4 }
+  ],
+  "contentSets": [
+    {
+      "key": "inside-m",
+      "kind": "inside",
+      "design": null,
+      "size": null,
+      "sizeGroup": "M",
+      "title": "Розмір {size}",
+      "contentTabLabel": "Що в середині в розмірі {size}?",
+      "faqTabLabel": "Часті питання",
+      "infoBox": "Розміри між собою відрізняються шириною та кількістю перегородок. Висота та глибина у всіх розмірах складає 30 та 30 см."
+    },
+    {
+      "key": "fixation-default",
+      "kind": "fixation",
+      "design": null,
+      "size": null,
+      "sizeGroup": null,
+      "title": "Фіксація з багажником",
+      "contentTabLabel": "Види фіксації",
+      "faqTabLabel": "Часті питання",
+      "infoBox": "Система фіксації входить у комплект та встановлюється безкоштовно. Вибір типу фіксації залежить від моделі вашого автомобіля."
+    }
+  ],
+  "contentSections": [
+    { "key": "inside-m-partitions", "contentSet": "inside-m", "title": "Перегородки", "text": "На перегородках присутні кармани для дрібних аксесуарів, перегородки можливо переміщувати по всій ширині кейсу, тим самим регулюючі 3 відділення так як вам потрібно.", "imagePlaceholder": "Перегородки", "sort": 1 },
+    { "key": "inside-m-elastics", "contentSet": "inside-m", "title": "Резинки на бокових дверцятах", "text": "Для фіксації аксесуарів в вертикальному положенні.", "imagePlaceholder": "Резинки на бокових дверцятах", "sort": 2 },
+    { "key": "inside-m-protection", "contentSet": "inside-m", "title": "Захист багажнику", "text": "Всередині непромокаюча підкладка, яка у разі розливу буде захищати багажник авто від рідини.", "imagePlaceholder": "Захист багажнику", "sort": 3 },
+    { "key": "fixation-bottom", "contentSet": "fixation-default", "title": "Фіксація на дні", "text": "Спеціальні липучки кріпляться до дна багажника, забезпечуючи надійну фіксацію кейсу. Підходить для більшості автомобілів з рівним дном багажника.", "imagePlaceholder": "Фіксація на дні багажника", "sort": 1 },
+    { "key": "fixation-wall", "contentSet": "fixation-default", "title": "Фіксація на стінці", "text": "Кріплення до бокової стінки багажника за допомогою регульованих ременів. Ідеальний варіант для хетчбеків та універсалів.", "imagePlaceholder": "Фіксація на стінці", "sort": 2 },
+    { "key": "fixation-both", "contentSet": "fixation-default", "title": "Універсальна система", "text": "Комбінована система фіксації, що поєднує кріплення на дні та стінці. Максимальна надійність для будь-яких умов експлуатації.", "imagePlaceholder": "Універсальна система", "sort": 3 }
+  ],
+  "faqItems": [
+    { "key": "inside-custom-width", "group": "inside", "question": "Чи можливо змінити ширину на нестандартну?", "answer": "Так, будь-який розмір від мінімум 35 см до 100 см. Кінцеву вартість Вам повідомить менеджер.", "sort": 1 },
+    { "key": "inside-height-depth", "group": "inside", "question": "Чи можливо змінити висоту чи глибину?", "answer": "Ні, зазначені сторони являються незмінними.", "sort": 2 },
+    { "key": "inside-size-choice", "group": "inside", "question": "Який розмір мені підійде?", "answer": "Сторони автокейсу висота (30 см), глибина (30 см) та ширина (80 см) найбільшого нашого стандартного розміру підходить практично під авто. Це все залежить від ваших потреб. Розмір M та L являються лідерами наших продажів.", "sort": 3 },
+    { "key": "fixation-upholstery", "group": "fixation", "question": "Чи пошкоджує фіксація оббивку багажника?", "answer": "Ні, всі елементи фіксації мають м'які накладки та не залишають слідів на оббивці. Після зняття кейсу багажник залишається в первинному стані.", "sort": 1 },
+    { "key": "fixation-installation", "group": "fixation", "question": "Як швидко встановлюється система?", "answer": "Встановлення займає 2-3 хвилини. У комплекті є детальна інструкція та всі необхідні кріпильні елементи. Не потрібні додаткові інструменти.", "sort": 2 },
+    { "key": "fixation-optional", "group": "fixation", "question": "Чи можна використовувати без фіксації?", "answer": "Так, кейс можна використовувати і без фіксації. Однак для безпеки рекомендуємо використовувати систему кріплення, особливо при активній їзді.", "sort": 3 },
+    { "key": "logo-custom", "group": "logo", "question": "Чи можна нанести кастомний логотип?", "answer": "Так, ми можемо нанести ваш власний логотип або зображення. Потрібно надіслати векторний файл (AI, EPS, SVG) або растрове зображення високої якості.", "sort": 1 },
+    { "key": "logo-time", "group": "logo", "question": "Скільки часу займає нанесення логотипу?", "answer": "Нанесення логотипу не впливає на час виготовлення. Стандартний термін виробництва залишається 3-5 робочих днів незалежно від наявності логотипу.", "sort": 2 },
+    { "key": "logo-position", "group": "logo", "question": "Чи можна змінити розмір або позицію логотипу?", "answer": "Стандартно логотип розміщується по центру верхньої кришки. За бажанням можемо змінити розмір або розміщення за додатковою домовленістю з менеджером.", "sort": 3 }
+  ],
+  "logoSettings": {
+    "title": "Про логотип",
+    "infoText": "У зв'язку з власним виробництвом шильдів, ми пропонуємо нашим клієнтам найкраще співвідношення ціни та якості, швидкість та гнучкість",
+    "fallbackImagePath": "/Без_имени-1.jpg",
+    "fallbackImageUpload": "public/Без_имени-1.jpg",
+    "specs": [
+      { "label": "Матеріал", "value": "нержавіюча сталь" },
+      { "label": "Стандартні розміри", "value": "82 × 18 мм" },
+      { "label": "Товщина", "value": "1.5 мм" },
+      { "label": "Покриття", "value": "полірована поверхня" },
+      { "label": "Спосіб виготовлення", "value": "фрезерування" }
+    ]
+  },
+  "siteSettings": {
+    "designInfoText": "Дизайни між собою нічим не відрізняються окрім візерунку.",
+    "featureMagneticText": "Магнітна система",
+    "featureMaterialFlag": "🇩🇪",
+    "featureMaterialText": "Німецька авто еко-шкіра",
+    "richSignoff": "З повагою, команда Carzo"
+  },
+  "logoPlacements": [],
+  "richSections": [
+    {
+      "key": "rich-materials",
+      "design": null,
+      "imagePath": "/rich-content/materials.jpg",
+      "imageUpload": "public/rich-content/materials.jpg",
+      "title": "Основні матеріали",
+      "subtitle": "Автомобільна еко-шкірка",
+      "description": "Основним матеріалом автокейсу являється преміальна автомобільна еко-шкіра німецького виробництва, максимальна стійка до механічних пошкоджень.",
+      "additionalTitle": "Міцний корпус",
+      "additionalText": "Корпус виготовлений з італьянського кожкартону, завдяки чому кейс буде зберігати форму довгі роки.",
+      "additionalList": [],
+      "sort": 1
+    },
+    {
+      "key": "rich-magnets",
+      "design": null,
+      "imagePath": "/rich-content/magnetic-system.jpg",
+      "imageUpload": "public/rich-content/magnetic-system.jpg",
+      "title": "Магнітна система",
+      "subtitle": "Функціональність та зручність",
+      "description": "З легкістю відкривайте кришку кейсу однією рукою завдяки спеціальній магнітній системі фіксації.",
+      "additionalTitle": "Магніти чи ліпучка?",
+      "additionalText": "Окрім функціональності про яку зазначено вище, магніти мають перевагу над ліпучкою в наступних аспектах:",
+      "additionalList": [
+        "В порівнянні з магнітами, ліпучка будь-якої якості має обмежений термін експлуатації, тобто функція зщеплення кришки кейсу поступово буде погіршуватись.",
+        "Заміна ліпучки на кришці кейсу являється досить проблемним питанням по причині трудомісткої технології відшивання.",
+        "Окрім цього, на відміну від магнітів, багаторазове використання ліпучки впливає на її естетичний вигляд."
+      ],
+      "sort": 2
+    },
+    {
+      "key": "rich-edging",
+      "design": null,
+      "imagePath": "/rich-content/edging.jpg",
+      "imageUpload": "public/rich-content/edging.jpg",
+      "title": "Якісна окантовка",
+      "subtitle": "Естетична складова",
+      "description": "Окантовка кейсу виконана з преміум еко-шкіри. В свою чергу хочемо зазначити, що основна більшість виробників для полегшення процесу виготовлення автокейсу, використовує в якості окантовки тканину, що в свою чергу значно погіршує естетичний вигляд виробу.",
+      "additionalTitle": "Порівняння для більшого розуміння",
+      "additionalText": "\"Окантовка з тканини на автокейсах з еко-шкіри - це як одягнути класичні туфлі під спортивні штани\"",
+      "additionalList": [],
+      "sort": 3
+    },
+    {
+      "key": "rich-handles",
+      "design": null,
+      "imagePath": "/rich-content/handles.jpg",
+      "imageUpload": "public/rich-content/handles.jpg",
+      "title": "Ручки автокейсу",
+      "subtitle": "Надійність та довговічність",
+      "description": "Ручки на кейсах прошиті армованою ниткою, укріплені від зносу, кріпляться до кейсу заклепками. На наших кейсах фурнітура високої якості, що являється ще однією характерною відмінністю від інших виробників.",
+      "additionalTitle": null,
+      "additionalText": null,
+      "additionalList": [],
+      "sort": 4
+    }
+  ],
+  "benefitModals": [
+    {
+      "key": "payment",
+      "cardLabel": "Варіанти\nоплати",
+      "title": "Варіанти оплати",
+      "subtitle": "Прозорі умови та жодних прихованих платежів",
+      "content": {
+        "blocks": [
+          { "type": "info_card", "icon": "wallet", "title": "Чи є передоплата?", "lines": [{ "text": "20% від суми замовлення — обов'язкова передоплата для замовлення будь-якого нашого продукту, окрім автокилимків.", "tone": "body" }] },
+          { "type": "info_card", "icon": "shield", "title": "Причина передоплати?", "lines": [{ "text": "Передоплата — це підтвердження того, що замовлення дійсно актуальне та клієнт прийде за ним на відділення.", "tone": "body" }] },
+          { "type": "info_card", "icon": "percent", "title": "Повна оплата?", "lines": [{ "text": "За бажанням ви можете оплатити повністю, щоб не сплачувати комісію Нової пошти за післяплату.", "tone": "body" }, { "text": "20 грн + 2% від суми післяплати", "tone": "accent" }] },
+          { "type": "info_card", "icon": "rotate", "title": "Повернення передоплати?", "lines": [{ "text": "Якщо клієнт отримав замовлення, а потім вирішив повернути товар — передоплата повертається повністю.", "tone": "body" }, { "text": "Якщо клієнт не прийшов на відділення або відмовився від отримання — передоплата повертається за мінусом витрат на послуги Нової пошти.", "tone": "body", "dividerBefore": true }], "highlight": { "title": "🤘 Нам є чим пишатись!", "text": "За весь 2025 рік кількість клієнтів, які звернулися з проханням повернути або обміняти товар, склала менше 1%." } }
+        ]
+      }
+    },
+    {
+      "key": "delivery",
+      "cardLabel": "Доставка\n1-2 дні",
+      "title": "Доставка 1-2 дні",
+      "subtitle": "Відправляємо швидко, пакуємо надійно, збірка займає кілька хвилин",
+      "content": {
+        "blocks": [
+          { "type": "info_card", "icon": "truck", "title": "Строки доставки?", "lines": [{ "text": "Зазвичай всі наші продукти, окрім автокилимків, ми відправляємо Новою поштою в день замовлення або наступний.", "tone": "body" }, { "text": "Якщо замовлення надійшло у вихідні дні — відправка буде у понеділок.", "tone": "small" }] },
+          { "type": "info_card", "icon": "package", "title": "Яке пакування?", "lines": [{ "text": "За власний рахунок ми забезпечуємо якісне пакування для безпечного транспортування замовлення.", "tone": "body" }] },
+          { "type": "info_card", "icon": "package_check", "title": "В якому вигляді відправляється автокейс?", "lines": [{ "text": "Автокейс відправляється у розібраному вигляді.", "tone": "body" }], "highlight": { "text": "📦 На пакуванні буде QR-код з посиланням на відео збірки." } }
+        ]
+      }
+    },
+    {
+      "key": "returns",
+      "cardLabel": "Обмін та\nповернення",
+      "title": "Обмін та повернення",
+      "subtitle": "Якщо щось не підійшло — допоможемо обміняти або повернути товар",
+      "content": {
+        "blocks": [
+          { "type": "badges", "items": ["✅ 14 днів на повернення", "✅ Безкоштовне «Легке повернення»"] },
+          { "type": "info_card", "icon": "refresh", "title": "Купив але не підійшло?", "lines": [{ "text": "Всі наші продукти, окрім автокилимків, можна без проблем повернути або обміняти.", "tone": "body" }] },
+          { "type": "info_card", "icon": "calendar", "title": "Строки повернення?", "lines": [{ "text": "Повернення можливе протягом 14 днів з моменту отримання замовлення відповідно до діючого законодавства України.", "tone": "body" }] },
+          { "type": "info_card", "icon": "package_check", "title": "Скільки коштує повернення?", "lines": [{ "text": "Повернення можна здійснити безкоштовно через програму Нової пошти \"Легке повернення\".", "tone": "body" }] },
+          { "type": "info_card", "icon": "undo", "title": "Повернення передоплати?", "lines": [{ "text": "Якщо клієнт отримав замовлення, а потім вирішив повернути товар — передоплата повертається повністю.", "tone": "body" }, { "text": "Якщо клієнт не прийшов на відділення або відмовився від отримання — передоплата повертається за мінусом витрат Нової пошти.", "tone": "small", "dividerBefore": true }], "highlight": { "text": "🤏 Менше 1% клієнтів звертаються щодо повернення або обміну" } }
+        ]
+      }
+    },
+    {
+      "key": "bundle",
+      "cardLabel": "Разом\nдешевше",
+      "title": "Разом дешевше",
+      "subtitle": "Комбінуй товари, економ кошти, отримуй більше задоволення від покупок",
+      "content": {
+        "blocks": [
+          { "type": "discount_grid", "items": [{ "label": "2 товари", "value": "-200 грн" }, { "label": "3 товари", "value": "-500 грн" }] },
+          { "type": "info_card", "icon": "tag", "title": "Як працює знижка?", "lines": [{ "text": "Додайте в кошик будь-які 2 товари — отримайте знижку 200 грн; 3 і більше — 500 грн.", "tone": "body" }] },
+          { "type": "calculation", "rows": [{ "label": "2 × Автокейс", "value": "4 000 грн", "muted": false }, { "label": "Знижка", "value": "−200 грн", "muted": true }], "totalLabel": "Разом", "totalValue": "3 800 грн", "note": "Знижка автоматично розраховується у кошику." }
+        ]
+      }
+    },
+    {
+      "key": "loyalty",
+      "cardLabel": "Клієнтська\nпрограма",
+      "title": "З Carzo назавжди",
+      "subtitle": "Постійна знижка для наших клієнтів після першої покупки",
+      "content": {
+        "blocks": [
+          { "type": "loyalty_hero", "value": "−5%", "label": "на всі товари назавжди" },
+          { "type": "steps", "items": ["Купуєте вперше", "Отримуєте промокод", "Наступні замовлення дешевші"] },
+          { "type": "info_card", "icon": "sparkles", "title": "Як працює програма?", "lines": [{ "text": "Після першої покупки ви отримуєте постійну знижку −5% на всі наші продукти.", "tone": "body" }, { "text": "Промокод можна застосувати у кошику і знижка автоматично розрахується.", "tone": "body", "dividerBefore": true }, { "text": "Якщо у вас немає промокоду — напишіть нам і ми надішлемо його або менеджер застосує знижку вручну.", "tone": "small" }] }
+        ]
+      }
+    }
+  ],
+  "discountTiers": [
+    { "key": "quantity-2", "minQuantity": 2, "amount": 200, "sort": 1 },
+    { "key": "quantity-3", "minQuantity": 3, "amount": 500, "sort": 2 }
+  ]
+}
