@@ -107,6 +107,24 @@
   outline-offset: 2px;
 }
 
+@media (hover: hover) {
+  .design-option:not([aria-pressed="true"]):hover {
+    border-color: #cfcfcf;
+    background: #fafafa;
+    color: #222;
+  }
+}
+
+.product-magnet-icon {
+  filter: drop-shadow(0 0 4px rgba(40, 197, 166, 0.42));
+  animation: carzo-magnet-breathe 2.8s ease-in-out infinite;
+}
+
+@keyframes carzo-magnet-breathe {
+  0%, 100% { opacity: 0.78; }
+  50% { opacity: 1; }
+}
+
 /* Shared Bolt-derived product modal visual system. */
 .modal-shell {
   position: relative;
@@ -374,5 +392,10 @@
   [data-cart-screen-cover] {
     animation: none;
     transition: none;
+  }
+
+  .product-magnet-icon {
+    animation: none;
+    opacity: 1;
   }
 }

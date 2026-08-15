@@ -7,17 +7,24 @@ import type { InfoModalData } from '@/lib/content/types';
 
 export type { InfoModalData } from '@/lib/content/types';
 
-interface InfoModalProps {
-  data: InfoModalData;
+interface InfoModalBaseProps {
   onClose: () => void;
 }
 
+type InfoModalProps = InfoModalBaseProps & (
+  | { data: InfoModalData; title?: never; text?: never }
+  | { data?: never; title: string; text: string }
+);
+
 /* ─── Modal ───────────────────────────────────────────────────── */
 
-export default function InfoModal({ data, onClose }: InfoModalProps) {
+export default function InfoModal(props: InfoModalProps) {
+  const { onClose } = props;
   const [activeTab, setActiveTab] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const backdropRef = useRef<HTMLDivElement>(null);
+  const isSimple = !('data' in props) || !props.data;
+  const title = isSimple ? props.title : props.data.title;
 
   // Lock body scroll
   useEffect(() => {
@@ -38,7 +45,7 @@ export default function InfoModal({ data, onClose }: InfoModalProps) {
     scrollRef.current?.scrollTo({ top: 0 });
   }, [activeTab]);
 
-  const tab = data.tabs[activeTab];
+  const tab = isSimple ? null : props.data.tabs[activeTab];
 
   return (
     /* Backdrop */
@@ -60,7 +67,7 @@ export default function InfoModal({ data, onClose }: InfoModalProps) {
         <div className="modal-header">
           {/* Title row */}
           <div className="flex items-center justify-between">
-            <h2 id="info-modal-title" className="modal-title">{data.title}</h2>
+            <h2 id="info-modal-title" className="modal-title">{title}</h2>
             <button
               onClick={onClose}
               className="modal-close"
@@ -71,26 +78,39 @@ export default function InfoModal({ data, onClose }: InfoModalProps) {
           </div>
 
           {/* Tab bar */}
-          <div className="modal-tab-bar mt-3">
-            {data.tabs.map((t, i) => (
-              <button
-                key={t.label}
-                onClick={() => setActiveTab(i)}
-                className={`modal-tab ${activeTab === i ? 'modal-tab-active' : ''}`}
-              >
-                {t.label}
-                {activeTab === i ? <span className="modal-tab-indicator" /> : null}
-              </button>
-            ))}
-          </div>
+          {!isSimple ? (
+            <div className="modal-tab-bar mt-3">
+              {props.data.tabs.map((t, i) => (
+                <button
+                  key={t.label}
+                  onClick={() => setActiveTab(i)}
+                  className={`modal-tab ${activeTab === i ? 'modal-tab-active' : ''}`}
+                >
+                  {t.label}
+                  {activeTab === i ? <span className="modal-tab-indicator" /> : null}
+                </button>
+              ))}
+            </div>
+          ) : null}
         </div>
+
+        {isSimple ? <div className="modal-divider" /> : null}
 
         {/* ── Scrollable content ── */}
         <div ref={scrollRef} className="modal-scroll">
           <div className="modal-content">
 
+            {isSimple ? (
+              <div className="modal-info-box">
+                <div className="modal-info-icon">
+                  <Info size={14} strokeWidth={2} />
+                </div>
+                <p className="modal-body-text pt-1">{props.text}</p>
+              </div>
+            ) : null}
+
             {/* Info box */}
-            {tab.infoBox && (
+            {tab?.infoBox && (
               <div className="modal-info-box">
                 <div className="modal-info-icon">
                   <Info size={14} strokeWidth={2} />
@@ -100,7 +120,7 @@ export default function InfoModal({ data, onClose }: InfoModalProps) {
             )}
 
             {/* FAQ cards */}
-            {tab.faqs?.map(faq => (
+            {tab?.faqs?.map(faq => (
               <div key={faq.key} className="modal-faq">
                 <p className="modal-faq-question">{faq.question}</p>
                 <p className="modal-faq-answer">{faq.answer}</p>
@@ -108,7 +128,7 @@ export default function InfoModal({ data, onClose }: InfoModalProps) {
             ))}
 
             {/* Content sections */}
-            {tab.sections?.map(section => (
+            {tab?.sections?.map(section => (
               <div key={section.key} className="flex flex-col gap-3">
                 {/* Image or safe placeholder */}
                 <div
