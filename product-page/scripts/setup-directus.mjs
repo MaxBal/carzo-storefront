@@ -449,7 +449,7 @@ const collections = [
     }),
     longText('message_template', {
       required: true,
-      note: 'Доступні: order_number, customer_name, customer_phone, contact_method, items_quantity, items_summary, total, delivery_city, delivery_point, order_url.',
+      note: 'Доступні: order_number, customer_name, customer_phone, contact_method, items_quantity, items_summary, total, delivery_method, delivery_city, delivery_destination, delivery_point, order_url.',
     }),
   ], {
     singleton: true,
@@ -492,15 +492,26 @@ const collections = [
       defaultValue: 'phone',
       note: 'Бажаний спосіб підтвердження замовлення менеджером.',
     }),
+    choice('delivery_method', [
+      { text: 'У відділення', value: 'BRANCH' },
+      { text: 'У поштомат', value: 'POSTOMAT' },
+      { text: 'Курʼєром', value: 'COURIER' },
+    ], { required: true, defaultValue: 'BRANCH' }),
     shortText('delivery_city_ref', { required: true }),
     shortText('delivery_city_name', { required: true }),
-    shortText('delivery_point_ref', { required: true }),
-    shortText('delivery_point_name', { required: true }),
-    shortText('delivery_point_address', { required: true }),
+    shortText('delivery_point_ref'),
+    shortText('delivery_point_number', { width: 'half' }),
+    shortText('delivery_point_name'),
+    shortText('delivery_point_address'),
     choice('delivery_point_type', [
       { text: 'Відділення', value: 'branch' },
       { text: 'Поштомат', value: 'postomat' },
-    ], { required: true, defaultValue: 'branch' }),
+    ]),
+    shortText('delivery_street_ref'),
+    shortText('delivery_street_name'),
+    shortText('delivery_street_type', { width: 'half' }),
+    shortText('delivery_house', { width: 'half' }),
+    shortText('delivery_apartment', { width: 'half' }),
     integer('items_quantity', { required: true }),
     integer('subtotal', { required: true }),
     integer('quantity_discount', { required: true, defaultValue: 0 }),
@@ -606,6 +617,13 @@ const relations = [
   },
 ];
 
+const physicalRelationRepairKeys = new Set([
+  'carzo_media_settings.image',
+  'carzo_rich_section_images.design',
+  'carzo_rich_section_images.section',
+  'carzo_rich_section_images.image',
+]);
+
 const legacyReadonlyFields = {
   carzo_brands: ['logo_extra'],
   carzo_sizes: [
@@ -701,6 +719,50 @@ async function retireLegacyFields() {
 }
 
 async function configureCheckoutFieldMetadata() {
+  await request('/fields/carzo_orders/delivery_method', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      schema: { is_nullable: false, default_value: 'BRANCH' },
+      meta: {
+        required: true,
+        options: {
+          choices: [
+            { text: 'У відділення', value: 'BRANCH' },
+            { text: 'У поштомат', value: 'POSTOMAT' },
+            { text: 'Курʼєром', value: 'COURIER' },
+          ],
+        },
+      },
+    }),
+  });
+  for (const fieldName of [
+    'delivery_point_ref',
+    'delivery_point_number',
+    'delivery_point_name',
+    'delivery_point_address',
+    'delivery_point_type',
+  ]) {
+    await request(`/fields/carzo_orders/${fieldName}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        schema: { is_nullable: true },
+        meta: { required: false },
+      }),
+    });
+  }
+  await request('/fields/carzo_orders/delivery_point_type', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      meta: {
+        options: {
+          choices: [
+            { text: 'Відділення', value: 'branch' },
+            { text: 'Поштомат', value: 'postomat' },
+          ],
+        },
+      },
+    }),
+  });
   await request('/fields/carzo_orders/contact_method', {
     method: 'PATCH',
     body: JSON.stringify({
@@ -720,6 +782,32 @@ async function configureCheckoutFieldMetadata() {
       },
     }),
   });
+  await request('/fields/carzo_notification_settings/message_template', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      meta: {
+        note: 'Доступні: order_number, customer_name, customer_phone, contact_method, items_quantity, items_summary, total, delivery_method, delivery_city, delivery_destination, delivery_point, order_url.',
+      },
+    }),
+  });
+}
+
+async function backfillOrderDeliveryMethods() {
+  const orders = await request(
+    '/items/carzo_orders?limit=-1&fields=id,delivery_method,delivery_point_type',
+  );
+  let updated = 0;
+  for (const order of orders) {
+    // Only repair historical locker orders that received the new BRANCH default.
+    // Current BRANCH/POSTOMAT values and every COURIER order are already canonical.
+    if (order.delivery_point_type !== 'postomat' || order.delivery_method !== 'BRANCH') continue;
+    await request(`/items/carzo_orders/${order.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ delivery_method: 'POSTOMAT' }),
+    });
+    updated += 1;
+  }
+  return { checked: orders.length, updated };
 }
 
 async function configureProductMediaFieldMetadata() {
@@ -741,32 +829,101 @@ async function configureProductMediaFieldMetadata() {
   });
 }
 
+async function assertRelationReferences(definition) {
+  const source = await request(
+    `/items/${definition.collection}?limit=-1&fields=id,${definition.field}`,
+  );
+  const relatedPath = definition.relatedCollection === 'directus_files'
+    ? '/files?limit=-1&fields=id'
+    : `/items/${definition.relatedCollection}?limit=-1&fields=id`;
+  const related = await request(relatedPath);
+  const sourceItems = Array.isArray(source) ? source : source ? [source] : [];
+  const relatedItems = Array.isArray(related) ? related : related ? [related] : [];
+  const relatedIds = new Set(relatedItems.map(item => String(item.id)));
+  const orphanedItemIds = sourceItems
+    .filter(item => {
+      const value = relatedId(item[definition.field]);
+      return value !== null && !relatedIds.has(String(value));
+    })
+    .map(item => item.id);
+
+  if (orphanedItemIds.length > 0) {
+    throw new Error(
+      `Cannot restore ${definition.collection}.${definition.field} foreign key: `
+      + `orphaned values exist in items ${orphanedItemIds.join(', ')}`,
+    );
+  }
+}
+
 async function ensureRelations() {
   const existing = await request('/relations');
   for (const definition of relations) {
-    const found = existing.some(relation => (
+    const found = existing.find(relation => (
       relation.collection === definition.collection && relation.field === definition.field
     ));
-    if (found) {
-      await request(`/relations/${definition.collection}/${definition.field}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          schema: definition.schema || { on_delete: 'SET NULL' },
-          meta: definition.meta || { one_deselect_action: 'nullify' },
-        }),
+    const schema = definition.schema || { on_delete: 'SET NULL' };
+    const meta = definition.meta || { one_deselect_action: 'nullify' };
+    const payload = {
+      collection: definition.collection,
+      field: definition.field,
+      related_collection: definition.relatedCollection,
+      schema,
+      meta,
+    };
+
+    if (!found) {
+      await request('/relations', {
+        method: 'POST',
+        body: JSON.stringify(payload),
       });
       continue;
     }
-    await request('/relations', {
-      method: 'POST',
-      body: JSON.stringify({
-        collection: definition.collection,
-        field: definition.field,
-        related_collection: definition.relatedCollection,
-        schema: definition.schema || { on_delete: 'SET NULL' },
-        meta: definition.meta || { one_deselect_action: 'nullify' },
-      }),
+
+    const key = `${definition.collection}.${definition.field}`;
+    const schemaMatches = found.schema
+      && found.schema.foreign_key_table === definition.relatedCollection
+      && found.schema.foreign_key_column === 'id'
+      && found.schema.on_delete === schema.on_delete;
+    const metaMatches = Object.entries(meta).every(
+      ([name, value]) => found.meta?.[name] === value,
+    );
+
+    if (schemaMatches && metaMatches) continue;
+
+    // Only these four relations had physical foreign keys in the checked-in
+    // baseline. Leave older metadata-only relations unchanged so this setup
+    // does not broaden the checkout migration into unrelated database DDL.
+    if (!found.schema && !physicalRelationRepairKeys.has(key)) continue;
+
+    if (!found.schema) {
+      await assertRelationReferences(definition);
+    }
+
+    await request(`/relations/${definition.collection}/${definition.field}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     });
+  }
+
+  const refreshed = await request('/relations');
+  for (const key of physicalRelationRepairKeys) {
+    const [collectionName, fieldName] = key.split('.');
+    const definition = relations.find(item => (
+      item.collection === collectionName && item.field === fieldName
+    ));
+    const relation = refreshed.find(item => (
+      item.collection === collectionName && item.field === fieldName
+    ));
+    const expectedOnDelete = definition?.schema?.on_delete || 'SET NULL';
+    if (
+      !definition
+      || !relation?.schema
+      || relation.schema.foreign_key_table !== definition.relatedCollection
+      || relation.schema.foreign_key_column !== 'id'
+      || relation.schema.on_delete !== expectedOnDelete
+    ) {
+      throw new Error(`Directus did not restore the expected foreign key for ${key}`);
+    }
   }
 }
 
@@ -926,7 +1083,8 @@ async function ensureNotificationSettings() {
       '{{items_summary}}',
       'Кількість: {{items_quantity}}',
       'Сума: {{total}} ₴',
-      'Доставка: {{delivery_city}}, {{delivery_point}}',
+      'Доставка: {{delivery_method}}',
+      'Адреса: {{delivery_city}}, {{delivery_destination}}',
       'Замовлення: {{order_url}}',
     ].join('\n'),
   };
@@ -1015,8 +1173,11 @@ function mimeType(path) {
 }
 
 function relatedId(value) {
-  if (typeof value === 'string') return value;
-  return value && typeof value === 'object' && typeof value.id === 'string' ? value.id : null;
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (value && typeof value === 'object' && (typeof value.id === 'string' || typeof value.id === 'number')) {
+    return String(value.id);
+  }
+  return null;
 }
 
 async function ensureFile(relativePath, folderId) {
@@ -1405,6 +1566,7 @@ for (const definition of collections) {
 }
 await retireLegacyFields();
 await configureCheckoutFieldMetadata();
+const orderDeliveryBackfill = await backfillOrderDeliveryMethods();
 await configureProductMediaFieldMetadata();
 await ensureRelations();
 const previewConfigured = await configurePagePreview();
@@ -1443,6 +1605,7 @@ console.log(JSON.stringify({
   access,
   notificationSettings,
   telegramBotSettings,
+  orderDeliveryBackfill,
   legacyOrderNotificationFlow,
   previewConfigured,
 }, null, 2));

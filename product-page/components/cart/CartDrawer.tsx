@@ -6,8 +6,9 @@ import { CheckCircle2, ChevronDown, Info, Loader2, Minus, Plus, ShoppingBag, Tra
 import { createOrder } from '@/app/actions/checkout';
 import { CONTACT_METHOD_OPTIONS, type ContactMethod } from '@/lib/cart/contact-method';
 import { formatUkrainePhoneInput, UKRAINE_PHONE_MASK_PREFIX, UKRAINE_PHONE_PATTERN } from '@/lib/cart/phone';
-import type { CheckoutResult } from '@/lib/cart/types';
+import type { CheckoutDelivery, CheckoutResult } from '@/lib/cart/types';
 import NovaPoshtaSelector from './NovaPoshtaSelector';
+import NovaPoshtaTrustRow from './NovaPoshtaTrustRow';
 import { useCart } from './cart-context';
 import { useCartViewport } from './useCartViewport';
 
@@ -16,6 +17,14 @@ const MOBILE_SURFACE_FADE_MS = 150;
 
 function money(value: number) {
   return new Intl.NumberFormat('uk-UA').format(value);
+}
+
+function deliveryIsComplete(delivery: CheckoutDelivery) {
+  if (!delivery.cityRef) return false;
+  if (delivery.method === 'COURIER') {
+    return Boolean(delivery.streetRef && delivery.streetName.trim() && delivery.house.trim());
+  }
+  return Boolean(delivery.pointRef);
 }
 
 export default function CartDrawer() {
@@ -28,11 +37,11 @@ export default function CartDrawer() {
   const [customerPhone, setCustomerPhone] = useState(UKRAINE_PHONE_MASK_PREFIX);
   const [customerComment, setCustomerComment] = useState('');
   const [contactMethod, setContactMethod] = useState<ContactMethod>('phone');
-  const [cityRef, setCityRef] = useState('');
-  const [pointRef, setPointRef] = useState('');
+  const [delivery, setDelivery] = useState<CheckoutDelivery>({ method: 'BRANCH', cityRef: '', pointRef: '' });
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [closing, setClosing] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
-  const { viewportRef, scrollRef } = useCartViewport(isOpen);
+  const { viewportRef, scrollRef } = useCartViewport(isOpen, checkout);
 
   const closeSurface = useCallback(() => {
     if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
@@ -58,6 +67,8 @@ export default function CartDrawer() {
       setClosing(false);
       setCheckout(false);
       setSubmitError(null);
+      setSubmitAttempted(false);
+      setDelivery({ method: 'BRANCH', cityRef: '', pointRef: '' });
       return;
     }
     const body = document.body;
@@ -97,8 +108,9 @@ export default function CartDrawer() {
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!cart.quote || !cityRef || !pointRef) {
-      setSubmitError('Заповніть контактні дані та оберіть точку доставки.');
+    setSubmitAttempted(true);
+    if (!cart.quote || !deliveryIsComplete(delivery)) {
+      setSubmitError('Заповніть контактні дані та адресу доставки.');
       return;
     }
     setSubmitting(true);
@@ -112,8 +124,7 @@ export default function CartDrawer() {
         customerPhone,
         customerComment,
         contactMethod,
-        deliveryCityRef: cityRef,
-        deliveryPointRef: pointRef,
+        delivery,
       });
     } catch {
       result = { ok: false, code: 'FAILED', message: 'Не вдалося оформити замовлення. Кошик збережено.' };
@@ -134,15 +145,17 @@ export default function CartDrawer() {
           <div ref={viewportRef} data-cart-interactive-viewport className="absolute inset-x-0 top-0 h-[100dvh] sm:inset-0 sm:h-auto">
             <button type="button" aria-label="Закрити кошик" className="absolute inset-0 hidden bg-black/55 backdrop-blur-[1px] sm:block" onClick={closeSurface} />
             <aside role="dialog" aria-modal="true" aria-labelledby="cart-title" className="absolute inset-y-0 right-0 flex h-full w-full max-w-none flex-col overflow-hidden bg-white sm:max-w-[520px] sm:shadow-2xl">
-            <div className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 px-4 sm:px-6">
-              <div className="flex items-center gap-2.5">
-                <ShoppingBag size={20} />
-                <h2 id="cart-title" className="text-lg font-bold">{checkout ? 'Оформлення замовлення' : 'Кошик'}</h2>
-                {!checkout && cart.itemsQuantity > 0 && <span className="rounded-full bg-black px-2 py-0.5 text-xs font-semibold text-white">{cart.itemsQuantity}</span>}
+            <div data-checkout-header>
+              <div data-checkout-header-inner className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 px-4 sm:px-6">
+                <div className="flex items-center gap-2.5">
+                  <ShoppingBag size={20} />
+                  <h2 id="cart-title" className="text-lg font-bold">{checkout ? 'Оформлення замовлення' : 'Кошик'}</h2>
+                  {!checkout && cart.itemsQuantity > 0 && <span className="rounded-full bg-black px-2 py-0.5 text-xs font-semibold text-white">{cart.itemsQuantity}</span>}
+                </div>
+                <button type="button" onClick={closeSurface} className="rounded-full p-2 hover:bg-gray-100" aria-label="Закрити">
+                  <X size={21} />
+                </button>
               </div>
-              <button type="button" onClick={closeSurface} className="rounded-full p-2 hover:bg-gray-100" aria-label="Закрити">
-                <X size={21} />
-              </button>
             </div>
 
             <div ref={scrollRef} className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-4 py-5 [scrollbar-gutter:stable] sm:px-6">
@@ -170,13 +183,12 @@ export default function CartDrawer() {
                   </div>
 
                   <div className="border-t border-gray-100 pt-5">
-                    <h3 className="mb-3 text-base font-bold">Доставка Новою поштою</h3>
+                    <h3 className="mb-3 text-base font-bold">Вкажіть адресу доставки</h3>
                     <NovaPoshtaSelector
                       allowPostomat={Boolean(cart.quote?.allowPostomat)}
-                      cityRef={cityRef}
-                      pointRef={pointRef}
-                      onCityChange={setCityRef}
-                      onPointChange={setPointRef}
+                      value={delivery}
+                      showErrors={submitAttempted}
+                      onChange={setDelivery}
                     />
                   </div>
 
@@ -251,6 +263,7 @@ export default function CartDrawer() {
                   <div className="flex justify-between border-t border-gray-100 pt-3 text-lg font-bold"><span>Разом</span><span>{money(cart.quote.total)} ₴</span></div>
                 </div>
                 <button type="button" onClick={() => setCheckout(true)} disabled={cart.quoteLoading || !cart.quote.canCheckout} className="mt-4 w-full rounded-xl bg-black px-4 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Оформити замовлення</button>
+                <NovaPoshtaTrustRow />
               </div>
             )}
             </aside>

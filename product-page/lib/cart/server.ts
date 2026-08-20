@@ -6,6 +6,9 @@ import type { DiscountTier } from '@/lib/content/types';
 
 type DirectusRecord = Record<string, unknown>;
 
+const POSTOMAT_MAX_WEIGHT_KG = 20;
+const POSTOMAT_MAX_DIMENSIONS_CM = [30, 40, 60] as const;
+
 export class CartQuoteError extends Error {
   constructor(message: string, public readonly code: 'INVALID' | 'UNAVAILABLE' = 'INVALID') {
     super(message);
@@ -59,6 +62,16 @@ function bool(value: unknown) {
   return value === true;
 }
 
+function fitsPostomatDimensions(values: unknown[]) {
+  const dimensions = values.map(Number).sort((left, right) => left - right);
+  return dimensions.length === POSTOMAT_MAX_DIMENSIONS_CM.length
+    && dimensions.every((dimension, index) => (
+      Number.isFinite(dimension)
+      && dimension > 0
+      && dimension <= POSTOMAT_MAX_DIMENSIONS_CM[index]
+    ));
+}
+
 function itemKey(item: Omit<CartInputItem, 'quantity'>) {
   return [item.size, item.designSlug, item.brandId, item.fixation].join(':');
 }
@@ -83,7 +96,7 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
 
   const [designs, sizes, brands, brandPricing, fixations, variants, discountTiers, shipping, siteSettings] = await Promise.all([
     readPublished('carzo_designs', 'slug,version,label'),
-    readPublished('carzo_sizes', 'code,slug,label'),
+    readPublished('carzo_sizes', 'code,slug,label,width_cm,height_cm,depth_cm'),
     readPublished('carzo_brands', 'slug,name'),
     readPublished('carzo_brand_pricing', 'brand.slug,logo_extra'),
     readPublished('carzo_fixations', 'key,label,extra'),
@@ -150,8 +163,13 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
   })), tiers);
   const onlyLine = lines.length === 1 ? lines[0] : null;
   const profile = onlyLine ? shippingBySize.get(onlyLine.item.size) : null;
-  const hasShippingProfile = Boolean(profile)
-    && ['length_cm', 'width_cm', 'height_cm', 'weight_kg'].every(field => Number(profile?.[field]) > 0);
+  const size = onlyLine ? sizeByCode.get(onlyLine.item.size) : null;
+  const postomatDimensions = profile
+    ? [profile.length_cm, profile.width_cm, profile.height_cm]
+    : [size?.width_cm, size?.height_cm, size?.depth_cm];
+  const postomatWeightAllowed = !profile
+    || (Number(profile.weight_kg) > 0 && Number(profile.weight_kg) <= POSTOMAT_MAX_WEIGHT_KG);
+  const postomatParcelAllowed = fitsPostomatDimensions(postomatDimensions) && postomatWeightAllowed;
 
   return {
     lines,
@@ -162,7 +180,11 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     appliedTier: totals.appliedTier
       ? { key: totals.appliedTier.key, minQuantity: totals.appliedTier.minQuantity, amount: totals.appliedTier.amount }
       : null,
-    allowPostomat: Boolean(onlyLine && onlyLine.quantity === 1 && hasShippingProfile),
+    allowPostomat: Boolean(
+      onlyLine
+      && onlyLine.quantity === 1
+      && postomatParcelAllowed,
+    ),
     canCheckout: lines.every(line => line.inStock),
     checkoutPaymentDetails: text(siteSettings[0]?.checkout_payment_details).trim(),
     verifiedAt: new Date().toISOString(),

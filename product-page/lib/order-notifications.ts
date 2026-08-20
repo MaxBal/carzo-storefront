@@ -23,8 +23,9 @@ export interface NewOrderNotification {
   contactMethod: string;
   itemsQuantity: number;
   total: number;
+  deliveryMethod: string;
   deliveryCity: string;
-  deliveryPoint: string;
+  deliveryDestination: string;
   items: Array<{ title: string; quantity: number; lineTotal: number }>;
 }
 
@@ -88,7 +89,7 @@ async function readSettings(): Promise<NotificationSettings> {
       : 'Нове замовлення {{order_number}}',
     messageTemplate: typeof data.message_template === 'string'
       ? data.message_template
-      : 'Покупець: {{customer_name}}\nТелефон: {{customer_phone}}\nСпосіб зв’язку: {{contact_method}}\nСума: {{total}} ₴\n{{order_url}}',
+      : 'Покупець: {{customer_name}}\nТелефон: {{customer_phone}}\nСпосіб зв’язку: {{contact_method}}\nСума: {{total}} ₴\nДоставка: {{delivery_method}}\nАдреса: {{delivery_city}}, {{delivery_destination}}\n{{order_url}}',
   };
 }
 
@@ -125,8 +126,11 @@ function renderedMessage(settings: NotificationSettings, order: NewOrderNotifica
       .map(item => `• ${item.title} × ${item.quantity} — ${item.lineTotal} ₴`)
       .join('\n'),
     total: String(order.total),
+    delivery_method: order.deliveryMethod,
     delivery_city: order.deliveryCity,
-    delivery_point: order.deliveryPoint,
+    delivery_destination: order.deliveryDestination,
+    // Existing custom templates can keep using this token for all delivery methods.
+    delivery_point: order.deliveryDestination,
     order_url: orderUrl,
   };
   return {

@@ -42,12 +42,43 @@ export interface NovaPoshtaCity {
   type: string;
 }
 
+export const DELIVERY_METHOD_VALUES = ['BRANCH', 'POSTOMAT', 'COURIER'] as const;
+
+export type DeliveryMethod = typeof DELIVERY_METHOD_VALUES[number];
+
 export interface NovaPoshtaPoint {
   ref: string;
+  number: string;
   name: string;
   address: string;
   type: 'branch' | 'postomat';
 }
+
+export interface NovaPoshtaStreet {
+  ref: string;
+  name: string;
+  type: string;
+}
+
+export type CheckoutDelivery =
+  | {
+    method: 'BRANCH';
+    cityRef: string;
+    pointRef: string;
+  }
+  | {
+    method: 'POSTOMAT';
+    cityRef: string;
+    pointRef: string;
+  }
+  | {
+    method: 'COURIER';
+    cityRef: string;
+    streetRef: string;
+    streetName: string;
+    house: string;
+    apartment?: string;
+  };
 
 export interface CheckoutInput {
   items: CartInputItem[];
@@ -56,8 +87,7 @@ export interface CheckoutInput {
   customerPhone: string;
   customerComment?: string;
   contactMethod: ContactMethod;
-  deliveryCityRef: string;
-  deliveryPointRef: string;
+  delivery: CheckoutDelivery;
 }
 
 export type CheckoutResult =

@@ -30,13 +30,14 @@ async function request(path) {
   return payload.data;
 }
 
-const [collections, policies, roles, access, permissions, flows] = await Promise.all([
+const [collections, policies, roles, access, permissions, flows, relations] = await Promise.all([
   request('/collections?limit=-1&fields=collection,meta.*,schema.*'),
   request('/policies?limit=-1&fields=id,name,app_access,admin_access'),
   request('/roles?limit=-1&fields=id,name'),
   request('/access?limit=-1&fields=id,role,policy'),
   request('/permissions?limit=-1&fields=policy,collection,action,fields,permissions,validation,presets'),
   request('/flows?limit=-1&fields=id,name,status,trigger,options,operation'),
+  request('/relations'),
 ]);
 
 const collectionNames = collections
@@ -166,6 +167,54 @@ assert(
   )),
   'Contact method must have a Ukrainian Studio label',
 );
+
+const deliveryMethodField = await request('/fields/carzo_orders/delivery_method');
+assert.equal(deliveryMethodField.schema.is_nullable, false);
+assert.equal(deliveryMethodField.schema.default_value, 'BRANCH');
+assert.equal(deliveryMethodField.meta.required, true);
+assert.deepEqual(
+  deliveryMethodField.meta.options?.choices?.map(item => item.value),
+  ['BRANCH', 'POSTOMAT', 'COURIER'],
+);
+
+for (const field of [
+  'delivery_point_ref',
+  'delivery_point_number',
+  'delivery_point_name',
+  'delivery_point_address',
+  'delivery_point_type',
+]) {
+  const live = await request(`/fields/carzo_orders/${field}`);
+  assert.equal(live.schema.is_nullable, true, `carzo_orders.${field} must allow courier orders`);
+  assert.equal(live.meta.required, false, `carzo_orders.${field} must not be globally required`);
+}
+
+for (const field of [
+  'delivery_street_ref',
+  'delivery_street_name',
+  'delivery_street_type',
+  'delivery_house',
+  'delivery_apartment',
+]) {
+  const live = await request(`/fields/carzo_orders/${field}`);
+  assert.equal(live.schema.is_nullable, true, `carzo_orders.${field} must allow point delivery orders`);
+  assert.equal(live.meta.required, false, `carzo_orders.${field} must not be globally required`);
+}
+
+for (const expected of [
+  ['carzo_media_settings', 'image', 'directus_files', 'SET NULL'],
+  ['carzo_rich_section_images', 'design', 'carzo_designs', 'CASCADE'],
+  ['carzo_rich_section_images', 'section', 'carzo_rich_sections', 'CASCADE'],
+  ['carzo_rich_section_images', 'image', 'directus_files', 'SET NULL'],
+]) {
+  const [collection, field, relatedCollection, onDelete] = expected;
+  const live = relations.find(item => item.collection === collection && item.field === field);
+  assert(live?.schema, `${collection}.${field} must have a physical foreign key`);
+  assert.equal(live.schema.foreign_key_table, relatedCollection);
+  assert.equal(live.schema.foreign_key_column, 'id');
+  assert.equal(live.schema.on_delete, onDelete);
+}
+
 const legacyEmailField = await request('/fields/carzo_orders/customer_email');
 assert.equal(legacyEmailField.meta.hidden, true, 'Legacy customer email must be hidden');
 assert.equal(legacyEmailField.meta.readonly, true, 'Legacy customer email must be read-only');
