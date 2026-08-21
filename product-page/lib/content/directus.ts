@@ -287,7 +287,13 @@ async function loadDirectusSource(): Promise<ContentSource> {
     richSectionImages: remote.richSectionImages,
     benefitModals: mergeByKey(DEFAULT_CONTENT_SOURCE.benefitModals, remote.benefitModals, item => item.type),
     discountTiers: mergeByKey(DEFAULT_CONTENT_SOURCE.discountTiers, remote.discountTiers, item => item.key),
-    reviews: remote.reviews,
+    reviews: {
+      settings: remote.reviews.settings,
+      items: remote.reviews.items.length > 0
+        ? remote.reviews.items
+        : DEFAULT_CONTENT_SOURCE.reviews.items,
+      screenshots: remote.reviews.screenshots,
+    },
   };
 }
 
