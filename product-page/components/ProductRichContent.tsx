@@ -61,9 +61,7 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
           ))}
         </div>
 
-        <div className="mt-16 border-t border-gray-800 pt-8 text-center">
-          <p className="italic text-gray-400">{data.signoff}</p>
-        </div>
+
       </div>
     </section>
   );

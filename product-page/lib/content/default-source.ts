@@ -128,4 +128,43 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     richSignoff: seed.siteSettings.richSignoff,
     mediaPlaceholder: '/media/landscape-placeholder.svg',
   },
+  reviews: {
+    settings: {
+      enabled: true,
+      title: '🤘 Відгуки клієнтів',
+      descriptionLine1: 'Понад 5 років роботи та сотні реальних відгуків від наших клієнтів.',
+      descriptionLine2: 'Частина з них представлена в Instagram',
+      instagramHandle: '@carzo.ua',
+      ctaLabel: 'Дивитися більше відгуків',
+      modalTitle: 'Відгуки клієнтів',
+      modalDescription: 'Скріншоти з Instagram та месенджерів.',
+    },
+    items: [
+      {
+        key: 'review-default-1',
+        reviewText: 'Чудова якість матеріалів і пошиття. Дуже зручно та практично!',
+        customerName: 'Олександр',
+        reviewDate: '2026-05-18',
+        rating: 5,
+        sort: 1,
+      },
+      {
+        key: 'review-default-2',
+        reviewText: 'Замовив другий автокейс — перший подарував другу. Рекомендую всім!',
+        customerName: 'Марина',
+        reviewDate: '2026-04-02',
+        rating: 5,
+        sort: 2,
+      },
+      {
+        key: 'review-default-3',
+        reviewText: 'Швидка доставка, якісна упаковка. Автокейс виглядає як на фото.',
+        customerName: 'Ігор',
+        reviewDate: '2026-03-15',
+        rating: 5,
+        sort: 3,
+      },
+    ],
+    screenshots: [],
+  },
 };

@@ -204,6 +204,7 @@ export function resolveProductContent(
     },
     benefitModals: source.benefitModals,
     discountTiers: sorted(source.discountTiers),
+    reviews: source.reviews,
     pricing: resolvePricing(params, source),
     siteSettings: source.siteSettings,
   };

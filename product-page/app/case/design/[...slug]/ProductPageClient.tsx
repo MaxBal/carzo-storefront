@@ -2,6 +2,7 @@ import Header from '@/components/Header';
 import ProductGallery from '@/components/ProductGallery';
 import ProductOptions from '@/components/ProductOptions';
 import ProductRichContent from '@/components/ProductRichContent';
+import CaseReviewsSection from '@/components/CaseReviewsSection';
 import type { ProductParams, ResolvedProductContent } from '@/lib/content/types';
 
 interface ProductPageClientProps {
@@ -46,6 +47,7 @@ export default function ProductPageClient({ params, content }: ProductPageClient
         </div>
 
         <ProductRichContent data={content.richContent} />
+        <CaseReviewsSection data={content.reviews} />
       </main>
     </div>
   );

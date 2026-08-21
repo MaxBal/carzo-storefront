@@ -6,6 +6,7 @@ import type {
   ContentSource,
   SizeContentGroup,
   SizeId,
+  ReviewsData,
 } from './types';
 
 type RecordValue = Record<string, unknown>;
@@ -92,6 +93,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     designs, sizes, brands, brandPricing, sizeShipping, fixations, variants, galleryImages, contentSets,
     contentSections, faqItems, logoSettings, logoPlacements, richSections, richSectionImages,
     benefitModals, discountTiers, siteSettings, mediaSettings,
+    reviewSettings, reviewItems, reviewScreenshots,
   ] = await Promise.all([
     readCollection('carzo_designs', '*,selector_image.id'),
     readCollection('carzo_sizes'),
@@ -112,6 +114,9 @@ async function loadDirectusSource(): Promise<ContentSource> {
     readCollection('carzo_discount_tiers'),
     readCollection('carzo_site_settings'),
     readCollection('carzo_media_settings', '*,image.id'),
+    readCollection('carzo_review_settings').catch(() => []),
+    readCollection('carzo_review_items').catch(() => []),
+    readCollection('carzo_review_screenshots', '*,image.id').catch(() => []),
   ]);
 
   const brandPricingBySlug = new Map(
@@ -227,6 +232,34 @@ async function loadDirectusSource(): Promise<ContentSource> {
     discountTiers: discountTiers.map(item => ({
       key: string(item.key), minQuantity: number(item.min_quantity), amount: number(item.amount), sort: number(item.sort),
     })),
+    reviews: {
+      settings: reviewSettings[0]
+        ? {
+            enabled: boolean(reviewSettings[0].enabled, true),
+            title: string(reviewSettings[0].title),
+            descriptionLine1: string(reviewSettings[0].description_line_1),
+            descriptionLine2: string(reviewSettings[0].description_line_2),
+            instagramHandle: string(reviewSettings[0].instagram_handle),
+            ctaLabel: string(reviewSettings[0].cta_label),
+            modalTitle: string(reviewSettings[0].modal_title),
+            modalDescription: string(reviewSettings[0].modal_description),
+          }
+        : DEFAULT_CONTENT_SOURCE.reviews.settings,
+      items: reviewItems.map(item => ({
+        key: string(item.key),
+        reviewText: string(item.review_text),
+        customerName: string(item.customer_name),
+        reviewDate: string(item.review_date),
+        rating: number(item.rating, 5),
+        sort: number(item.sort),
+      })),
+      screenshots: reviewScreenshots.map(item => ({
+        key: string(item.key),
+        image: assetUrl(item.image),
+        altText: string(item.alt_text),
+        sort: number(item.sort),
+      })).filter(item => item.image),
+    },
     siteSettings: siteSettings[0]
       ? {
           designInfoText: string(siteSettings[0].design_info_text),
@@ -254,6 +287,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     richSectionImages: remote.richSectionImages,
     benefitModals: mergeByKey(DEFAULT_CONTENT_SOURCE.benefitModals, remote.benefitModals, item => item.type),
     discountTiers: mergeByKey(DEFAULT_CONTENT_SOURCE.discountTiers, remote.discountTiers, item => item.key),
+    reviews: remote.reviews,
   };
 }
 

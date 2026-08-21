@@ -557,6 +557,49 @@ const collections = [
       placeholder: 'Тут треба вставити реквізити',
     }),
   ], { singleton: true, displayTemplate: 'Налаштування Carzo' }),
+  collection('carzo_review_settings', 'reviews', 'Глобальні налаштування блоку відгуків клієнтів.', [
+    idField(), statusField(),
+    toggle('enabled', true, 'Показувати блок відгуків на картках автокейсів.'),
+    shortText('title', { required: true }),
+    longText('description_line_1', { required: true }),
+    shortText('description_line_2', { required: true }),
+    shortText('instagram_handle', { required: true, width: 'half' }),
+    shortText('cta_label', { required: true }),
+    shortText('modal_title', { required: true }),
+    shortText('modal_description', { required: true }),
+    aliasField('items', 'list-o2m', {
+      special: ['o2m'],
+      note: 'Текстові відгуки, що відображаються в блоці (максимум 3).',
+      options: {
+        template: '{{customer_name}} — {{review_text}}',
+        enableCreate: true,
+        enableSelect: false,
+      },
+    }),
+    aliasField('screenshots', 'list-o2m', {
+      special: ['o2m'],
+      note: 'Скріншоти відгуків для модалки (максимум 5).',
+      options: {
+        template: '{{sort}} — {{alt_text}}',
+        enableCreate: true,
+        enableSelect: false,
+      },
+    }),
+  ], { singleton: true, displayTemplate: 'Налаштування відгуків' }),
+  collection('carzo_review_items', 'rate_review', 'Текстові відгуки клієнтів для блоку на картці товару.', [
+    idField(), statusField(), sortField(), keyField(),
+    relationField('review_settings', 'Батьківський синглтон налаштувань відгуків.'),
+    longText('review_text', { required: true }),
+    shortText('customer_name', { required: true }),
+    field('review_date', 'date', 'datetime', { is_nullable: true }, { width: 'half' }),
+    integer('rating', { required: true, defaultValue: 5, note: 'Від 1 до 5 зірок.' }),
+  ], { displayTemplate: '{{customer_name}}' }),
+  collection('carzo_review_screenshots', 'image', 'Скріншоти відгуків з Instagram та месенджерів для модалки.', [
+    idField(), statusField(), sortField(), keyField(),
+    relationField('review_settings', 'Батьківський синглтон налаштувань відгуків.'),
+    imageField('image', 'Скріншот відгуку.'),
+    shortText('alt_text', { note: 'Опис зображення для доступності.' }),
+  ], { displayTemplate: 'Скріншот {{sort}}' }),
 ];
 
 for (const definition of collections) {
@@ -608,6 +651,21 @@ const relations = [
   { collection: 'carzo_rich_section_images', field: 'section', relatedCollection: 'carzo_rich_sections', schema: { on_delete: 'CASCADE' } },
   { collection: 'carzo_rich_section_images', field: 'image', relatedCollection: 'directus_files' },
   { collection: 'carzo_media_settings', field: 'image', relatedCollection: 'directus_files' },
+  {
+    collection: 'carzo_review_items',
+    field: 'review_settings',
+    relatedCollection: 'carzo_review_settings',
+    schema: { on_delete: 'SET NULL' },
+    meta: { one_field: 'items', one_deselect_action: 'nullify', sort_field: 'sort' },
+  },
+  {
+    collection: 'carzo_review_screenshots',
+    field: 'review_settings',
+    relatedCollection: 'carzo_review_settings',
+    schema: { on_delete: 'SET NULL' },
+    meta: { one_field: 'screenshots', one_deselect_action: 'nullify', sort_field: 'sort' },
+  },
+  { collection: 'carzo_review_screenshots', field: 'image', relatedCollection: 'directus_files' },
   {
     collection: 'carzo_order_items',
     field: 'order',
@@ -1404,6 +1462,32 @@ async function seedItems() {
     await upsertSingleton('carzo_media_settings', {
       status: 'published', image: mediaPlaceholderFileId, external_url: null,
     });
+  }
+
+  await upsertSingleton('carzo_review_settings', {
+    status: 'published', enabled: true,
+    title: '🤘 Відгуки клієнтів',
+    description_line_1: 'Понад 5 років роботи та сотні реальних відгуків від наших клієнтів.',
+    description_line_2: 'Частина з них представлена в Instagram',
+    instagram_handle: '@carzo.ua',
+    cta_label: 'Дивитися більше відгуків',
+    modal_title: 'Відгуки клієнтів',
+    modal_description: 'Скріншоти з Instagram та месенджерів.',
+  });
+
+  const reviewDefaults = [
+    { key: 'review-1', sort: 1, review_text: 'Чудова якість матеріалів і пошиття. Дуже зручно та практично!', customer_name: 'Олександр', review_date: '2026-05-18', rating: 5 },
+    { key: 'review-2', sort: 2, review_text: 'Замовив другий автокейс — перший подарував другу. Рекомендую всім!', customer_name: 'Марина', review_date: '2026-04-02', rating: 5 },
+    { key: 'review-3', sort: 3, review_text: 'Швидка доставка, якісна упаковка. Автокейс виглядає як на фото.', customer_name: 'Ігор', review_date: '2026-03-15', rating: 5 },
+  ];
+
+  for (const item of reviewDefaults) {
+    const existing = await findOne('carzo_review_items', 'key', item.key);
+    if (!existing) {
+      await upsert('carzo_review_items', 'key', item.key, {
+        status: 'published', ...item,
+      });
+    }
   }
 
   return folder.id;

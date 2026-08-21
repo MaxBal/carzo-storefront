@@ -75,6 +75,9 @@ export const EDITORIAL_COLLECTIONS = [
   'carzo_rich_section_images',
   'carzo_benefit_modals',
   'carzo_site_settings',
+  'carzo_review_settings',
+  'carzo_review_items',
+  'carzo_review_screenshots',
 ];
 
 export const EDITORIAL_DELETE_COLLECTIONS = [

@@ -221,6 +221,39 @@ export interface DiscountTier {
   sort: number;
 }
 
+export interface ReviewItem {
+  key: string;
+  reviewText: string;
+  customerName: string;
+  reviewDate: string;
+  rating: number;
+  sort: number;
+}
+
+export interface ReviewScreenshot {
+  key: string;
+  image: string;
+  altText: string;
+  sort: number;
+}
+
+export interface ReviewSettings {
+  enabled: boolean;
+  title: string;
+  descriptionLine1: string;
+  descriptionLine2: string;
+  instagramHandle: string;
+  ctaLabel: string;
+  modalTitle: string;
+  modalDescription: string;
+}
+
+export interface ReviewsData {
+  settings: ReviewSettings;
+  items: ReviewItem[];
+  screenshots: ReviewScreenshot[];
+}
+
 export interface SiteSettings {
   designInfoText: string;
   featureMagneticText: string;
@@ -250,6 +283,7 @@ export interface ContentSource extends ProductCatalog {
   richSectionImages: RichContentSectionImage[];
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
+  reviews: ReviewsData;
   siteSettings: SiteSettings;
 }
 
@@ -273,6 +307,7 @@ export interface ResolvedProductContent {
   richContent: { sections: ResolvedRichContentSection[]; signoff: string };
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
+  reviews: ReviewsData;
   pricing: ResolvedPricing;
   siteSettings: SiteSettings;
 }
