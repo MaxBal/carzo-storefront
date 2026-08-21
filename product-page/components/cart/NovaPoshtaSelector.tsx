@@ -452,7 +452,7 @@ export default function NovaPoshtaSelector({
               setPointActiveIndex(-1);
               setPointError(null);
             }}
-            className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left text-base outline-none transition focus:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 sm:text-sm ${pointInvalid ? 'border-red-400' : 'border-gray-200'}`}
+            className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left text-base outline-none transition focus:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 sm:text-sm ${pointInvalid ? 'border-red-400' : 'border-gray-200'}`}
           >
             <span id={`${id}-point-value`} className={selectedPoint ? 'text-gray-900' : 'text-gray-400'}>{selectedPoint?.name || pointPlaceholder}</span>
             <ChevronDown aria-hidden="true" className={`shrink-0 text-gray-400 transition-transform ${pointOpen ? 'rotate-180' : ''}`} size={18} />
