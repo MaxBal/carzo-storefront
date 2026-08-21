@@ -30,7 +30,7 @@ export default function BenefitCards({ data }: BenefitCardsProps) {
           <button
             key={item.type}
             onClick={() => setOpenModal(item.type)}
-            className="relative flex-shrink-0 flex flex-col items-center justify-center bg-white border border-gray-200 rounded-[12px] gap-2 hover:border-[#2DD4BF] hover:shadow-sm active:scale-95 transition-all duration-150 cursor-pointer"
+            className="relative flex-shrink-0 flex flex-col items-center justify-center bg-white border border-gray-200 rounded-[12px] gap-2 hover:border-[#5ce4ab] hover:shadow-sm active:scale-95 transition-all duration-150 cursor-pointer"
             style={{ width: 92, height: 88, padding: '10px 8px' }}
           >
             <ArrowUpRight size={14} strokeWidth={2} className="absolute top-1.5 right-1.5 text-gray-700" />

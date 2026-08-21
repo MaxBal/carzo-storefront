@@ -92,7 +92,7 @@ function HeroBlock({ block }: { block: CmsPageBlock }) {
     <section id={block.anchor || undefined} className={`${themeClasses[block.theme]} overflow-hidden`}>
       <div className="mx-auto grid min-h-[580px] max-w-7xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:px-8 lg:py-20">
         <div className="max-w-xl">
-          {block.eyebrow && <p className="mb-4 text-sm font-bold uppercase tracking-[0.24em] text-[#28c5a6]">{block.eyebrow}</p>}
+          {block.eyebrow && <p className="mb-4 text-sm font-bold uppercase tracking-[0.24em] text-[#5ce4ab]">{block.eyebrow}</p>}
           {block.title && <h1 className="text-4xl font-bold leading-[1.08] sm:text-5xl lg:text-6xl">{block.title}</h1>}
           {block.subtitle && <p className={`mt-6 text-lg leading-8 ${inverse ? 'text-gray-300' : 'text-gray-600'}`}>{block.subtitle}</p>}
           <RichBody html={block.body} />

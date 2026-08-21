@@ -51,7 +51,7 @@ function IconBadge({ icon }: { icon: BenefitIcon }) {
 function TextLine({ line }: { line: BenefitTextLine }) {
   const className = line.tone === 'small'
     ? 'modal-secondary-text mt-0.5'
-    : `modal-body-text ${line.tone === 'accent' ? 'font-medium !text-[#28c5a6]' : ''}`;
+    : `modal-body-text ${line.tone === 'accent' ? 'font-medium !text-[#5ce4ab]' : ''}`;
   const firstPercent = line.text.startsWith('20%') ? '20%' : null;
 
   return (
@@ -60,7 +60,7 @@ function TextLine({ line }: { line: BenefitTextLine }) {
       <p className={className}>
         {firstPercent ? (
           <>
-            <span className="font-semibold text-[#28c5a6]">{firstPercent}</span>
+            <span className="font-semibold text-[#5ce4ab]">{firstPercent}</span>
             {line.text.slice(firstPercent.length)}
           </>
         ) : line.text}
@@ -109,7 +109,7 @@ function BenefitBlockView({ block }: { block: BenefitBlock }) {
             className="modal-card flex flex-col items-center gap-1 text-center"
           >
             <span className="modal-card-title">{item.label}</span>
-            <span className="text-2xl font-bold text-[#28c5a6]">{item.value}</span>
+            <span className="text-2xl font-bold text-[#5ce4ab]">{item.value}</span>
           </div>
         ))}
       </div>
@@ -123,7 +123,7 @@ function BenefitBlockView({ block }: { block: BenefitBlock }) {
           {block.rows.map(row => (
             <div key={`${row.label}-${row.value}`} className="flex items-center justify-between">
               <span className={`text-base ${row.muted ? 'text-[#858585]' : 'text-gray-700'}`}>{row.label}</span>
-              <span className={`text-base font-medium ${row.muted ? 'text-[#28c5a6]' : 'text-gray-900'}`}>{row.value}</span>
+              <span className={`text-base font-medium ${row.muted ? 'text-[#5ce4ab]' : 'text-gray-900'}`}>{row.value}</span>
             </div>
           ))}
         </div>
@@ -141,7 +141,7 @@ function BenefitBlockView({ block }: { block: BenefitBlock }) {
   if (block.type === 'loyalty_hero') {
     return (
       <div className="modal-card flex flex-col items-center gap-1 px-4 py-6 text-center">
-        <span className="text-5xl font-black tracking-tight text-[#28c5a6]">{block.value}</span>
+        <span className="text-5xl font-black tracking-tight text-[#5ce4ab]">{block.value}</span>
         <span className="modal-body-text font-bold">{block.label}</span>
       </div>
     );

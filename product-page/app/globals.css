@@ -36,13 +36,13 @@
 }
 
 .cms-rich-text blockquote {
-  border-left: 3px solid #28c5a6;
+  border-left: 3px solid #5ce4ab;
   padding-left: 1rem;
   color: #6b7280;
 }
 
 :root {
-  --teal: #2DD4BF;
+  --teal: #5ce4ab;
 }
 
 @layer base {

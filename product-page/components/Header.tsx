@@ -62,7 +62,7 @@ function DesktopDropdown({ item }: { item: NavItem }) {
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#28c5a6] focus-visible:text-[#28c5a6]"
+        className="flex items-center gap-2 text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
         aria-expanded={open}
       >
         {item.label}
@@ -75,7 +75,7 @@ function DesktopDropdown({ item }: { item: NavItem }) {
               key={child.label}
               href={child.href}
               onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#28c5a6]"
+              className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
             >
               {child.label}
             </Link>
@@ -143,7 +143,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#28c5a6] focus-visible:text-[#28c5a6]"
+                  className="text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </Link>
@@ -154,12 +154,12 @@ export default function Header() {
           <button
             type="button"
             onClick={openCart}
-            className="relative flex h-11 w-11 items-center justify-center text-white transition-colors hover:text-[#28c5a6] focus-visible:text-[#28c5a6]"
+            className="relative flex h-11 w-11 items-center justify-center text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
             aria-label={`Кошик, товарів: ${itemsQuantity}`}
           >
             <ShoppingCart size={23} strokeWidth={1.6} />
             {itemsQuantity > 0 ? (
-              <span className="absolute right-0.5 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#28c5a6] px-1 text-[10px] font-semibold leading-none text-white">
+              <span className="absolute right-0.5 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#5ce4ab] px-1 text-[10px] font-semibold leading-none text-white">
                 {itemsQuantity > 99 ? '99+' : itemsQuantity}
               </span>
             ) : null}
@@ -197,12 +197,12 @@ export default function Header() {
                     <button
                       type="button"
                       onClick={() => toggleAccordion(item.label)}
-                      className={`flex w-full items-center justify-between text-lg leading-6 transition-colors ${isAccordionOpen ? 'text-[#28c5a6]' : 'text-white hover:text-[#28c5a6]'}`}
+                      className={`flex w-full items-center justify-between text-lg leading-6 transition-colors ${isAccordionOpen ? 'text-[#5ce4ab]' : 'text-white hover:text-[#5ce4ab]'}`}
                       aria-expanded={isAccordionOpen}
                     >
                       {item.label}
                       {isAccordionOpen
-                        ? <ChevronUp size={18} strokeWidth={1.8} className="text-[#28c5a6]" />
+                        ? <ChevronUp size={18} strokeWidth={1.8} className="text-[#5ce4ab]" />
                         : <ChevronDown size={18} strokeWidth={1.8} />}
                     </button>
                     <div
@@ -214,7 +214,7 @@ export default function Header() {
                           key={child.label}
                           href={child.href}
                           onClick={() => setMobileOpen(false)}
-                          className="mt-3 block pl-6 text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#28c5a6]"
+                          className="mt-3 block pl-6 text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#5ce4ab]"
                         >
                           {child.label}
                         </Link>
@@ -227,7 +227,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#28c5a6] ${index === 0 ? '' : 'mt-[21px]'}`}
+                  className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#5ce4ab] ${index === 0 ? '' : 'mt-[21px]'}`}
                   onClick={() => setMobileOpen(false)}
                 >
                   {item.label}
@@ -239,7 +239,7 @@ export default function Header() {
           <div className="shrink-0 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-4">
             <a
               href="tel:+380661031094"
-              className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-white/75 bg-transparent px-4 text-base font-semibold leading-6 text-white transition-colors hover:border-white hover:text-[#28c5a6]"
+              className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-white/75 bg-transparent px-4 text-base font-semibold leading-6 text-white transition-colors hover:border-white hover:text-[#5ce4ab]"
               style={{ minHeight: 56 }}
             >
               <Phone size={18} strokeWidth={1.8} />

@@ -34,7 +34,7 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
               <div className="w-full space-y-6 lg:w-1/2">
                 <div>
                   <h3 className="mb-2 text-2xl font-bold text-white">{feature.title}</h3>
-                  <div className="mb-4 inline-block rounded-full bg-[#00d5b5] px-3 py-1 text-sm text-black">
+                  <div className="mb-4 inline-block rounded-full bg-[#5ce4ab] px-3 py-1 text-sm text-black">
                     {feature.subtitle}
                   </div>
                   <p className="leading-relaxed text-gray-300">{feature.description}</p>
@@ -48,7 +48,7 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
                       <ul className="space-y-2">
                         {feature.additionalInfo.list.map(item => (
                           <li key={item} className="flex items-start text-sm text-gray-400">
-                            <span className="mr-3 mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#00d5b5]" aria-hidden="true" />
+                            <span className="mr-3 mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#5ce4ab]" aria-hidden="true" />
                             {item}
                           </li>
                         ))}
