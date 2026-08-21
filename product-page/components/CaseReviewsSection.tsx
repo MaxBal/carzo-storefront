@@ -144,7 +144,7 @@ export default function CaseReviewsSection({ data }: CaseReviewsSectionProps) {
                 ref={triggerRef}
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex h-[56px] w-full items-center justify-center rounded-full bg-[#28c5a6] px-8 text-[16px] font-semibold text-black transition-colors hover:bg-[#22b094] active:bg-[#1d9a82] sm:h-[60px] sm:w-[400px] lg:h-[64px] lg:w-[480px]"
+                className="inline-flex h-[40px] w-[224px] items-center justify-center rounded-[800px] border border-[#16895d] bg-[#178f69] px-[23px] text-[14px] font-medium leading-[20px] text-[#d9d6d1] transition-colors hover:bg-[#148a5e] active:bg-[#12805a]"
               >
                 {data.settings.ctaLabel}
               </button>
