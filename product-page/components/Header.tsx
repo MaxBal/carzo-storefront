@@ -1,16 +1,38 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ChevronDown, ShoppingCart, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ChevronDown, ChevronUp, Phone, ShoppingCart, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/components/cart/cart-context';
 
-const navigation = [
+interface NavItem {
+  label: string;
+  href: string;
+  children?: Array<{ label: string; href: string }>;
+}
+
+const navigation: NavItem[] = [
   { label: 'Головна', href: '/' },
-  { label: 'Каталог', href: '/case/design/m/2-0', catalog: true },
-  { label: 'B2B', href: '/#b2b' },
+  {
+    label: 'Каталог',
+    href: '/case/design/m/2-0',
+    children: [
+      { label: 'Автокейси', href: '/case/design/m/2-0' },
+      { label: 'Автокилимки', href: '#' },
+    ],
+  },
+  {
+    label: 'B2B',
+    href: '/#b2b',
+    children: [
+      { label: 'Корпоративні замовлення', href: '/#b2b' },
+      { label: 'Для партнерів', href: '/#b2b' },
+    ],
+  },
   { label: 'Контакти', href: '/#contacts' },
+  { label: 'Про нас', href: '/about' },
+  { label: 'Blog', href: '/blog' },
 ];
 
 function TwoLineMenuIcon() {
@@ -22,13 +44,57 @@ function TwoLineMenuIcon() {
   );
 }
 
+function DesktopDropdown({ item }: { item: NavItem }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-2 text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#28c5a6] focus-visible:text-[#28c5a6]"
+        aria-expanded={open}
+      >
+        {item.label}
+        <ChevronDown size={15} strokeWidth={1.8} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && item.children && (
+        <div className="absolute left-0 top-full z-50 mt-2 min-w-[180px] rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+          {item.children.map(child => (
+            <Link
+              key={child.label}
+              href={child.href}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#28c5a6]"
+            >
+              {child.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileAccordion, setMobileAccordion] = useState<Record<string, boolean>>({ Каталог: true });
   const { itemsQuantity, openCart } = useCart();
 
   useEffect(() => {
     if (!mobileOpen) return;
 
+    setMobileAccordion({ Каталог: true });
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const handleEscape = (event: KeyboardEvent) => {
@@ -41,6 +107,10 @@ export default function Header() {
       window.removeEventListener('keydown', handleEscape);
     };
   }, [mobileOpen]);
+
+  const toggleAccordion = (label: string) => {
+    setMobileAccordion(prev => ({ ...prev, [label]: !prev[label] }));
+  };
 
   return (
     <>
@@ -65,17 +135,20 @@ export default function Header() {
             <Image src="/carzo-logo-tight.svg" alt="CARZO" width={88} height={16} priority />
           </Link>
 
-          <nav className="hidden items-center gap-[46px] md:flex" aria-label="Основна навігація">
-            {navigation.map(item => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="flex items-center gap-2 text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#28c5a6] focus-visible:text-[#28c5a6]"
-              >
-                {item.label}
-                {item.catalog ? <ChevronDown size={15} strokeWidth={1.8} /> : null}
-              </Link>
-            ))}
+          <nav className="hidden items-center gap-[36px] md:flex" aria-label="Основна навігація">
+            {navigation.map(item =>
+              item.children ? (
+                <DesktopDropdown key={item.label} item={item} />
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#28c5a6] focus-visible:text-[#28c5a6]"
+                >
+                  {item.label}
+                </Link>
+              ),
+            )}
           </nav>
 
           <button
@@ -101,7 +174,7 @@ export default function Header() {
           aria-modal="true"
           aria-label="Мобільне меню"
         >
-          <div className="flex h-14 items-center justify-between px-5">
+          <div className="flex h-14 shrink-0 items-center justify-between px-5">
             <Link href="/" className="flex items-center" onClick={() => setMobileOpen(false)} aria-label="CARZO — головна">
               <Image src="/carzo-logo-tight.svg" alt="CARZO" width={88} height={16} />
             </Link>
@@ -115,22 +188,67 @@ export default function Header() {
             </button>
           </div>
 
-          <nav className="flex flex-1 flex-col px-5 pt-9" aria-label="Мобільна навігація">
-            {navigation.map((item, index) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#28c5a6] ${index === 0 ? '' : 'mt-[21px]'}`}
-                onClick={() => setMobileOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+          <nav className="flex flex-1 flex-col overflow-y-auto px-5 pt-6" aria-label="Мобільна навігація">
+            {navigation.map((item, index) => {
+              const isAccordionOpen = Boolean(mobileAccordion[item.label]);
+              if (item.children) {
+                return (
+                  <div key={item.label} className={index === 0 ? '' : 'mt-[21px]'}>
+                    <button
+                      type="button"
+                      onClick={() => toggleAccordion(item.label)}
+                      className={`flex w-full items-center justify-between text-lg leading-6 transition-colors ${isAccordionOpen ? 'text-[#28c5a6]' : 'text-white hover:text-[#28c5a6]'}`}
+                      aria-expanded={isAccordionOpen}
+                    >
+                      {item.label}
+                      {isAccordionOpen
+                        ? <ChevronUp size={18} strokeWidth={1.8} className="text-[#28c5a6]" />
+                        : <ChevronDown size={18} strokeWidth={1.8} />}
+                    </button>
+                    <div
+                      className="overflow-hidden transition-[max-height] duration-200 ease-in-out"
+                      style={{ maxHeight: isAccordionOpen ? '200px' : '0' }}
+                    >
+                      {item.children.map(child => (
+                        <Link
+                          key={child.label}
+                          href={child.href}
+                          onClick={() => setMobileOpen(false)}
+                          className="mt-3 block pl-6 text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#28c5a6]"
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#28c5a6] ${index === 0 ? '' : 'mt-[21px]'}`}
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
-          <p className="px-5 pb-[max(12px,env(safe-area-inset-bottom))] text-center text-[13px] leading-[18px] text-white">
-            🇺🇦 Сконструйовано та виготовлено в Україні
-          </p>
+          <div className="shrink-0 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-4">
+            <a
+              href="tel:+380661031094"
+              className="flex w-full items-center justify-center gap-2.5 rounded-[14px] border border-white/75 bg-transparent px-4 text-base font-semibold leading-6 text-white transition-colors hover:border-white hover:text-[#28c5a6]"
+              style={{ minHeight: 56 }}
+            >
+              <Phone size={18} strokeWidth={1.8} />
+              Зателефонувати з 10:00 до 20:00
+            </a>
+            <p className="mt-5 text-center text-[13px] leading-[18px] text-white">
+              🇺🇦 Сконструйовано та виготовлено в Україні
+            </p>
+          </div>
         </div>
       ) : null}
     </>

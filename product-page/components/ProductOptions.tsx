@@ -195,18 +195,18 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
         {/* Key characteristics */}
         <section
-          className="mt-3 grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3.5 py-3"
+          className="mt-3 grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 rounded-[12px] border border-[#1A1A1A] bg-white px-3.5 py-3"
           aria-label="Ключові характеристики"
           data-product-characteristics
         >
           <span className="product-magnet-icon flex h-5 w-5 items-center justify-center" aria-hidden="true">
             <Magnet size={16} strokeWidth={1.7} className="text-[#28C5A6]" />
           </span>
-          <span className="text-sm font-normal leading-5 text-gray-900">{siteSettings.featureMagneticText}</span>
+          <span className="text-sm font-medium leading-5 text-gray-900">{siteSettings.featureMagneticText}</span>
           <span className="flex h-5 w-5 items-center justify-center text-sm leading-5" aria-hidden="true">
             {siteSettings.featureMaterialFlag}
           </span>
-          <span className="text-sm font-normal leading-5 text-gray-900">{siteSettings.featureMaterialText}</span>
+          <span className="text-sm font-medium leading-5 text-gray-900">{siteSettings.featureMaterialText}</span>
         </section>
 
         {/* Price */}
