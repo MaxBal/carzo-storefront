@@ -41,7 +41,7 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
                 </div>
 
                 {feature.additionalInfo && (
-                  <div className="rounded-lg border border-[#2a2a2a] bg-[#181818] p-6 shadow-sm">
+                  <div className="rounded-2xl border border-[#2a2a2a] bg-[#181818] p-6 shadow-sm">
                     <h4 className="mb-3 font-semibold text-white">{feature.additionalInfo.title}</h4>
                     <p className="mb-3 leading-relaxed text-gray-300">{feature.additionalInfo.text}</p>
                     {feature.additionalInfo.list && (

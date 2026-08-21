@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Camera, ShoppingCart, Magnet, Check, ArrowUpRight, ChevronRight, Info } from 'lucide-react';
 import BenefitCards from './BenefitCards';
@@ -194,18 +195,18 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
         {/* Key characteristics */}
         <section
-          className="mt-3 grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 rounded-[12px] bg-black px-3.5 py-3 text-white"
+          className="mt-3 grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 rounded-[12px] border border-[#E5E7EB] bg-white px-3.5 py-3"
           aria-label="Ключові характеристики"
           data-product-characteristics
         >
           <span className="product-magnet-icon flex h-5 w-5 items-center justify-center" aria-hidden="true">
             <Magnet size={16} strokeWidth={1.7} className="text-[#28C5A6]" />
           </span>
-          <span className="text-sm font-medium leading-5 text-white">{siteSettings.featureMagneticText}</span>
+          <span className="text-sm font-normal leading-5 text-gray-900">{siteSettings.featureMagneticText}</span>
           <span className="flex h-5 w-5 items-center justify-center text-sm leading-5" aria-hidden="true">
             {siteSettings.featureMaterialFlag}
           </span>
-          <span className="text-sm font-medium leading-5 text-white">{siteSettings.featureMaterialText}</span>
+          <span className="text-sm font-normal leading-5 text-gray-900">{siteSettings.featureMaterialText}</span>
         </section>
 
         {/* Price */}
@@ -226,7 +227,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
             </div>
             <button
               type="button"
-              className="flex min-h-[44px] shrink-0 items-center gap-1 rounded-md px-1 text-sm font-medium text-[#159E85] transition-colors hover:text-[#117c6a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#858585] focus-visible:ring-offset-2"
+              className="overview-btn"
               onClick={() => setOpenModal('design')}
             >
               про дизайни
@@ -245,15 +246,22 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                   aria-label={`Обрати дизайн ${design.version}`}
                   aria-pressed={active}
                   data-design-slug={design.slug}
-                  className={`design-option relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-[10px] border-[1.5px] text-sm font-semibold transition-[border-color,background-color,color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#858585] focus-visible:ring-offset-2 ${
+                  className={`design-option relative flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border-[1.5px] transition-[border-color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#858585] focus-visible:ring-offset-2 ${
                     active
-                      ? 'border-[#1A1A1A] bg-[#F7F7F7] text-[#111827]'
-                      : 'border-[#E5E7EB] bg-white text-[#596170]'
+                      ? 'border-[#1A1A1A]'
+                      : 'border-[#E5E7EB]'
                   }`}
                 >
-                  {design.version}
+                  <Image
+                    src={design.selectorImage}
+                    alt={design.label}
+                    fill
+                    className="object-cover"
+                    sizes="60px"
+                    unoptimized
+                  />
                   {active ? (
-                    <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-black" aria-hidden="true">
+                    <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-black" aria-hidden="true">
                       <Check size={9} color="white" strokeWidth={3} />
                     </span>
                   ) : null}
