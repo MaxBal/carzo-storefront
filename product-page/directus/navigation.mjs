@@ -80,9 +80,6 @@ export const DIRECTUS_COLLECTION_NAVIGATION = Object.freeze({
   carzo_benefit_modals: { group: 'carzo_group_product_content', label: 'Модальні вікна переваг', sort: 8 },
   carzo_logo_settings: { group: 'carzo_group_product_content', label: 'Налаштування логотипа', sort: 9 },
   carzo_logo_placements: { group: 'carzo_group_product_content', label: 'Розміщення логотипа', sort: 10 },
-  carzo_review_settings: { group: 'carzo_group_product_content', label: 'Налаштування відгуків', sort: 11 },
-  carzo_review_items: { group: 'carzo_group_product_content', label: 'Відгуки клієнтів', sort: 12 },
-  carzo_review_screenshots: { group: 'carzo_group_product_content', label: 'Скріншоти відгуків', sort: 13 },
 
   carzo_variants: { group: 'carzo_group_commerce', label: 'Варіанти товару', sort: 1 },
   carzo_brand_pricing: { group: 'carzo_group_commerce', label: 'Доплати за марку', sort: 2 },

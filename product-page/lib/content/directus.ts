@@ -88,12 +88,38 @@ function mergeByKey<T>(fallback: T[], remote: T[], key: (item: T) => string) {
   return [...remote, ...fallback.filter(item => !remoteKeys.has(key(item)))];
 }
 
+function parseReviewItems(raw: unknown): ContentSource['reviews']['items'] {
+  if (!Array.isArray(raw)) return DEFAULT_CONTENT_SOURCE.reviews.items;
+  const items = raw.map((item, index) => ({
+    key: string(item.key) || `review-${index}`,
+    reviewText: string(item.reviewText || item.review_text),
+    customerName: string(item.customerName || item.customer_name),
+    reviewDate: string(item.reviewDate || item.review_date),
+    rating: number(item.rating, 5),
+    sort: number(item.sort, index + 1),
+  })).filter(item => item.reviewText);
+  return items.length > 0 ? items : DEFAULT_CONTENT_SOURCE.reviews.items;
+}
+
+function parseReviewScreenshots(raw: unknown): ContentSource['reviews']['screenshots'] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item, index) => ({
+    key: string(item.key) || `screenshot-${index}`,
+    image: typeof item.image === 'string'
+      ? (item.image.startsWith('http') || item.image.startsWith('/api/')
+        ? item.image
+        : assetUrl(item.image))
+      : assetUrl(item.image),
+    altText: string(item.altText || item.alt_text),
+    sort: number(item.sort, index + 1),
+  })).filter(item => item.image);
+}
+
 async function loadDirectusSource(): Promise<ContentSource> {
   const [
     designs, sizes, brands, brandPricing, sizeShipping, fixations, variants, galleryImages, contentSets,
     contentSections, faqItems, logoSettings, logoPlacements, richSections, richSectionImages,
     benefitModals, discountTiers, siteSettings, mediaSettings,
-    reviewSettings, reviewItems, reviewScreenshots,
   ] = await Promise.all([
     readCollection('carzo_designs', '*,selector_image.id'),
     readCollection('carzo_sizes'),
@@ -114,9 +140,6 @@ async function loadDirectusSource(): Promise<ContentSource> {
     readCollection('carzo_discount_tiers'),
     readCollection('carzo_site_settings'),
     readCollection('carzo_media_settings', '*,image.id'),
-    readCollection('carzo_review_settings').catch(() => []),
-    readCollection('carzo_review_items').catch(() => []),
-    readCollection('carzo_review_screenshots', '*,image.id').catch(() => []),
   ]);
 
   const brandPricingBySlug = new Map(
@@ -233,32 +256,20 @@ async function loadDirectusSource(): Promise<ContentSource> {
       key: string(item.key), minQuantity: number(item.min_quantity), amount: number(item.amount), sort: number(item.sort),
     })),
     reviews: {
-      settings: reviewSettings[0]
+      settings: siteSettings[0]
         ? {
-            enabled: boolean(reviewSettings[0].enabled, true),
-            title: string(reviewSettings[0].title),
-            descriptionLine1: string(reviewSettings[0].description_line_1),
-            descriptionLine2: string(reviewSettings[0].description_line_2),
-            instagramHandle: string(reviewSettings[0].instagram_handle),
-            ctaLabel: string(reviewSettings[0].cta_label),
-            modalTitle: string(reviewSettings[0].modal_title),
-            modalDescription: string(reviewSettings[0].modal_description),
+            enabled: boolean(siteSettings[0].reviews_enabled, true),
+            title: string(siteSettings[0].reviews_title),
+            descriptionLine1: string(siteSettings[0].reviews_description_line_1),
+            descriptionLine2: string(siteSettings[0].reviews_description_line_2),
+            instagramHandle: string(siteSettings[0].reviews_instagram_handle),
+            ctaLabel: string(siteSettings[0].reviews_cta_label),
+            modalTitle: string(siteSettings[0].reviews_modal_title),
+            modalDescription: string(siteSettings[0].reviews_modal_description),
           }
         : DEFAULT_CONTENT_SOURCE.reviews.settings,
-      items: reviewItems.map(item => ({
-        key: string(item.key),
-        reviewText: string(item.review_text),
-        customerName: string(item.customer_name),
-        reviewDate: string(item.review_date),
-        rating: number(item.rating, 5),
-        sort: number(item.sort),
-      })),
-      screenshots: reviewScreenshots.map(item => ({
-        key: string(item.key),
-        image: assetUrl(item.image),
-        altText: string(item.alt_text),
-        sort: number(item.sort),
-      })).filter(item => item.image),
+      items: parseReviewItems(siteSettings[0]?.reviews_items),
+      screenshots: parseReviewScreenshots(siteSettings[0]?.reviews_screenshots),
     },
     siteSettings: siteSettings[0]
       ? {
