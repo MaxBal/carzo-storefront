@@ -77,7 +77,7 @@ function ReviewsModal({ data, onClose }: { data: ReviewsData; onClose: () => voi
                   src={screenshot.image}
                   alt={screenshot.altText}
                   loading="lazy"
-                  className="w-full rounded-lg border border-gray-200"
+                  className="w-full rounded-[12px] border border-gray-200"
                   style={{ height: 'auto', objectFit: 'contain' }}
                 />
               ))

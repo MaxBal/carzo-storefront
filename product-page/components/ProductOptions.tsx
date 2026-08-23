@@ -94,10 +94,20 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   const router = useRouter();
   const { addItem } = useCart();
   const { size, designSlug, brandId } = params;
-  const { catalog, pricing, siteSettings } = content;
+  const { catalog, pricing, siteSettings, gallery } = content;
 
   const [selectedFixation, setSelectedFixation] = useState(persistedFixation);
   const [openModal, setOpenModal] = useState<'design' | 'size' | 'logo' | 'fixation' | null>(null);
+
+  const designThumbnails = catalog.designs.map(design => {
+    const firstGalleryImage = gallery
+      .filter(img => img.designSlug === design.slug && !img.isPlaceholder)
+      .sort((a, b) => a.sort - b.sort)[0];
+    return {
+      ...design,
+      thumbnailSrc: firstGalleryImage?.src || design.selectorImage,
+    };
+  });
 
   // Keep local state in sync with the module-level persistence on param changes
   useEffect(() => {
@@ -236,7 +246,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           </div>
 
           <div className="flex flex-wrap gap-2" role="group" aria-label="Оберіть дизайн">
-            {catalog.designs.map(design => {
+            {designThumbnails.map(design => {
               const active = design.slug === designSlug;
               return (
                 <button
@@ -253,7 +263,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                   }`}
                 >
                   <Image
-                    src={design.selectorImage}
+                    src={design.thumbnailSrc}
                     alt={design.label}
                     fill
                     className="object-cover"

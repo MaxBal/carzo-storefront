@@ -5,11 +5,13 @@ import { ChevronDown, ChevronUp, Phone, ShoppingCart, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/components/cart/cart-context';
+import SimpleModal, { BlogModalContent, B2BModalContent } from './SimpleModal';
 
 interface NavItem {
   label: string;
   href: string;
-  children?: Array<{ label: string; href: string }>;
+  children?: Array<{ label: string; href: string; isModal?: boolean }>;
+  isModal?: boolean;
 }
 
 const navigation: NavItem[] = [
@@ -26,13 +28,13 @@ const navigation: NavItem[] = [
     label: 'B2B',
     href: '/#b2b',
     children: [
-      { label: 'Корпоративні замовлення', href: '/#b2b' },
-      { label: 'Для партнерів', href: '/#b2b' },
+      { label: 'Корпоративні замовлення', href: '/#b2b', isModal: true },
+      { label: 'Гурт для партнерів', href: '/#b2b', isModal: true },
     ],
   },
   { label: 'Контакти', href: '/#contacts' },
   { label: 'Про нас', href: '/about' },
-  { label: 'Blog', href: '/blog' },
+  { label: 'Blog', href: '/blog', isModal: true },
 ];
 
 function TwoLineMenuIcon() {
@@ -44,7 +46,7 @@ function TwoLineMenuIcon() {
   );
 }
 
-function DesktopDropdown({ item }: { item: NavItem }) {
+function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?: (label: string) => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -71,14 +73,28 @@ function DesktopDropdown({ item }: { item: NavItem }) {
       {open && item.children && (
         <div className="absolute left-0 top-full z-50 mt-2 min-w-[180px] rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
           {item.children.map(child => (
-            <Link
-              key={child.label}
-              href={child.href}
-              onClick={() => setOpen(false)}
-              className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
-            >
-              {child.label}
-            </Link>
+            child.isModal ? (
+              <button
+                key={child.label}
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onModalClick?.(child.label);
+                }}
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
+              >
+                {child.label}
+              </button>
+            ) : (
+              <Link
+                key={child.label}
+                href={child.href}
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
+              >
+                {child.label}
+              </Link>
+            )
           ))}
         </div>
       )}
@@ -89,6 +105,8 @@ function DesktopDropdown({ item }: { item: NavItem }) {
 export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileAccordion, setMobileAccordion] = useState<Record<string, boolean>>({ Каталог: true });
+  const [openBlogModal, setOpenBlogModal] = useState(false);
+  const [openB2BModal, setOpenB2BModal] = useState(false);
   const { itemsQuantity, openCart } = useCart();
 
   useEffect(() => {
@@ -138,7 +156,20 @@ export default function Header() {
           <nav className="hidden items-center gap-[36px] md:flex" aria-label="Основна навігація">
             {navigation.map(item =>
               item.children ? (
-                <DesktopDropdown key={item.label} item={item} />
+                <DesktopDropdown
+                  key={item.label}
+                  item={item}
+                  onModalClick={item.label === 'B2B' ? () => setOpenB2BModal(true) : undefined}
+                />
+              ) : item.isModal ? (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => setOpenBlogModal(true)}
+                  className="text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                >
+                  {item.label}
+                </button>
               ) : (
                 <Link
                   key={item.label}
@@ -210,28 +241,56 @@ export default function Header() {
                       style={{ maxHeight: isAccordionOpen ? '200px' : '0' }}
                     >
                       {item.children.map(child => (
-                        <Link
-                          key={child.label}
-                          href={child.href}
-                          onClick={() => setMobileOpen(false)}
-                          className="mt-3 block pl-6 text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#5ce4ab]"
-                        >
-                          {child.label}
-                        </Link>
+                        child.isModal ? (
+                          <button
+                            key={child.label}
+                            type="button"
+                            onClick={() => {
+                              setMobileOpen(false);
+                              setOpenB2BModal(true);
+                            }}
+                            className="mt-3 block w-full pl-6 text-left text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#5ce4ab]"
+                          >
+                            {child.label}
+                          </button>
+                        ) : (
+                          <Link
+                            key={child.label}
+                            href={child.href}
+                            onClick={() => setMobileOpen(false)}
+                            className="mt-3 block pl-6 text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#5ce4ab]"
+                          >
+                            {child.label}
+                          </Link>
+                        )
                       ))}
                     </div>
                   </div>
                 );
               }
               return (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#5ce4ab] ${index === 0 ? '' : 'mt-[21px]'}`}
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {item.label}
-                </Link>
+                item.isModal ? (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setOpenBlogModal(true);
+                    }}
+                    className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#5ce4ab] ${index === 0 ? '' : 'mt-[21px]'}`}
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#5ce4ab] ${index === 0 ? '' : 'mt-[21px]'}`}
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                )
               );
             })}
           </nav>
@@ -251,6 +310,32 @@ export default function Header() {
           </div>
         </div>
       ) : null}
+
+      {openBlogModal && (
+        <SimpleModal title="Розділ сайту в розробці" onClose={() => setOpenBlogModal(false)}>
+          <BlogModalContent />
+          <button
+            type="button"
+            onClick={() => setOpenBlogModal(false)}
+            className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
+          >
+            Зрозуміло
+          </button>
+        </SimpleModal>
+      )}
+
+      {openB2BModal && (
+        <SimpleModal title="Зазначений розділ у розробці" onClose={() => setOpenB2BModal(false)}>
+          <B2BModalContent />
+          <button
+            type="button"
+            onClick={() => setOpenB2BModal(false)}
+            className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
+          >
+            Зрозуміло
+          </button>
+        </SimpleModal>
+      )}
     </>
   );
 }
