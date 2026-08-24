@@ -32,7 +32,6 @@ const navigation: NavItem[] = [
       { label: 'Гурт для партнерів', href: '/#b2b', isModal: true },
     ],
   },
-  { label: 'Контакти', href: '/#contacts' },
   { label: 'Про нас', href: '/about' },
   { label: 'Blog', href: '/blog', isModal: true },
 ];
@@ -326,14 +325,7 @@ export default function Header() {
 
       {openB2BModal && (
         <SimpleModal title="Зазначений розділ у розробці" onClose={() => setOpenB2BModal(false)}>
-          <B2BModalContent />
-          <button
-            type="button"
-            onClick={() => setOpenB2BModal(false)}
-            className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
-          >
-            Зрозуміло
-          </button>
+          <B2BModalContent onClose={() => setOpenB2BModal(false)} />
         </SimpleModal>
       )}
     </>

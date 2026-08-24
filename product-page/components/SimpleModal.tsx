@@ -35,29 +35,27 @@ export default function SimpleModal({ title, onClose, children }: SimpleModalPro
       aria-labelledby="simple-modal-title"
       onClick={e => { if (e.target === backdropRef.current) onClose(); }}
     >
-      <div className="modal-shell">
-        <div className="modal-header flex items-start justify-between">
-          <h2 id="simple-modal-title" className="modal-title">{title}</h2>
+      <div className="w-full max-w-[420px] rounded-t-[24px] bg-white md:rounded-[16px]">
+        <div className="flex items-start justify-between px-5 pt-5 pb-3">
+          <h2 id="simple-modal-title" className="text-[20px] font-bold leading-tight text-gray-900 md:text-[22px]">{title}</h2>
           <button
             type="button"
-            className="modal-close"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500 transition-colors hover:bg-gray-200"
             onClick={onClose}
             aria-label="Закрити"
           >
             <X size={18} />
           </button>
         </div>
-        <div className="modal-scroll">
-          <div className="modal-content">
-            {children}
-          </div>
+        <div className="px-5 pb-5">
+          {children}
         </div>
       </div>
     </div>
   );
 }
 
-export function B2BModalContent() {
+export function B2BModalContent({ onClose }: { onClose?: () => void }) {
   return (
     <>
       <div className="flex justify-center mb-4">
@@ -65,17 +63,17 @@ export function B2BModalContent() {
           <MessageCircle size={28} className="text-gray-600" />
         </div>
       </div>
-      <p className="modal-body-text text-center">
+      <p className="text-[15px] leading-relaxed text-gray-600 text-center mb-4">
         Потрібна консультація? Напишіть нам на carzo.ukraine@gmail.com або в один із месенджерів.
       </p>
       <a
         href="mailto:carzo.ukraine@gmail.com"
-        className="flex items-center gap-3 rounded-[12px] border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50"
+        className="flex items-center gap-3 rounded-[12px] border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 mb-3"
       >
         <Mail size={20} className="text-gray-500" />
         <span className="text-[15px] text-gray-900">carzo.ukraine@gmail.com</span>
       </a>
-      <div className="flex gap-3">
+      <div className="flex gap-3 mb-4">
         <a
           href="https://t.me/carzo_ua"
           target="_blank"
@@ -110,13 +108,15 @@ export function B2BModalContent() {
           WhatsApp
         </a>
       </div>
-      <button
-        type="button"
-        onClick={() => {}}
-        className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
-      >
-        Зрозуміло
-      </button>
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
+        >
+          Зрозуміло
+        </button>
+      )}
     </>
   );
 }

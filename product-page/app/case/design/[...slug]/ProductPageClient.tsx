@@ -3,7 +3,6 @@ import ProductGallery from '@/components/ProductGallery';
 import ProductOptions from '@/components/ProductOptions';
 import ProductRichContent from '@/components/ProductRichContent';
 import CaseReviewsSection from '@/components/CaseReviewsSection';
-import Footer from '@/components/Footer';
 import type { ProductParams, ResolvedProductContent } from '@/lib/content/types';
 
 interface ProductPageClientProps {
@@ -50,8 +49,6 @@ export default function ProductPageClient({ params, content }: ProductPageClient
         <ProductRichContent data={content.richContent} />
         <CaseReviewsSection data={content.reviews} />
       </main>
-
-      <Footer benefitModals={content.benefitModals} />
     </div>
   );
 }

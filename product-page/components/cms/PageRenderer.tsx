@@ -2,7 +2,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import sanitizeHtml from 'sanitize-html';
 import Header from '@/components/Header';
-import Footer from '@/components/Footer';
 import type { CmsPage, CmsPageBlock } from '@/lib/pages/types';
 
 const themeClasses = {
@@ -221,7 +220,6 @@ export default function PageRenderer({ page, preview = false }: { page: CmsPage;
           </section>
         )}
       </main>
-      {page.showFooter && <Footer />}
     </div>
   );
 }
