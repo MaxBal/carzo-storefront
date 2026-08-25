@@ -8,6 +8,28 @@ export const metadata: Metadata = {
   alternates: {
     canonical: '/about',
   },
+  openGraph: {
+    title: 'Про нас — український бренд автокейсів CARZO',
+    description: 'Carzo — український бренд автомобільних органайзерів і килимків. Створюємо порядок в автомобілі з 2020 року.',
+    url: '/about',
+    siteName: 'CARZO',
+    locale: 'uk_UA',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Про нас — CARZO',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Про нас — український бренд автокейсів CARZO',
+    description: 'Carzo — український бренд автомобільних органайзерів і килимків. Створюємо порядок в автомобілі з 2020 року.',
+    images: ['/og-image.svg'],
+  },
 };
 
 const advantages = [
