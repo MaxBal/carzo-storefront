@@ -108,10 +108,10 @@ export default function CaseReviewsSection({ data }: CaseReviewsSectionProps) {
             {data.settings.title}
           </h2>
           <div className="mx-auto mb-10 max-w-[780px] text-center">
-            <p className="text-[14px] leading-relaxed text-gray-600 sm:text-[16px] lg:text-[17px]">
+            <p className="text-[14px] leading-relaxed text-gray-600 sm:text-[16px] lg:text-[16px]">
               {data.settings.descriptionLine1}
             </p>
-            <p className="mt-1 text-[14px] leading-relaxed text-gray-600 sm:text-[16px] lg:text-[17px]">
+            <p className="mt-1 text-[14px] leading-relaxed text-gray-600 sm:text-[16px] lg:text-[16px]">
               {data.settings.descriptionLine2}{' '}
               <span className="font-semibold">{data.settings.instagramHandle}</span>
             </p>
@@ -121,10 +121,10 @@ export default function CaseReviewsSection({ data }: CaseReviewsSectionProps) {
             {displayItems.map(item => (
               <div
                 key={item.key}
-                className="rounded-[16px] border border-[#dedede] bg-[#fafafa] p-5"
+                className="rounded-[16px] border border-gray-200 bg-[#fafafa] p-5"
               >
                 <Stars rating={item.rating} />
-                <p className="mb-4 text-[15px] leading-relaxed text-gray-700">{item.reviewText}</p>
+                <p className="mb-4 text-[16px] leading-relaxed text-gray-700">{item.reviewText}</p>
                 <div className="flex items-center gap-3 border-t border-gray-200 pt-3">
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
                     <User size={16} className="text-gray-400" />
@@ -144,7 +144,7 @@ export default function CaseReviewsSection({ data }: CaseReviewsSectionProps) {
                 ref={triggerRef}
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex h-[40px] w-[224px] items-center justify-center rounded-[800px] border border-[#5ae4aa] bg-[#5ae4aa] px-[23px] text-[14px] font-medium leading-[20px] text-[#181818] transition-colors hover:bg-[#4cd99d] active:bg-[#40cc91]"
+                className="inline-flex h-[40px] w-[224px] items-center justify-center rounded-[800px] border border-[#5ce4ab] bg-[#5ce4ab] px-[23px] text-[14px] font-medium leading-[20px] text-[#181818] transition-colors hover:bg-[#4cd99d] active:bg-[#3cc48e]"
               >
                 {data.settings.ctaLabel}
               </button>

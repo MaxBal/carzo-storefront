@@ -63,7 +63,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+        className="flex items-center gap-2 text-[16px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
         aria-expanded={open}
       >
         {item.label}
@@ -165,7 +165,7 @@ export default function Header() {
                   key={item.label}
                   type="button"
                   onClick={() => setOpenBlogModal(true)}
-                  className="text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[16px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </button>
@@ -173,7 +173,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-[15px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[16px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </Link>
@@ -303,7 +303,7 @@ export default function Header() {
               <Phone size={18} strokeWidth={1.8} />
               Зателефонувати з 10:00 до 20:00
             </a>
-            <p className="mt-5 text-center text-[13px] leading-[18px] text-white">
+            <p className="mt-5 text-center text-[14px] leading-[18px] text-white">
               🇺🇦 Сконструйовано та виготовлено в Україні
             </p>
           </div>
@@ -316,7 +316,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setOpenBlogModal(false)}
-            className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
+            className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[16px] font-semibold text-white transition-colors hover:bg-gray-800"
           >
             Зрозуміло
           </button>

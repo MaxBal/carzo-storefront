@@ -221,7 +221,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
         {/* Price */}
         <div className="mt-4 flex flex-wrap items-center gap-[14px]">
-          <span className="text-[26px] font-bold leading-none text-gray-900 md:text-[32px]">{currentPrice} ₴</span>
+          <span className="text-[24px] font-bold leading-none text-gray-900 md:text-[32px]">{currentPrice} ₴</span>
           <span className="ml-0.5 text-base font-medium text-[#9aa1ac] line-through">{oldPrice} ₴</span>
           <span className="ml-3 whitespace-nowrap rounded-full bg-[#ffe3cc] px-[13px] py-[5px] text-sm font-semibold leading-none text-[#f97316]">
             SALE {oldPrice - currentPrice}₴
@@ -365,7 +365,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           </div>
           <div className="mb-[11px] mt-[5px] flex items-center gap-1.5">
             <Info size={13} strokeWidth={1.5} className="flex-shrink-0 text-[#626975]" />
-            <span className="text-[13px] font-normal leading-[18px] text-[#626975]">Оберіть марку, щоб переглянути фото лого</span>
+            <span className="text-[14px] font-normal leading-[18px] text-[#626975]">Оберіть марку, щоб переглянути фото лого</span>
           </div>
 
           <div className="relative">

@@ -65,7 +65,7 @@ export default function ModalProvider({ children, benefitModals = [] }: ModalPro
           <button
             type="button"
             onClick={() => setOpenBlog(false)}
-            className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
+            className="mt-4 flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[16px] font-semibold text-white transition-colors hover:bg-gray-800"
           >
             Зрозуміло
           </button>

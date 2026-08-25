@@ -56,7 +56,7 @@ function TextLine({ line }: { line: BenefitTextLine }) {
 
   return (
     <>
-      {line.dividerBefore ? <div className="my-0.5 border-t border-[#dedede]" /> : null}
+      {line.dividerBefore ? <div className="my-0.5 border-t border-gray-200" /> : null}
       <p className={className}>
         {firstPercent ? (
           <>
@@ -157,7 +157,7 @@ function BenefitBlockView({ block }: { block: BenefitBlock }) {
             </div>
             <span className="modal-secondary-text px-1 text-center leading-tight">{label}</span>
           </div>
-          {index < block.items.length - 1 ? <div className="-mt-5 h-px w-6 flex-shrink-0 bg-[#dedede]" /> : null}
+          {index < block.items.length - 1 ? <div className="-mt-5 h-px w-6 flex-shrink-0 bg-gray-200" /> : null}
         </div>
       ))}
     </div>

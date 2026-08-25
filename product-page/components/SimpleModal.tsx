@@ -63,7 +63,7 @@ export function B2BModalContent({ onClose }: { onClose?: () => void }) {
           <MessageCircle size={28} className="text-gray-600" />
         </div>
       </div>
-      <p className="text-[15px] leading-relaxed text-gray-600 text-center mb-4">
+      <p className="text-[16px] leading-relaxed text-gray-600 text-center mb-4">
         Потрібна консультація? Напишіть нам на carzo.ukraine@gmail.com або в один із месенджерів.
       </p>
       <a
@@ -71,7 +71,7 @@ export function B2BModalContent({ onClose }: { onClose?: () => void }) {
         className="flex items-center gap-3 rounded-[12px] border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 mb-3"
       >
         <Mail size={20} className="text-gray-500" />
-        <span className="text-[15px] text-gray-900">carzo.ukraine@gmail.com</span>
+        <span className="text-[16px] text-gray-900">carzo.ukraine@gmail.com</span>
       </a>
       <div className="flex gap-3 mb-4">
         <a
@@ -112,7 +112,7 @@ export function B2BModalContent({ onClose }: { onClose?: () => void }) {
         <button
           type="button"
           onClick={onClose}
-          className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[15px] font-semibold text-white transition-colors hover:bg-gray-800"
+          className="flex h-[48px] w-full items-center justify-center rounded-[12px] bg-black text-[16px] font-semibold text-white transition-colors hover:bg-gray-800"
         >
           Зрозуміло
         </button>

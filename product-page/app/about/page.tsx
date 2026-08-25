@@ -54,11 +54,11 @@ export default function AboutPage() {
         {/* Hero */}
         <section className="px-4 pt-16 pb-20 sm:px-6 sm:pt-20 sm:pb-24 lg:px-8 lg:pt-28 lg:pb-32">
           <div className="mx-auto max-w-[720px] text-center">
-            <p className="text-[13px] font-bold uppercase tracking-[0.28em] text-[#5ce4ab]">ПРО CARZO</p>
+            <p className="text-[14px] font-bold uppercase tracking-[0.28em] text-[#5ce4ab]">ПРО CARZO</p>
             <h1 className="mt-5 text-[32px] font-black leading-tight tracking-tight text-black sm:text-[40px] lg:text-[48px]">
               Створюємо порядок в автомобілі з 2020 року
             </h1>
-            <p className="mx-auto mt-6 max-w-[560px] text-[16px] leading-relaxed text-gray-600 sm:text-[17px]">
+            <p className="mx-auto mt-6 max-w-[560px] text-[16px] leading-relaxed text-gray-600 sm:text-[16px]">
               Carzo — український бренд автомобільних органайзерів і килимків. Ми поєднуємо практичність, продуману конструкцію та охайний дизайн, щоб кожна поїздка була комфортнішою.
             </p>
           </div>
@@ -70,8 +70,8 @@ export default function AboutPage() {
             {advantages.map(item => (
               <div key={item.title} className="rounded-[16px] border border-gray-200 bg-white p-5 sm:p-6">
                 <item.icon size={28} strokeWidth={1.5} className="mb-4 text-black" />
-                <h3 className="mb-2 text-[15px] font-semibold text-black sm:text-[16px]">{item.title}</h3>
-                <p className="text-[13px] leading-relaxed text-gray-500 sm:text-[14px]">{item.text}</p>
+                <h3 className="mb-2 text-[16px] font-semibold text-black sm:text-[16px]">{item.title}</h3>
+                <p className="text-[14px] leading-relaxed text-gray-500 sm:text-[14px]">{item.text}</p>
               </div>
             ))}
           </div>
@@ -84,10 +84,10 @@ export default function AboutPage() {
               Від ідеї до продуманого продукту
             </h2>
             <div className="mt-6 space-y-5">
-              <p className="text-[15px] leading-relaxed text-gray-600 sm:text-[16px]">
+              <p className="text-[16px] leading-relaxed text-gray-600 sm:text-[16px]">
                 Carzo з&apos;явився з простого бажання зробити багажник автомобіля охайним і зручним у щоденному використанні. Ми послідовно вдосконалюємо конструкцію, добираємо практичні матеріали та враховуємо реальний досвід власників авто.
               </p>
-              <p className="text-[15px] leading-relaxed text-gray-600 sm:text-[16px]">
+              <p className="text-[16px] leading-relaxed text-gray-600 sm:text-[16px]">
                 Кожен виріб має бути не лише привабливим, а й витримувати повсякденне навантаження, легко встановлюватися та допомагати зберігати речі на своїх місцях.
               </p>
             </div>
@@ -103,8 +103,8 @@ export default function AboutPage() {
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 lg:gap-8">
               {principles.map(item => (
                 <div key={item.title} className="rounded-[16px] border border-gray-200 bg-white p-6 sm:p-8">
-                  <h3 className="mb-3 text-[16px] font-semibold text-black sm:text-[17px]">{item.title}</h3>
-                  <p className="text-[14px] leading-relaxed text-gray-500 sm:text-[15px]">{item.text}</p>
+                  <h3 className="mb-3 text-[16px] font-semibold text-black sm:text-[16px]">{item.title}</h3>
+                  <p className="text-[14px] leading-relaxed text-gray-500 sm:text-[14px]">{item.text}</p>
                 </div>
               ))}
             </div>
@@ -117,7 +117,7 @@ export default function AboutPage() {
             <h2 className="text-[24px] font-bold leading-tight text-white sm:text-[28px] lg:text-[32px]">
               Carzo — порядок, що залишається з вами в дорозі
             </h2>
-            <p className="mx-auto mt-5 max-w-[560px] text-[15px] leading-relaxed text-gray-400 sm:text-[16px]">
+            <p className="mx-auto mt-5 max-w-[560px] text-[16px] leading-relaxed text-gray-400 sm:text-[16px]">
               Ми продовжуємо розвивати продукти для автомобіля, спираючись на досвід клієнтів, якість виконання та чесний український сервіс.
             </p>
           </div>
