@@ -14,7 +14,9 @@ const nextConfig = {
     ];
   },
   async headers() {
-    if (process.env.VERCEL_ENV !== 'preview') return [];
+    const isStaging = process.env.VERCEL_URL?.includes('staging') || 
+                      process.env.NEXT_PUBLIC_SITE_URL?.includes('staging');
+    if (!isStaging) return [];
     return [
       {
         source: '/:path*',
