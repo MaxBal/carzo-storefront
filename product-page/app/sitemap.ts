@@ -19,6 +19,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 1,
   });
 
+  entries.set(absoluteSiteUrl('/about'), {
+    url: absoluteSiteUrl('/about'),
+    changeFrequency: 'monthly',
+    priority: 0.6,
+  });
+
   pages
     .filter(page => !page.noIndex)
     .forEach((page) => {

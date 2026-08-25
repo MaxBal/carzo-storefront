@@ -12,19 +12,19 @@ const catalogLinks = [
 
 const customerLinks = [
   { label: 'Про нас', href: '/about', action: 'link' as const },
-  { label: 'Доставка', action: 'delivery' as const },
-  { label: 'Оплата', action: 'payment' as const },
-  { label: 'Обмін та повернення', action: 'returns' as const },
+  { label: 'Доставка', href: '/delivery', action: 'delivery' as const },
+  { label: 'Оплата', href: '/payment', action: 'payment' as const },
+  { label: 'Обмін та повернення', href: '/returns', action: 'returns' as const },
 ];
 
 const b2bLinks = [
-  { label: 'Корпоративні замовлення', action: 'b2b' as const },
-  { label: 'Гурт для партнерів', action: 'b2b' as const },
+  { label: 'Корпоративні замовлення', href: '/corporate-orders', action: 'b2b' as const },
+  { label: 'Гурт для партнерів', href: '/wholesale', action: 'b2b' as const },
 ];
 
 const bonusLinks = [
-  { label: 'Клієнтська програма', action: 'loyalty' as const },
-  { label: 'Разом дешевше', action: 'bundle' as const },
+  { label: 'Клієнтська програма', href: '/loyalty-program', action: 'loyalty' as const },
+  { label: 'Разом дешевше', href: '/bundle-deals', action: 'bundle' as const },
 ];
 
 const legalLinks = [
@@ -83,13 +83,13 @@ export default function Footer() {
                         {link.label}
                       </Link>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleAction(link.action)}
+                      <a
+                        href={link.href}
+                        onClick={(e) => { e.preventDefault(); handleAction(link.action); }}
                         className="text-[14px] text-gray-300 transition-colors hover:text-white"
                       >
                         {link.label}
-                      </button>
+                      </a>
                     )}
                   </li>
                 ))}
@@ -102,13 +102,13 @@ export default function Footer() {
               <ul className="space-y-3">
                 {b2bLinks.map(link => (
                   <li key={link.label}>
-                    <button
-                      type="button"
-                      onClick={() => handleAction(link.action)}
+                    <a
+                      href={link.href}
+                      onClick={(e) => { e.preventDefault(); handleAction(link.action); }}
                       className="text-[14px] text-gray-300 transition-colors hover:text-white"
                     >
                       {link.label}
-                    </button>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -120,13 +120,13 @@ export default function Footer() {
               <ul className="space-y-3">
                 {bonusLinks.map(link => (
                   <li key={link.label}>
-                    <button
-                      type="button"
-                      onClick={() => handleAction(link.action)}
+                    <a
+                      href={link.href}
+                      onClick={(e) => { e.preventDefault(); handleAction(link.action); }}
                       className="text-[14px] text-gray-300 transition-colors hover:text-white"
                     >
                       {link.label}
-                    </button>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -184,8 +184,8 @@ export default function Footer() {
             {[
               { label: 'Каталог', links: catalogLinks.map(l => ({ label: l.label, type: 'link' as const, href: l.href, action: '' })) },
               { label: 'Покупцеві', links: customerLinks.map(l => ({ label: l.label, type: l.action === 'link' ? 'link' as const : 'action' as const, href: l.href, action: l.action })) },
-              { label: 'B2B', links: b2bLinks.map(l => ({ label: l.label, type: 'action' as const, href: '', action: l.action })) },
-              { label: 'Carzo bonus', links: bonusLinks.map(l => ({ label: l.label, type: 'action' as const, href: '', action: l.action })) },
+              { label: 'B2B', links: b2bLinks.map(l => ({ label: l.label, type: 'action' as const, href: l.href, action: l.action })) },
+              { label: 'Carzo bonus', links: bonusLinks.map(l => ({ label: l.label, type: 'action' as const, href: l.href, action: l.action })) },
             ].map(section => (
               <div key={section.label} className="border-t border-white/10">
                 <button
@@ -205,13 +205,13 @@ export default function Footer() {
                             {link.label}
                           </Link>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleAction(link.action)}
+                          <a
+                            href={link.href || '#'}
+                            onClick={(e) => { e.preventDefault(); handleAction(link.action); }}
                             className="text-[14px] text-gray-300 transition-colors hover:text-white"
                           >
                             {link.label}
-                          </button>
+                          </a>
                         )}
                       </li>
                     ))}

@@ -5,6 +5,9 @@ import { Clock, Factory, MessageSquare, Flag } from 'lucide-react';
 export const metadata: Metadata = {
   title: 'Про нас',
   description: 'Carzo — український бренд автомобільних органайзерів і килимків. Створюємо порядок в автомобілі з 2020 року.',
+  alternates: {
+    canonical: '/about',
+  },
 };
 
 const advantages = [
