@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { CmsPage } from './types';
 
 const DEFAULT_OG_IMAGE = {
-  url: '/og-image.svg',
+  url: '/case.jpg',
   width: 1200,
   height: 630,
   alt: 'CARZO — автомобільні органайзери',

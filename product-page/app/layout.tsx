@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image.svg',
+        url: '/case.jpg',
         width: 1200,
         height: 630,
         alt: 'CARZO — автомобільні органайзери',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'CARZO — преміальні органайзери для автомобіля',
     description: 'Автокейси CARZO допомагають підтримувати порядок у багажнику та доповнюють інтер\'єр автомобіля.',
-    images: ['/og-image.svg'],
+    images: ['/case.jpg'],
   },
 };
 

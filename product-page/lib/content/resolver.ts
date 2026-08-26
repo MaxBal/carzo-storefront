@@ -46,7 +46,7 @@ function resolveGallery(params: ProductParams, source: ContentSource): GalleryIm
     size: params.size,
     src: source.siteSettings.mediaPlaceholder,
     fallbackSrc: source.siteSettings.mediaPlaceholder,
-    alt: `Автокейс ${params.size} Carzo ${design?.version ?? params.designSlug} — фото ще не додано`,
+    alt: `Автокейс ${params.size} Carzo ${design?.version ?? params.designSlug}`,
     sort: 1,
     isPlaceholder: true,
   }];

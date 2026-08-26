@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image.svg',
+        url: '/case.jpg',
         width: 1200,
         height: 630,
         alt: 'Про нас — Carzo',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Про нас — Carzo',
     description: 'Carzo — український бренд автомобільних аксесуарів. Розробляємо, виготовляємо та тестуємо продукцію самостійно.',
-    images: ['/og-image.svg'],
+    images: ['/case.jpg'],
   },
 };
 

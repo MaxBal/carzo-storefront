@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image.svg',
+        url: '/case.jpg',
         width: 1200,
         height: 630,
         alt: 'CARZO — преміальні автоаксесуари',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'CARZO — преміальні автоаксесуари',
     description: 'Преміальні автомобільні органайзери та килимки з магнітною системою та німецькою еко-шкірою.',
-    images: ['/og-image.svg'],
+    images: ['/case.jpg'],
   },
 };
 

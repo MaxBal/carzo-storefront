@@ -20,6 +20,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = buildProductTitle(productParams, catalog);
   const description = buildMetaDescription(productParams, catalog);
   const canonical = buildProductUrl({ ...productParams, brandId: 'none' }, catalog);
+  const content = resolveProductContent(productParams, source);
+  const firstImage = content.gallery.find(img => !img.isPlaceholder);
+  const ogImage = firstImage?.src || '/case.jpg';
+
   return {
     title,
     description,
@@ -33,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'website',
       images: [
         {
-          url: '/og-image.svg',
+          url: ogImage,
           width: 1200,
           height: 630,
           alt: title,
@@ -44,7 +48,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: 'summary_large_image',
       title,
       description,
-      images: ['/og-image.svg'],
+      images: [ogImage],
     },
   };
 }
