@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Header from '@/components/Header';
 import { siteOrigin } from '@/lib/seo';
 
 export const metadata: Metadata = {
@@ -30,5 +31,10 @@ export const metadata: Metadata = {
 };
 
 export default function Home() {
-  return <main />;
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <main />
+    </div>
+  );
 }
