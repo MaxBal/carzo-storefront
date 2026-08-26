@@ -276,7 +276,7 @@ export default function Header() {
                       setMobileOpen(false);
                       setOpenBlogModal(true);
                     }}
-                    className={`text-lg font-normal leading-6 text-white transition-colors hover:text-[#5ce4ab] ${index === 0 ? '' : 'mt-[21px]'}`}
+                    className={`block w-full border-0 bg-transparent p-0 text-left text-lg font-normal leading-6 text-white transition-colors hover:text-[#5ce4ab] ${index === 0 ? '' : 'mt-[21px]'}`}
                   >
                     {item.label}
                   </button>

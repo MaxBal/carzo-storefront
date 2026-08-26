@@ -1,28 +1,34 @@
-import { draftMode } from 'next/headers';
-import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import PageRenderer from '@/components/cms/PageRenderer';
-import { getPreviewPage, getPublishedPage } from '@/lib/pages/directus';
-import { buildCmsMetadata } from '@/lib/pages/metadata';
+import { siteOrigin } from '@/lib/seo';
 
-interface HomeProps {
-  searchParams: { preview?: string };
-}
+export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
+  title: 'CARZO — автомобільні органайзери',
+  description: 'Преміальні автомобільні органайзери з магнітною системою та німецькою еко-шкірою.',
+  openGraph: {
+    title: 'CARZO — преміальні органайзери для автомобіля',
+    description: 'Автокейси CARZO допомагають підтримувати порядок у багажнику та доповнюють інтер\'єр автомобіля.',
+    url: '/',
+    siteName: 'CARZO',
+    locale: 'uk_UA',
+    type: 'website',
+    images: [
+      {
+        url: '/og-image.svg',
+        width: 1200,
+        height: 630,
+        alt: 'CARZO — автомобільні органайзери',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CARZO — преміальні органайзери для автомобіля',
+    description: 'Автокейси CARZO допомагають підтримувати порядок у багажнику та доповнюють інтер\'єр автомобіля.',
+    images: ['/og-image.svg'],
+  },
+};
 
-export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPublishedPage('home');
-  return buildCmsMetadata(page, 'CARZO');
-}
-
-export default async function Home({ searchParams }: HomeProps) {
-  const previewEnabled = draftMode().isEnabled && Boolean(searchParams.preview);
-  const page = previewEnabled && searchParams.preview
-    ? await getPreviewPage(searchParams.preview)
-    : await getPublishedPage('home');
-
-  if (!page || (previewEnabled && page.slug !== 'home')) {
-    redirect('/case/design/m/2-0');
-  }
-
-  return <PageRenderer page={page} preview={previewEnabled} />;
+export default function Home() {
+  return <main />;
 }

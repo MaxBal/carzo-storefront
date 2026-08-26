@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { X, Mail, MessageCircle } from 'lucide-react';
+import { CARZO_LINKS } from '@/lib/links';
 
 interface SimpleModalProps {
   title: string;
@@ -67,7 +68,7 @@ export function B2BModalContent({ onClose }: { onClose?: () => void }) {
         Потрібна консультація? Напишіть нам на carzo.ukraine@gmail.com або в один із месенджерів.
       </p>
       <a
-        href="mailto:carzo.ukraine@gmail.com"
+        href={CARZO_LINKS.email}
         className="flex items-center gap-3 rounded-[12px] border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50 mb-3"
       >
         <Mail size={20} className="text-gray-500" />
@@ -75,7 +76,7 @@ export function B2BModalContent({ onClose }: { onClose?: () => void }) {
       </a>
       <div className="flex gap-3 mb-4">
         <a
-          href="https://t.me/carzo_ua"
+          href={CARZO_LINKS.messengers.telegram}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-gray-200 bg-white px-4 py-3 text-[14px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
@@ -86,7 +87,7 @@ export function B2BModalContent({ onClose }: { onClose?: () => void }) {
           Telegram
         </a>
         <a
-          href="viber://chat?number=%2B380661031094"
+          href={CARZO_LINKS.messengers.viber}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-gray-200 bg-white px-4 py-3 text-[14px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
@@ -97,7 +98,7 @@ export function B2BModalContent({ onClose }: { onClose?: () => void }) {
           Viber
         </a>
         <a
-          href="https://wa.me/380661031094"
+          href={CARZO_LINKS.messengers.whatsapp}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 items-center justify-center gap-2 rounded-[12px] border border-gray-200 bg-white px-4 py-3 text-[14px] font-medium text-gray-700 transition-colors hover:bg-gray-50"
