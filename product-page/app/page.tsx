@@ -8,6 +8,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin()),
   title: 'CARZO — преміальні автоаксесуари',
   description: 'Преміальні автомобільні органайзери та килимки з магнітною системою та німецькою еко-шкірою.',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
     title: 'CARZO — преміальні автоаксесуари',
     description: 'Преміальні автомобільні органайзери та килимки з магнітною системою та німецькою еко-шкірою.',

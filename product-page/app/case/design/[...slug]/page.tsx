@@ -73,12 +73,15 @@ export default async function Page({ params }: PageProps) {
   const productTitle = buildProductTitle(parsed.params, catalog);
   const productDescription = buildMetaDescription(parsed.params, catalog);
   const { selectedVariant } = content.pricing;
+  const firstImage = content.gallery.find(img => !img.isPlaceholder);
+  const productImage = firstImage ? absoluteSiteUrl(firstImage.src) : absoluteSiteUrl('/og-image.svg');
 
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: productTitle,
     description: productDescription,
+    image: productImage,
     brand: {
       '@type': 'Brand',
       name: 'CARZO',

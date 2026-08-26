@@ -54,8 +54,11 @@ const organizationSchema = {
     hoursAvailable: 'Mo-Su 10:00-20:00',
   },
   sameAs: [
-    'https://instagram.com/carzo.ua',
+    'https://www.instagram.com/carzo.ua',
     'https://t.me/carzo_ua',
+    'https://www.facebook.com/share/1F9iCULp4s/',
+    'https://www.tiktok.com/@carzo_ua',
+    'https://www.youtube.com/@carzoua9083',
   ],
 };
 
