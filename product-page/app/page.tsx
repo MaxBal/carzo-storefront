@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import HomePageContent from '@/components/HomePageContent';
 import { siteOrigin } from '@/lib/seo';
+import { getHomepageData } from '@/lib/content/homepage';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin()),
@@ -31,11 +32,13 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const homepageData = await getHomepageData();
+
   return (
     <div className="min-h-screen bg-white">
       <Header />
-      <HomePageContent />
+      <HomePageContent data={homepageData} />
     </div>
   );
 }

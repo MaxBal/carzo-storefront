@@ -1,8 +1,14 @@
 'use client';
 
+import type { HomepageData } from '@/lib/content/homepage';
+
 const Arrow = () => <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg>;
 
-export default function HomePageContent() {
+interface HomePageContentProps {
+  data: HomepageData;
+}
+
+export default function HomePageContent({ data }: HomePageContentProps) {
   return (
     <>
       <style jsx global>{`
@@ -80,6 +86,7 @@ export default function HomePageContent() {
           font-weight: 400;
           letter-spacing: -.075em;
           line-height: .88;
+          white-space: pre-line;
         }
 
         .hp-material-copy {
@@ -227,6 +234,7 @@ export default function HomePageContent() {
           font-weight: 500;
           letter-spacing: -.065em;
           line-height: .96;
+          white-space: pre-line;
         }
 
         .hp-title > p:last-child {
@@ -372,6 +380,7 @@ export default function HomePageContent() {
           color: #555;
           font-size: 16px;
           line-height: 1.5;
+          white-space: pre-line;
         }
 
         @media (max-width: 900px) {
@@ -532,47 +541,49 @@ export default function HomePageContent() {
       <div className="hp-root">
         <section className="hp-hero" id="catalog">
           <div className="hp-intro">
-            <p className="hp-eyebrow hp-hero-kicker"><span aria-hidden="true">🇺🇦</span><span>Виготовляємо стабільно якісно з 2020 року</span></p>
-            <h1>Преміальні<br/>автоаксесуари Carzo</h1>
+            <p className="hp-eyebrow hp-hero-kicker"><span aria-hidden="true">🇺🇦</span><span>{data.hero.eyebrow}</span></p>
+            <h1>{data.hero.title}</h1>
             <div className="hp-material-copy">
-              <p className="hp-lead">Німецька автомобільна еко-шкіра створена для авто</p>
-              <p className="hp-material-details"><span>ВИСОКОЯКІСНА ТА ЗНОСОСТІЙКА</span></p>
+              <p className="hp-lead">{data.hero.lead}</p>
+              <p className="hp-material-details"><span>{data.hero.materialTag}</span></p>
             </div>
           </div>
           <div className="hp-products">
-            <a className="hp-product hp-product-case" href="/case/design/l/4-0">
-              <img src="/case.jpg" alt="Чорний автокейс Carzo у багажнику"/>
-              <i/><small>Магнітна система</small><strong>Premium автокейси</strong><b><Arrow/></b>
-            </a>
-            <a className="hp-product hp-product-mats" href="/catalog-carmat">
-              <img src="/mats.png" alt="Комплект чорних автокилимків Carzo"/>
-              <i/><small>Точність лекал</small><strong>Premium автокилимки</strong><b><Arrow/></b>
-            </a>
+            {data.hero.products.map((product, index) => (
+              <a
+                key={product.href}
+                className={`hp-product ${index === 0 ? 'hp-product-case' : 'hp-product-mats'}`}
+                href={product.href}
+              >
+                <img src={product.image} alt={product.alt}/>
+                <i/><small>{product.tag}</small><strong>{product.title}</strong><b><Arrow/></b>
+              </a>
+            ))}
           </div>
         </section>
 
         <section className="hp-badges" id="badges">
-          <div className="hp-title hp-light"><p className="hp-eyebrow">Власне виробництво</p><h2>Високоякісні<br/>шильди</h2><p>Від фрезування металу до готової деталі — усе контролюємо самі.</p></div>
+          <div className="hp-title hp-light"><p className="hp-eyebrow">{data.badges.eyebrow}</p><h2>{data.badges.title}</h2><p>{data.badges.description}</p></div>
           <div className="hp-badge-scene">
             <video className="hp-badge-video" autoPlay muted loop playsInline preload="metadata" aria-label="Металеві автомобільні шильди Carzo">
-              <source src="/carzo-badges.mp4" type="video/mp4"/>
+              <source src={data.badges.videoUrl} type="video/mp4"/>
             </video>
             <span className="hp-video-gradient"/>
-            <em>20 × 80 мм</em>
+            <em>{data.badges.sizeLabel}</em>
           </div>
           <div className="hp-features">
-            <article><span>01</span><h3>Фрезування металу</h3><p>Основний процес виготовлення — точне фрезування металевої основи.</p></article>
-            <article><span>02</span><h3>Для виробів Carzo</h3><p>Додайте фірмовий шильд до автокейса за привабливою ціною.</p></article>
-            <article><span>03</span><h3>Стандартні та індивідуальні</h3><p>Готові рішення для популярних марок та виготовлення за вашим дизайном.</p></article>
+            {data.badges.features.map(feature => (
+              <article key={feature.number}><span>{feature.number}</span><h3>{feature.title}</h3><p>{feature.description}</p></article>
+            ))}
           </div>
         </section>
 
         <section className="hp-quality" id="quality">
-          <div className="hp-title"><p className="hp-eyebrow">Carzo у цифрах</p><h2>Відмінна якість<br/>продукту та обслуговування</h2></div>
+          <div className="hp-title"><p className="hp-eyebrow">{data.quality.eyebrow}</p><h2>{data.quality.title}</h2></div>
           <div className="hp-stats">
-            <article><strong>15K<sup>+</sup></strong><p>задоволених клієнтів<br/>зі всієї країни</p></article>
-            <article><strong>24<sup>%</sup></strong><p>клієнтів здійснюють<br/>повторну покупку</p></article>
-            <article><strong>&lt;1<sup>%</sup></strong><p>звернень із проханням<br/>повернути або обміняти товар</p></article>
+            {data.quality.stats.map((stat, index) => (
+              <article key={index}><strong>{stat.value}<sup>{stat.suffix}</sup></strong><p>{stat.description}</p></article>
+            ))}
           </div>
         </section>
       </div>

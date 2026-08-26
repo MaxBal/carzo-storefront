@@ -566,6 +566,20 @@ const collections = [
     shortText('reviews_modal_description'),
     json('reviews_items', 'Текстові відгуки [{ reviewText, customerName, reviewDate, rating, sort }].'),
     json('reviews_screenshots', 'Скріншоти відгуків [{ image (Directus file ID), altText, sort }].'),
+    shortText('homepage_hero_eyebrow'),
+    shortText('homepage_hero_title'),
+    longText('homepage_hero_lead'),
+    shortText('homepage_hero_material_tag'),
+    json('homepage_hero_products', 'Масив продуктів [{ image, alt, href, tag, title }].'),
+    shortText('homepage_badges_eyebrow'),
+    shortText('homepage_badges_title'),
+    longText('homepage_badges_description'),
+    imageField('homepage_badges_video', 'Відео шильдів (MP4).'),
+    shortText('homepage_badges_size_label'),
+    json('homepage_badges_features', 'Масив фіч [{ number, title, description }].'),
+    shortText('homepage_quality_eyebrow'),
+    shortText('homepage_quality_title'),
+    json('homepage_quality_stats', 'Масив статистики [{ value, suffix, description }].'),
   ], { singleton: true, displayTemplate: 'Налаштування Carzo' }),
 ];
 
@@ -1421,6 +1435,31 @@ async function seedItems() {
       { key: 'review-3', reviewText: 'Швидка доставка, якісна упаковка. Автокейс виглядає як на фото.', customerName: 'Ігор', reviewDate: '2026-03-15', rating: 5, sort: 3 },
     ],
     reviews_screenshots: [],
+    homepage_hero_eyebrow: 'Виготовляємо стабільно якісно з 2020 року',
+    homepage_hero_title: 'Преміальні\nавтоаксесуари Carzo',
+    homepage_hero_lead: 'Німецька автомобільна еко-шкіра створена для авто',
+    homepage_hero_material_tag: 'ВИСОКОЯКІСНА ТА ЗНОСОСТІЙКА',
+    homepage_hero_products: [
+      { image: '/case.jpg', alt: 'Чорний автокейс Carzo у багажнику', href: '/case/design/l/4-0', tag: 'Магнітна система', title: 'Premium автокейси' },
+      { image: '/mats.png', alt: 'Комплект чорних автокилимків Carzo', href: '/catalog-carmat', tag: 'Точність лекал', title: 'Premium автокилимки' },
+    ],
+    homepage_badges_eyebrow: 'Власне виробництво',
+    homepage_badges_title: 'Високоякісні\nшильди',
+    homepage_badges_description: 'Від фрезування металу до готової деталі — усе контролюємо самі.',
+    homepage_badges_video: null,
+    homepage_badges_size_label: '20 × 80 мм',
+    homepage_badges_features: [
+      { number: '01', title: 'Фрезування металу', description: 'Основний процес виготовлення — точне фрезування металевої основи.' },
+      { number: '02', title: 'Для виробів Carzo', description: 'Додайте фірмовий шильд до автокейса за привабливою ціною.' },
+      { number: '03', title: 'Стандартні та індивідуальні', description: 'Готові рішення для популярних марок та виготовлення за вашим дизайном.' },
+    ],
+    homepage_quality_eyebrow: 'Carzo у цифрах',
+    homepage_quality_title: 'Відмінна якість\nпродукту та обслуговування',
+    homepage_quality_stats: [
+      { value: '15K', suffix: '+', description: 'задоволених клієнтів\nзі всієї країни' },
+      { value: '24', suffix: '%', description: 'клієнтів здійснюють\nповторну покупку' },
+      { value: '<1', suffix: '%', description: 'звернень із проханням\nповернути або обміняти товар' },
+    ],
   });
 
   const mediaSettings = await request('/items/carzo_media_settings?fields=*');
