@@ -1,0 +1,581 @@
+'use client';
+
+const Arrow = () => <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></svg>;
+
+export default function HomePageContent() {
+  return (
+    <>
+      <style jsx global>{`
+        .hp-root {
+          --black: #080808;
+          --ink: #111;
+          --gray: #888;
+          --line: #d2d2d0;
+          --soft: #f0f0ee;
+          --mint: #5ce4ab;
+        }
+
+        .hp-root * {
+          box-sizing: border-box;
+        }
+
+        .hp-root a {
+          color: inherit;
+          text-decoration: none;
+        }
+
+        .hp-root svg {
+          width: 22px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 1.7;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
+        .hp-hero {
+          min-height: 100vh;
+          padding: clamp(50px, 6vw, 90px) 2.2vw 2.2vw;
+          background: var(--black);
+          color: #fff;
+        }
+
+        .hp-intro {
+          max-width: 1550px;
+          margin: 0 auto clamp(44px, 5vw, 68px);
+        }
+
+        .hp-eyebrow {
+          margin: 0 0 20px;
+          color: #777;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: .14em;
+          line-height: 1.5;
+          text-transform: uppercase;
+        }
+
+        .hp-intro .hp-eyebrow {
+          color: #fff;
+        }
+
+        .hp-hero-kicker {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 12px;
+          font-weight: 300;
+          letter-spacing: .14em;
+        }
+
+        .hp-hero-kicker span:first-child {
+          font-size: 13px;
+          letter-spacing: 0;
+        }
+
+        .hp-intro h1 {
+          max-width: 1120px;
+          margin: 0;
+          font-size: clamp(52px, 6.1vw, 108px);
+          font-weight: 400;
+          letter-spacing: -.075em;
+          line-height: .88;
+        }
+
+        .hp-material-copy {
+          margin: clamp(26px, 2.5vw, 40px) 0 0;
+        }
+
+        .hp-lead {
+          max-width: 680px;
+          margin: 0;
+          color: #aaa;
+          font-size: clamp(20px, 1.7vw, 27px);
+          font-weight: 400;
+          line-height: 1.35;
+        }
+
+        .hp-material-details {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0 9px;
+          margin: 8px 0 0;
+          color: var(--mint);
+          font-size: 12px;
+          font-weight: 300;
+          letter-spacing: .13em;
+          line-height: 1.65;
+        }
+
+        .hp-material-details b {
+          color: var(--mint);
+          font-size: 12px;
+          font-weight: 200;
+        }
+
+        .hp-products {
+          display: grid;
+          grid-template-columns: 1.72fr .82fr;
+          gap: 18px;
+          max-width: 1550px;
+          margin: auto;
+        }
+
+        .hp-product {
+          position: relative;
+          min-height: clamp(400px, 47vw, 650px);
+          overflow: hidden;
+          border: 1px solid #333;
+          border-radius: 16px;
+          background: #151515;
+          isolation: isolate;
+        }
+
+        .hp-product img {
+          position: absolute;
+          z-index: -2;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform .7s, filter .5s;
+        }
+
+        .hp-product-case img {
+          object-position: 50% 63%;
+        }
+
+        .hp-product-mats img {
+          object-position: 51% 42%;
+        }
+
+        .hp-product i {
+          position: absolute;
+          z-index: -1;
+          inset: 0;
+          background: linear-gradient(180deg, #00000008 25%, #000000d9);
+        }
+
+        .hp-product small,
+        .hp-product strong {
+          position: absolute;
+          left: clamp(22px, 2.2vw, 38px);
+        }
+
+        .hp-product small {
+          top: 30px;
+          color: #fff;
+          font-size: 12px;
+          font-style: normal;
+          font-weight: 200;
+          letter-spacing: .14em;
+          text-transform: uppercase;
+        }
+
+        .hp-product strong {
+          right: 90px;
+          bottom: 34px;
+          font-size: clamp(25px, 2.4vw, 41px);
+          font-weight: 500;
+          letter-spacing: -.045em;
+        }
+
+        .hp-product b {
+          position: absolute;
+          right: 28px;
+          bottom: 28px;
+          display: grid;
+          width: 54px;
+          height: 54px;
+          place-items: center;
+          border: 1px solid #ffffffa8;
+          border-radius: 50%;
+          font-weight: 400;
+          transition: .25s;
+        }
+
+        .hp-product:hover img {
+          transform: scale(1.025);
+          filter: brightness(1.08);
+        }
+
+        .hp-product:hover b {
+          transform: translateX(3px);
+          background: #fff;
+          color: #000;
+        }
+
+        .hp-badges,
+        .hp-quality {
+          padding: clamp(90px, 11vw, 180px) 3vw;
+        }
+
+        .hp-badges {
+          background: #0a0a0a;
+          color: #fff;
+        }
+
+        .hp-title {
+          max-width: 1150px;
+          margin: 0 auto clamp(60px, 8vw, 110px);
+          text-align: center;
+        }
+
+        .hp-title h2 {
+          margin: 0 0 26px;
+          font-size: clamp(46px, 6.1vw, 98px);
+          font-weight: 500;
+          letter-spacing: -.065em;
+          line-height: .96;
+        }
+
+        .hp-title > p:last-child {
+          max-width: 560px;
+          margin: auto;
+          color: #777;
+          font-size: 18px;
+          line-height: 1.55;
+        }
+
+        .hp-light p {
+          color: #929292;
+        }
+
+        .hp-badges .hp-title .hp-eyebrow {
+          color: #fff;
+          font-size: 12px;
+          font-weight: 300;
+          letter-spacing: .14em;
+        }
+
+        .hp-badge-scene {
+          position: relative;
+          max-width: 1450px;
+          aspect-ratio: 16/9;
+          margin: auto;
+          overflow: hidden;
+          border: 1px solid #282828;
+          border-radius: 18px;
+          background: #111;
+        }
+
+        .hp-badge-video {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .hp-video-gradient {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: linear-gradient(180deg, rgba(0,0,0,.14) 30%, rgba(0,0,0,.72) 100%), linear-gradient(90deg, rgba(0,0,0,.34), transparent 44%, rgba(0,0,0,.18));
+        }
+
+        .hp-badge-scene em {
+          position: absolute;
+          bottom: 28px;
+          left: 30px;
+          padding: 10px 15px;
+          border: 1px solid #777;
+          border-radius: 99px;
+          background: rgba(5,5,5,.28);
+          color: #ddd;
+          font-size: 11px;
+          font-style: normal;
+          letter-spacing: .1em;
+          backdrop-filter: blur(8px);
+        }
+
+        .hp-features,
+        .hp-stats {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          max-width: 1450px;
+          margin: 22px auto 0;
+        }
+
+        .hp-features article {
+          min-height: 250px;
+          padding: 34px;
+          border: 1px solid #292929;
+          border-right: 0;
+        }
+
+        .hp-features article:first-child {
+          border-radius: 16px 0 0 16px;
+        }
+
+        .hp-features article:last-child {
+          border-right: 1px solid #292929;
+          border-radius: 0 16px 16px 0;
+        }
+
+        .hp-features span {
+          display: block;
+          margin-bottom: 62px;
+          color: var(--mint);
+          font-size: 11px;
+        }
+
+        .hp-features h3 {
+          margin: 0 0 14px;
+          font-size: 23px;
+          font-weight: 400;
+          letter-spacing: -.03em;
+        }
+
+        .hp-features p {
+          max-width: 360px;
+          margin: 0;
+          color: #8e8e8e;
+          font-size: 15px;
+          line-height: 1.55;
+        }
+
+        .hp-quality {
+          background: var(--soft);
+        }
+
+        .hp-stats {
+          border-top: 1px solid var(--line);
+        }
+
+        .hp-stats article {
+          padding: 58px 34px 12px;
+          text-align: center;
+        }
+
+        .hp-stats article + article {
+          border-left: 1px solid var(--line);
+        }
+
+        .hp-stats strong {
+          display: block;
+          margin-bottom: 30px;
+          font-size: clamp(60px, 7vw, 108px);
+          font-weight: 500;
+          letter-spacing: -.07em;
+          line-height: .9;
+        }
+
+        .hp-stats sup {
+          color: #777;
+          font-size: .48em;
+          font-weight: 500;
+        }
+
+        .hp-stats p {
+          margin: 0;
+          color: #555;
+          font-size: 16px;
+          line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+          .hp-hero {
+            padding: 50px 14px 14px;
+          }
+
+          .hp-intro {
+            display: block;
+            margin-bottom: 42px;
+            padding: 0 6px;
+          }
+
+          .hp-intro h1 {
+            font-size: clamp(48px, 12.5vw, 76px);
+          }
+
+          .hp-material-copy {
+            margin-top: 28px;
+          }
+
+          .hp-lead {
+            font-size: 20px;
+          }
+
+          .hp-products {
+            grid-template-columns: 1fr;
+          }
+
+          .hp-product {
+            min-height: 440px;
+          }
+
+          .hp-product-mats {
+            min-height: 560px;
+            background: #111;
+          }
+
+          .hp-features,
+          .hp-stats {
+            grid-template-columns: 1fr;
+          }
+
+          .hp-features article {
+            min-height: auto;
+            border-right: 1px solid #292929;
+            border-bottom: 0;
+          }
+
+          .hp-features article:first-child {
+            border-radius: 14px 14px 0 0;
+          }
+
+          .hp-features article:last-child {
+            border-bottom: 1px solid #292929;
+            border-radius: 0 0 14px 14px;
+          }
+
+          .hp-features span {
+            margin-bottom: 30px;
+          }
+
+          .hp-stats article + article {
+            border-top: 1px solid var(--line);
+            border-left: 0;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .hp-hero-kicker {
+            gap: 5px;
+            letter-spacing: .1em;
+          }
+
+          .hp-material-details {
+            max-width: 350px;
+            gap: 0 7px;
+            letter-spacing: .09em;
+          }
+
+          .hp-product {
+            min-height: 58vh;
+            border-radius: 12px;
+          }
+
+          .hp-product-mats {
+            min-height: 0;
+            aspect-ratio: 2/3;
+          }
+
+          .hp-product-mats img {
+            object-fit: cover;
+            object-position: center;
+          }
+
+          .hp-product strong {
+            right: 72px;
+            font-size: 27px;
+          }
+
+          .hp-product-mats strong {
+            max-width: 245px;
+            line-height: 1.15;
+          }
+
+          .hp-product b {
+            right: 20px;
+            bottom: 20px;
+            width: 46px;
+            height: 46px;
+          }
+
+          .hp-badges,
+          .hp-quality {
+            padding: 90px 16px;
+          }
+
+          .hp-title {
+            margin-bottom: 55px;
+            text-align: left;
+          }
+
+          .hp-title h2 {
+            font-size: 45px;
+          }
+
+          .hp-title > p:last-child {
+            margin-left: 0;
+            font-size: 16px;
+          }
+
+          .hp-badge-scene {
+            aspect-ratio: 16/9;
+            border-radius: 12px;
+          }
+
+          .hp-badge-scene em {
+            bottom: 16px;
+            left: 16px;
+          }
+
+          .hp-features article {
+            padding: 28px 24px;
+          }
+
+          .hp-stats article {
+            padding: 46px 10px;
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .hp-root * {
+            transition-duration: .01ms !important;
+          }
+        }
+      `}</style>
+
+      <div className="hp-root">
+        <section className="hp-hero" id="catalog">
+          <div className="hp-intro">
+            <p className="hp-eyebrow hp-hero-kicker"><span aria-hidden="true">🇺🇦</span><span>Виготовляємо стабільно якісно з 2020 року</span></p>
+            <h1>Преміальні<br/>автоаксесуари Carzo</h1>
+            <div className="hp-material-copy">
+              <p className="hp-lead">Німецька автомобільна еко-шкіра створена для авто</p>
+              <p className="hp-material-details"><span>ВИСОКОЯКІСНА ТА ЗНОСОСТІЙКА</span></p>
+            </div>
+          </div>
+          <div className="hp-products">
+            <a className="hp-product hp-product-case" href="/case/design/l/4-0">
+              <img src="/case.jpg" alt="Чорний автокейс Carzo у багажнику"/>
+              <i/><small>Магнітна система</small><strong>Premium автокейси</strong><b><Arrow/></b>
+            </a>
+            <a className="hp-product hp-product-mats" href="/catalog-carmat">
+              <img src="/mats.png" alt="Комплект чорних автокилимків Carzo"/>
+              <i/><small>Точність лекал</small><strong>Premium автокилимки</strong><b><Arrow/></b>
+            </a>
+          </div>
+        </section>
+
+        <section className="hp-badges" id="badges">
+          <div className="hp-title hp-light"><p className="hp-eyebrow">Власне виробництво</p><h2>Високоякісні<br/>шильди</h2><p>Від фрезування металу до готової деталі — усе контролюємо самі.</p></div>
+          <div className="hp-badge-scene">
+            <video className="hp-badge-video" autoPlay muted loop playsInline preload="metadata" aria-label="Металеві автомобільні шильди Carzo">
+              <source src="/carzo-badges.mp4" type="video/mp4"/>
+            </video>
+            <span className="hp-video-gradient"/>
+            <em>20 × 80 мм</em>
+          </div>
+          <div className="hp-features">
+            <article><span>01</span><h3>Фрезування металу</h3><p>Основний процес виготовлення — точне фрезування металевої основи.</p></article>
+            <article><span>02</span><h3>Для виробів Carzo</h3><p>Додайте фірмовий шильд до автокейса за привабливою ціною.</p></article>
+            <article><span>03</span><h3>Стандартні та індивідуальні</h3><p>Готові рішення для популярних марок та виготовлення за вашим дизайном.</p></article>
+          </div>
+        </section>
+
+        <section className="hp-quality" id="quality">
+          <div className="hp-title"><p className="hp-eyebrow">Carzo у цифрах</p><h2>Відмінна якість<br/>продукту та обслуговування</h2></div>
+          <div className="hp-stats">
+            <article><strong>15K<sup>+</sup></strong><p>задоволених клієнтів<br/>зі всієї країни</p></article>
+            <article><strong>24<sup>%</sup></strong><p>клієнтів здійснюють<br/>повторну покупку</p></article>
+            <article><strong>&lt;1<sup>%</sup></strong><p>звернень із проханням<br/>повернути або обміняти товар</p></article>
+          </div>
+        </section>
+      </div>
+    </>
+  );
+}
