@@ -78,7 +78,7 @@ export default async function Page({ params }: PageProps) {
   const productDescription = buildMetaDescription(parsed.params, catalog);
   const { selectedVariant } = content.pricing;
   const firstImage = content.gallery.find(img => !img.isPlaceholder);
-  const productImage = firstImage ? absoluteSiteUrl(firstImage.src) : absoluteSiteUrl('/og-image.svg');
+  const productImage = firstImage ? absoluteSiteUrl(firstImage.src) : absoluteSiteUrl('/case.jpg');
 
   const productSchema = {
     '@context': 'https://schema.org',
