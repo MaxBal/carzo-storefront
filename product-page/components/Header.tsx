@@ -21,7 +21,7 @@ const navigation: NavItem[] = [
     href: '/case/design/m/2-0',
     children: [
       { label: 'Автокейси', href: '/case/design/m/2-0' },
-      { label: 'Автокилимки', href: '#' },
+      { label: 'Автокилимки', href: '/catalog-carmat' },
     ],
   },
   {

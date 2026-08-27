@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { ChevronDown, Phone } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useModalContext } from './ModalProvider';
 import { CARZO_LINKS } from '@/lib/links';
 
 const catalogLinks = [
   { label: 'Автокейси', href: '/case/design/m/2-0' },
-  { label: 'Автокилимки', href: '#' },
+  { label: 'Автокилимки', href: '/catalog-carmat' },
 ];
 
 const customerLinks = [
@@ -38,8 +39,11 @@ interface FooterProps {
 }
 
 export default function Footer({ siteFlag = '/flag-ua.svg' }: FooterProps) {
+  const pathname = usePathname();
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const modalCtx = useModalContext();
+
+  if (pathname === '/catalog-carmat') return null;
 
   const toggleAccordion = (label: string) => {
     setOpenAccordion(prev => prev === label ? null : label);
