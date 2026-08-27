@@ -3,6 +3,7 @@ import Header from '@/components/Header';
 import HomePageContent from '@/components/HomePageContent';
 import { siteOrigin } from '@/lib/seo';
 import { getHomepageData } from '@/lib/content/homepage';
+import { getSiteFlag } from '@/lib/content/site-flag';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin()),
@@ -37,11 +38,12 @@ export const metadata: Metadata = {
 
 export default async function Home() {
   const homepageData = await getHomepageData();
+  const siteFlag = await getSiteFlag();
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
-      <HomePageContent data={homepageData} />
+      <Header siteFlag={siteFlag} />
+      <HomePageContent data={homepageData} siteFlag={siteFlag} />
     </div>
   );
 }

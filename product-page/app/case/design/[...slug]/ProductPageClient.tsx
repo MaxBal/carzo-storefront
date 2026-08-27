@@ -8,14 +8,15 @@ import type { ProductParams, ResolvedProductContent } from '@/lib/content/types'
 interface ProductPageClientProps {
   params: ProductParams;
   content: ResolvedProductContent;
+  siteFlag?: string;
 }
 
-export default function ProductPageClient({ params, content }: ProductPageClientProps) {
+export default function ProductPageClient({ params, content, siteFlag }: ProductPageClientProps) {
   const gallerySelection = `${params.designSlug}:${params.size}`;
 
   return (
     <div className="min-h-screen bg-white">
-      <Header sticky={false} />
+      <Header sticky={false} siteFlag={siteFlag} />
 
       <main>
         {/* Desktop: padded container with two columns */}

@@ -202,7 +202,7 @@ function PageBlock({ block }: { block: CmsPageBlock }) {
   }
 }
 
-export default function PageRenderer({ page, preview = false }: { page: CmsPage; preview?: boolean }) {
+export default function PageRenderer({ page, preview = false, siteFlag }: { page: CmsPage; preview?: boolean; siteFlag?: string }) {
   return (
     <div className="min-h-screen bg-white">
       {preview && (
@@ -211,7 +211,7 @@ export default function PageRenderer({ page, preview = false }: { page: CmsPage;
           <a href="/api/draft/disable" className="underline">Вийти</a>
         </div>
       )}
-      {page.showHeader && <Header />}
+      {page.showHeader && <Header siteFlag={siteFlag} />}
       <main>
         {page.blocks.length > 0 ? page.blocks.map(block => <PageBlock key={block.id || block.key} block={block} />) : (
           <section className="px-4 py-24 text-center">

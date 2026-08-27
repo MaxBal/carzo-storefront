@@ -7,15 +7,16 @@ const Arrow = () => <svg viewBox="0 0 24 24"><path d="M5 12h13M13 6l6 6-6 6"/></
 
 interface HomePageContentProps {
   data: HomepageData;
+  siteFlag?: string;
 }
 
-export default function HomePageContent({ data }: HomePageContentProps) {
+export default function HomePageContent({ data, siteFlag = '/flag-ua.svg' }: HomePageContentProps) {
   return (
     <div className="hp-root">
       <section className="hp-hero" id="catalog">
         <div className="hp-intro">
           <p className="hp-eyebrow hp-hero-kicker">
-            <span aria-hidden="true">🇺🇦</span>
+            <img src={siteFlag} alt="" width="16" height="12" className="inline-block align-middle" aria-hidden="true" />
             <span>{data.hero.eyebrow}</span>
           </p>
           <h1>{data.hero.title}</h1>

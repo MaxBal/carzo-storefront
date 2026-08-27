@@ -279,6 +279,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
           featureMaterialText: string(siteSettings[0].feature_material_text),
           richSignoff: string(siteSettings[0].rich_signoff),
           mediaPlaceholder,
+          siteFlag: assetUrl(siteSettings[0].site_flag, DEFAULT_CONTENT_SOURCE.siteSettings.siteFlag),
         }
       : DEFAULT_CONTENT_SOURCE.siteSettings,
   };

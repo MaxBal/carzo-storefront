@@ -101,7 +101,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
   );
 }
 
-export default function Header({ sticky = true }: { sticky?: boolean }) {
+export default function Header({ sticky = true, siteFlag = '/flag-ua.svg' }: { sticky?: boolean; siteFlag?: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileAccordion, setMobileAccordion] = useState<Record<string, boolean>>({ Каталог: true });
   const [openBlogModal, setOpenBlogModal] = useState(false);
@@ -304,7 +304,8 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
               Зателефонувати з 10:00 до 20:00
             </a>
             <p className="mt-5 text-center text-[14px] leading-[18px] text-white">
-              🇺🇦 Сконструйовано та виготовлено в Україні
+              <img src={siteFlag} alt="" width="16" height="12" className="inline-block align-middle mr-1" aria-hidden="true" />
+              Сконструйовано та виготовлено в Україні
             </p>
           </div>
         </div>

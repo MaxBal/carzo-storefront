@@ -6,6 +6,7 @@ import ModalProvider from '@/components/ModalProvider';
 import Footer from '@/components/Footer';
 import { siteOrigin } from '@/lib/seo';
 import { getBenefitModals } from '@/lib/content/global-modals';
+import { getSiteFlag } from '@/lib/content/site-flag';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
@@ -64,6 +65,7 @@ const organizationSchema = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const benefitModals = await getBenefitModals();
+  const siteFlag = await getSiteFlag();
 
   return (
     <html lang="uk">
@@ -78,7 +80,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <CartProvider>
           <ModalProvider benefitModals={benefitModals}>
             {children}
-            <Footer />
+            <Footer siteFlag={siteFlag} />
           </ModalProvider>
         </CartProvider>
       </body>

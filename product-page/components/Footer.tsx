@@ -33,7 +33,11 @@ const legalLinks = [
   { label: 'Публічна оферта', href: '/public-offer' },
 ];
 
-export default function Footer() {
+interface FooterProps {
+  siteFlag?: string;
+}
+
+export default function Footer({ siteFlag = '/flag-ua.svg' }: FooterProps) {
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const modalCtx = useModalContext();
 
@@ -175,7 +179,8 @@ export default function Footer() {
       <div className="md:hidden">
         <div className="px-4 py-8">
           <p className="text-center text-[14px] text-white">
-            🇺🇦 Сконструйовано та виготовлено в Україні
+            <img src={siteFlag} alt="" width="16" height="12" className="inline-block align-middle mr-1" aria-hidden="true" />
+            Сконструйовано та виготовлено в Україні
           </p>
           <a
             href={CARZO_LINKS.phone}

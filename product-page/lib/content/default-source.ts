@@ -127,6 +127,7 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     featureMaterialText: seed.siteSettings.featureMaterialText,
     richSignoff: seed.siteSettings.richSignoff,
     mediaPlaceholder: '/media/landscape-placeholder.svg',
+    siteFlag: '/flag-ua.svg',
   },
   reviews: {
     settings: {

@@ -12831,6 +12831,52 @@
       }
     },
     {
+      "collection": "carzo_site_settings",
+      "field": "site_flag",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_site_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "site_flag",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Прапор країни (SVG/PNG). Використовується в хедері, футері та на головній.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 47,
+        "special": [
+          "file"
+        ],
+        "translations": null,
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "site_flag",
+        "table": "carzo_site_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
       "collection": "carzo_size_shipping",
       "field": "id",
       "type": "uuid",
@@ -14953,6 +14999,31 @@
         "foreign_key_table": "directus_files",
         "foreign_key_column": "id",
         "constraint_name": "carzo_site_settings_about_process_image_3_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_site_settings",
+      "field": "site_flag",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_site_settings",
+        "many_field": "site_flag",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_site_settings",
+        "column": "site_flag",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_site_settings_site_flag_foreign",
         "on_update": "NO ACTION",
         "on_delete": "SET NULL"
       }

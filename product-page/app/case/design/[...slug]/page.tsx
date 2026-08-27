@@ -108,7 +108,7 @@ export default async function Page({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
       />
-      <ProductPageClient params={parsed.params} content={content} />
+      <ProductPageClient params={parsed.params} content={content} siteFlag={content.siteSettings.siteFlag} />
     </>
   );
 }

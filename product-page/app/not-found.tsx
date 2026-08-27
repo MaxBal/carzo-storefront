@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Header from '@/components/Header';
+import { getSiteFlag } from '@/lib/content/site-flag';
 
 export const metadata: Metadata = {
   title: 'Сторінку не знайдено',
@@ -8,10 +9,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function NotFound() {
+export default async function NotFound() {
+  const siteFlag = await getSiteFlag();
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <Header />
+      <Header siteFlag={siteFlag} />
       <main className="relative flex flex-1 items-center overflow-hidden bg-[#f5f7f6] px-4 py-20 sm:px-6 lg:px-8">
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 text-center text-[13rem] font-black leading-none tracking-[-0.08em] text-black/[0.035] sm:text-[22rem]">
           404

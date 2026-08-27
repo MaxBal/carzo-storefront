@@ -261,6 +261,7 @@ export interface SiteSettings {
   featureMaterialText: string;
   richSignoff: string;
   mediaPlaceholder: string;
+  siteFlag: string;
 }
 
 export interface ProductCatalog {

@@ -552,6 +552,7 @@ const collections = [
     shortText('feature_material_flag', { required: true, width: 'half' }),
     shortText('feature_material_text', { required: true }),
     shortText('rich_signoff', { required: true }),
+    imageField('site_flag', 'Прапор країни (SVG/PNG). Використовується в хедері, футері та на головній.'),
     longText('checkout_payment_details', {
       note: 'Показується під способом зв’язку під час оформлення замовлення. Порожнє значення приховує блок на сайті.',
       placeholder: 'Тут треба вставити реквізити',
@@ -649,6 +650,7 @@ const relations = [
   { collection: 'carzo_site_settings', field: 'about_process_image_1', relatedCollection: 'directus_files' },
   { collection: 'carzo_site_settings', field: 'about_process_image_2', relatedCollection: 'directus_files' },
   { collection: 'carzo_site_settings', field: 'about_process_image_3', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'site_flag', relatedCollection: 'directus_files' },
   {
     collection: 'carzo_order_items',
     field: 'order',
