@@ -1456,7 +1456,7 @@ async function seedItems() {
       { key: 'review-3', reviewText: 'Швидка доставка, якісна упаковка. Автокейс виглядає як на фото.', customerName: 'Ігор', reviewDate: '2026-03-15', rating: 5, sort: 3 },
     ],
     reviews_screenshots: [],
-    homepage_hero_eyebrow: 'Виготовляємо стабільно якісно з 2020 року',
+    homepage_hero_eyebrow: 'Стабільно якісно з 2020 року',
     homepage_hero_title: 'Преміальні\nавтоаксесуари Carzo',
     homepage_hero_lead: 'Німецька автомобільна еко-шкіра створена для авто',
     homepage_hero_material_tag: 'ВИСОКОЯКІСНА ТА ЗНОСОСТІЙКА',
