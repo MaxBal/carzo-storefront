@@ -193,14 +193,14 @@
 .modal-title {
   color: #111827;
   font: inherit;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 600;
   line-height: 1.25;
 }
 
 @media (min-width: 768px) {
   .modal-title {
-    font-size: 22px;
+    font-size: 20px;
   }
 }
 
@@ -311,7 +311,7 @@
   margin-bottom: 8px;
   color: #111827;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -320,7 +320,7 @@
 .modal-body-text {
   color: #4d4d4d;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.5;
 }
@@ -336,7 +336,7 @@
 .modal-card-title {
   color: #111827;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.35;
 }

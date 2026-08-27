@@ -221,8 +221,8 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
         {/* Price */}
         <div className="mt-4 flex flex-wrap items-center gap-[14px]">
-          <span className="text-[24px] font-bold leading-none text-gray-900 md:text-[32px]">{currentPrice} ₴</span>
-          <span className="ml-0.5 text-base font-medium text-[#9aa1ac] line-through">{oldPrice} ₴</span>
+          <span className="text-[28px] font-bold leading-none text-gray-900 md:text-[36px]">{currentPrice} ₴</span>
+          <span className="ml-0.5 text-[17px] font-medium text-[#5A5A5A] line-through md:text-[20px]">{oldPrice} ₴</span>
           <span className="ml-3 whitespace-nowrap rounded-full bg-[#ffe3cc] px-[13px] py-[5px] text-sm font-semibold leading-none text-[#f97316]">
             SALE {oldPrice - currentPrice}₴
           </span>

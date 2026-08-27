@@ -63,7 +63,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 text-[16px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+        className="flex items-center gap-2 text-[15px] font-medium leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
         aria-expanded={open}
       >
         {item.label}
@@ -165,7 +165,7 @@ export default function Header() {
                   key={item.label}
                   type="button"
                   onClick={() => setOpenBlogModal(true)}
-                  className="text-[16px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[15px] font-medium leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </button>
@@ -173,7 +173,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-[16px] font-normal leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[15px] font-medium leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </Link>

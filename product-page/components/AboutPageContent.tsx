@@ -36,7 +36,7 @@ export default function AboutPageContent() {
           max-width: 1120px;
           margin: 0;
           font-size: clamp(52px, 6.1vw, 108px);
-          font-weight: 400;
+          font-weight: 700;
           letter-spacing: -.075em;
           line-height: .88;
         }
@@ -107,7 +107,7 @@ export default function AboutPageContent() {
         .process-text h2 {
           margin: 0 0 clamp(18px, 1.8vw, 28px);
           font-size: clamp(30px, 3vw, 48px);
-          font-weight: 400;
+          font-weight: 600;
           letter-spacing: -.05em;
           line-height: 1.05;
         }
@@ -161,7 +161,7 @@ export default function AboutPageContent() {
         .about-section-header h2 {
           margin: 0;
           font-size: clamp(40px, 5vw, 80px);
-          font-weight: 400;
+          font-weight: 600;
           letter-spacing: -.06em;
           line-height: .96;
         }
@@ -200,7 +200,7 @@ export default function AboutPageContent() {
         .principle h3 {
           margin: 0 0 14px;
           font-size: clamp(19px, 1.5vw, 24px);
-          font-weight: 400;
+          font-weight: 500;
           letter-spacing: -.03em;
         }
 
@@ -233,7 +233,7 @@ export default function AboutPageContent() {
 
         .year-start {
           font-size: clamp(60px, 7vw, 120px);
-          font-weight: 300;
+          font-weight: 700;
           letter-spacing: -.06em;
           line-height: .85;
           color: #fff;
@@ -253,7 +253,7 @@ export default function AboutPageContent() {
         .development-copy h2 {
           margin: 0 0 clamp(16px, 1.5vw, 24px);
           font-size: clamp(24px, 2.2vw, 36px);
-          font-weight: 400;
+          font-weight: 600;
           letter-spacing: -.04em;
           line-height: 1.1;
         }
