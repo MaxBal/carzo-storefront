@@ -120,8 +120,8 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
 
         .process-text p {
           margin: 0 0 14px;
-          color: #999;
-          font-size: clamp(15px, 1.1vw, 17px);
+          color: #ffffff;
+          font-size: 18px;
           line-height: 1.6;
         }
 
