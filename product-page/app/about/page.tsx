@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import AboutPageContent from '@/components/AboutPageContent';
+import { getAboutData } from '@/lib/content/about';
 
 export const metadata: Metadata = {
   title: 'Про нас — Carzo',
@@ -32,11 +33,12 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const data = await getAboutData();
   return (
     <div className="min-h-screen">
       <Header />
-      <AboutPageContent />
+      <AboutPageContent data={data} />
     </div>
   );
 }
