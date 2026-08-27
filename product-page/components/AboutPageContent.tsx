@@ -454,27 +454,30 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
         {/* Three key blocks */}
         <section className="about-process">
           <div className="about-container">
-            {data.processBlocks.map((block, i) => (
-              <div
-                key={block.index}
-                className={`process-block${i % 2 === 1 ? ' process-block--reversed' : ''}`}
-              >
-                <div className="process-text">
-                  <span className="process-index">{block.index}</span>
-                  <h2>{block.title}</h2>
-                  <p>{block.paragraph1}</p>
-                  <p>{block.paragraph2}</p>
+            {data.processBlocks.map((block, i) => {
+              const processImages = [data.processImage1, data.processImage2, data.processImage3];
+              return (
+                <div
+                  key={block.index}
+                  className={`process-block${i % 2 === 1 ? ' process-block--reversed' : ''}`}
+                >
+                  <div className="process-text">
+                    <span className="process-index">{block.index}</span>
+                    <h2>{block.title}</h2>
+                    <p>{block.paragraph1}</p>
+                    <p>{block.paragraph2}</p>
+                  </div>
+                  <div className="process-media">
+                    <img
+                      src={processImages[i]}
+                      alt={block.title}
+                      width={1672}
+                      height={941}
+                    />
+                  </div>
                 </div>
-                <div className="process-media">
-                  <img
-                    src={block.imageField}
-                    alt={block.title}
-                    width={1672}
-                    height={941}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

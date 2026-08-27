@@ -584,7 +584,10 @@ const collections = [
     shortText('about_hero_title'),
     longText('about_hero_paragraph_1'),
     longText('about_hero_paragraph_2'),
-    json('about_process_blocks', 'Масив блоків процесу [{ index, title, paragraph1, paragraph2, imageField }].'),
+    json('about_process_blocks', 'Масив блоків процесу [{ index, title, paragraph1, paragraph2 }].'),
+    imageField('about_process_image_1', 'Фото для блоку «Розробляємо самостійно».'),
+    imageField('about_process_image_2', 'Фото для блоку «Виготовляємо на власному виробництві».'),
+    imageField('about_process_image_3', 'Фото для блоку «Перевіряємо на практиці».'),
     shortText('about_principles_eyebrow'),
     shortText('about_principles_title'),
     json('about_principles_items', 'Масив принципів [{ index, title, description }].'),
@@ -643,6 +646,9 @@ const relations = [
   { collection: 'carzo_rich_section_images', field: 'section', relatedCollection: 'carzo_rich_sections', schema: { on_delete: 'CASCADE' } },
   { collection: 'carzo_rich_section_images', field: 'image', relatedCollection: 'directus_files' },
   { collection: 'carzo_media_settings', field: 'image', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'about_process_image_1', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'about_process_image_2', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'about_process_image_3', relatedCollection: 'directus_files' },
   {
     collection: 'carzo_order_items',
     field: 'order',
@@ -1426,6 +1432,10 @@ async function seedItems() {
     });
   }
 
+  const aboutProcessImage1Id = await ensureFile('public/about-design.png', folder.id);
+  const aboutProcessImage2Id = await ensureFile('public/about-production.png', folder.id);
+  const aboutProcessImage3Id = await ensureFile('public/about-testing.png', folder.id);
+
   await upsertSingleton('carzo_site_settings', {
     status: 'published', design_info_text: seed.siteSettings.designInfoText,
     feature_magnetic_text: seed.siteSettings.featureMagneticText,
@@ -1476,9 +1486,9 @@ async function seedItems() {
     about_hero_paragraph_1: 'Carzo — український бренд автомобільних аксесуарів, який ми розвиваємо з 2020 року.',
     about_hero_paragraph_2: 'Розробляємо продукцію та відповідаємо за її якість на всіх етапах — від задуму до готового виробу. Для нас важливі якісні матеріали, продумані рішення, акуратне виконання й увага до деталей.',
     about_process_blocks: [
-      { index: '01', title: 'Розробляємо самостійно', paragraph1: 'Ми не працюємо з готовими типовими рішеннями. Конструкції, лекала та ключові елементи продуктів розробляємо самостійно.', paragraph2: 'Для автомобільних килимків створюємо власні лекала під конкретні моделі авто, приділяючи увагу точності геометрії та посадки. Для автокейсів розробляємо конструкцію, розміри й функціональні елементи.', imageField: '/about-design.png' },
-      { index: '02', title: 'Виготовляємо на власному виробництві', paragraph1: 'Власне виробництво дає змогу контролювати всі етапи роботи: поведінку матеріалів, точність виготовлення та поєднання деталей, якість виконання й можливості для вдосконалення технології.', paragraph2: 'Це також дозволяє оперативно впроваджувати зміни, коли вони роблять продукт кращим.', imageField: '/about-production.png' },
-      { index: '03', title: 'Перевіряємо на практиці', paragraph1: 'Перед запуском у продаж нові продукти тестуємо самостійно — оцінюємо зручність, надійність, зносостійкість і поведінку матеріалів у щоденній експлуатації.', paragraph2: 'Автомобільні килимки Carzo протягом пів року тестували у власному автомобілі: перевіряли точність посадки, зручність користування та стійкість до різних умов. Лише після цього продукт запустили в продаж.', imageField: '/about-testing.png' },
+      { index: '01', title: 'Розробляємо самостійно', paragraph1: 'Ми не працюємо з готовими типовими рішеннями. Конструкції, лекала та ключові елементи продуктів розробляємо самостійно.', paragraph2: 'Для автомобільних килимків створюємо власні лекала під конкретні моделі авто, приділяючи увагу точності геометрії та посадки. Для автокейсів розробляємо конструкцію, розміри й функціональні елементи.' },
+      { index: '02', title: 'Виготовляємо на власному виробництві', paragraph1: 'Власне виробництво дає змогу контролювати всі етапи роботи: поведінку матеріалів, точність виготовлення та поєднання деталей, якість виконання й можливості для вдосконалення технології.', paragraph2: 'Це також дозволяє оперативно впроваджувати зміни, коли вони роблять продукт кращим.' },
+      { index: '03', title: 'Перевіряємо на практиці', paragraph1: 'Перед запуском у продаж нові продукти тестуємо самостійно — оцінюємо зручність, надійність, зносостійкість і поведінку матеріалів у щоденній експлуатації.', paragraph2: 'Автомобільні килимки Carzo протягом пів року тестували у власному автомобілі: перевіряли точність посадки, зручність користування та стійкість до різних умов. Лише після цього продукт запустили в продаж.' },
     ],
     about_principles_eyebrow: 'Наш підхід',
     about_principles_title: 'Наші принципи',
@@ -1491,6 +1501,9 @@ async function seedItems() {
     about_development_title: 'Розвиток Carzo з 2020 року',
     about_development_text: 'Для нас розвиток — це не лише роки роботи чи кількість проданих виробів, а передусім те, як змінюється продукт і наскільки кращою стає кожна його наступна версія.',
     about_statement_text: 'Ми самостійно розробляємо та виготовляємо продукцію Carzo й відповідаємо за кожен продукт, що виходить під нашим брендом.',
+    about_process_image_1: aboutProcessImage1Id,
+    about_process_image_2: aboutProcessImage2Id,
+    about_process_image_3: aboutProcessImage3Id,
   });
 
   const mediaSettings = await request('/items/carzo_media_settings?fields=*');

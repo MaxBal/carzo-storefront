@@ -20,12 +20,21 @@ function string(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback;
 }
 
+function assetUrl(file: unknown, fallback = '') {
+  const directusUrl = getDirectusUrl();
+  if (!directusUrl || !file) return fallback;
+  const id = typeof file === 'string' ? file : (file as RecordValue).id;
+  if (typeof id !== 'string') return fallback;
+  return getDirectusToken()
+    ? `/api/directus-assets/${encodeURIComponent(id)}`
+    : `${directusUrl}/assets/${id}`;
+}
+
 export interface AboutProcessBlock {
   index: string;
   title: string;
   paragraph1: string;
   paragraph2: string;
-  imageField: string;
 }
 
 export interface AboutPrincipleItem {
@@ -42,6 +51,9 @@ export interface AboutData {
     paragraph2: string;
   };
   processBlocks: AboutProcessBlock[];
+  processImage1: string;
+  processImage2: string;
+  processImage3: string;
   principles: {
     eyebrow: string;
     title: string;
@@ -69,23 +81,23 @@ const DEFAULT_ABOUT: AboutData = {
       title: 'Розробляємо самостійно',
       paragraph1: 'Ми не працюємо з готовими типовими рішеннями. Конструкції, лекала та ключові елементи продуктів розробляємо самостійно.',
       paragraph2: 'Для автомобільних килимків створюємо власні лекала під конкретні моделі авто, приділяючи увагу точності геометрії та посадки. Для автокейсів розробляємо конструкцію, розміри й функціональні елементи.',
-      imageField: '/about-design.png',
     },
     {
       index: '02',
       title: 'Виготовляємо на власному виробництві',
       paragraph1: 'Власне виробництво дає змогу контролювати всі етапи роботи: поведінку матеріалів, точність виготовлення та поєднання деталей, якість виконання й можливості для вдосконалення технології.',
       paragraph2: 'Це також дозволяє оперативно впроваджувати зміни, коли вони роблять продукт кращим.',
-      imageField: '/about-production.png',
     },
     {
       index: '03',
       title: 'Перевіряємо на практиці',
       paragraph1: 'Перед запуском у продаж нові продукти тестуємо самостійно — оцінюємо зручність, надійність, зносостійкість і поведінку матеріалів у щоденній експлуатації.',
       paragraph2: 'Автомобільні килимки Carzo протягом пів року тестували у власному автомобілі: перевіряли точність посадки, зручність користування та стійкість до різних умов. Лише після цього продукт запустили в продаж.',
-      imageField: '/about-testing.png',
     },
   ],
+  processImage1: '/about-design.png',
+  processImage2: '/about-production.png',
+  processImage3: '/about-testing.png',
   principles: {
     eyebrow: 'Наш підхід',
     title: 'Наші принципи',
@@ -128,7 +140,6 @@ function parseProcessBlocks(raw: unknown): AboutProcessBlock[] {
     title: string(item.title) || DEFAULT_ABOUT.processBlocks[index]?.title || '',
     paragraph1: string(item.paragraph1) || DEFAULT_ABOUT.processBlocks[index]?.paragraph1 || '',
     paragraph2: string(item.paragraph2) || DEFAULT_ABOUT.processBlocks[index]?.paragraph2 || '',
-    imageField: string(item.imageField) || DEFAULT_ABOUT.processBlocks[index]?.imageField || '',
   }));
 }
 
@@ -166,6 +177,9 @@ export const getAboutData = cache(async (): Promise<AboutData> => {
         paragraph2: string(data.about_hero_paragraph_2, DEFAULT_ABOUT.hero.paragraph2),
       },
       processBlocks: parseProcessBlocks(data.about_process_blocks),
+      processImage1: assetUrl(data.about_process_image_1, DEFAULT_ABOUT.processImage1),
+      processImage2: assetUrl(data.about_process_image_2, DEFAULT_ABOUT.processImage2),
+      processImage3: assetUrl(data.about_process_image_3, DEFAULT_ABOUT.processImage3),
       principles: {
         eyebrow: string(data.about_principles_eyebrow, DEFAULT_ABOUT.principles.eyebrow),
         title: string(data.about_principles_title, DEFAULT_ABOUT.principles.title),
