@@ -63,14 +63,14 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 text-[18px] font-medium leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+        className="flex items-center gap-2 text-[16px] font-normal leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
         aria-expanded={open}
       >
         {item.label}
         <ChevronDown size={15} strokeWidth={1.8} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && item.children && (
-        <div className="absolute left-0 top-full z-50 mt-2 min-w-[180px] rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-2 min-w-[180px] rounded-xl border border-white/10 bg-black/90 py-1.5 shadow-lg backdrop-blur-sm">
           {item.children.map(child => (
             child.isModal ? (
               <button
@@ -80,7 +80,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
                   setOpen(false);
                   onModalClick?.(child.label);
                 }}
-                className="block w-full px-4 py-2 text-left text-[16px] text-[#A2A2A2] transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
+                className="block w-full px-4 py-2 text-left text-[16px] text-white transition-colors hover:text-[#5ce4ab]"
               >
                 {child.label}
               </button>
@@ -89,7 +89,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
                 key={child.label}
                 href={child.href}
                 onClick={() => setOpen(false)}
-                className="block px-4 py-2 text-[16px] text-[#A2A2A2] transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
+                className="block px-4 py-2 text-[16px] text-white transition-colors hover:text-[#5ce4ab]"
               >
                 {child.label}
               </Link>
@@ -131,7 +131,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
 
   return (
     <>
-      <header className={`z-50 h-14 bg-black ${sticky ? 'sticky top-0' : 'relative'}`}>
+      <header className={`z-50 h-14 bg-black ${sticky ? 'sticky top-0' : 'relative'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4">
           <div className="flex items-center gap-[7px] md:hidden">
             <button
@@ -165,7 +165,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
                   key={item.label}
                   type="button"
                   onClick={() => setOpenBlogModal(true)}
-                  className="text-[18px] font-medium leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[16px] font-normal leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </button>
@@ -173,7 +173,7 @@ export default function Header({ sticky = true }: { sticky?: boolean }) {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-[18px] font-medium leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[16px] font-normal leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </Link>

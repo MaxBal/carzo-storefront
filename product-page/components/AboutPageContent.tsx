@@ -213,7 +213,7 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
         .principle p {
           max-width: 420px;
           margin: 0;
-          color: #fff;
+          color: #A2A2A2;
           font-size: 18px;
           line-height: 1.6;
         }
