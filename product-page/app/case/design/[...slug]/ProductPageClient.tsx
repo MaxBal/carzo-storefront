@@ -15,7 +15,7 @@ export default function ProductPageClient({ params, content }: ProductPageClient
 
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header sticky={false} />
 
       <main>
         {/* Desktop: padded container with two columns */}

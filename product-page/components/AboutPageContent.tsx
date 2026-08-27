@@ -54,8 +54,8 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
 
         .about-hero-copy p {
           margin: 0 0 16px;
-          color: #aaa;
-          font-size: clamp(17px, 1.3vw, 21px);
+          color: #fff;
+          font-size: 18px;
           font-weight: 400;
           line-height: 1.55;
         }
@@ -105,7 +105,7 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
           display: block;
           margin-bottom: clamp(24px, 3vw, 48px);
           color: #5ce4ab;
-          font-size: 12px;
+          font-size: 14px;
           font-weight: 300;
           letter-spacing: .12em;
         }
@@ -198,14 +198,14 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
           display: block;
           margin-bottom: clamp(20px, 2.5vw, 40px);
           color: #5ce4ab;
-          font-size: 11px;
+          font-size: 14px;
           font-weight: 300;
           letter-spacing: .12em;
         }
 
         .principle h3 {
           margin: 0 0 14px;
-          font-size: clamp(19px, 1.5vw, 24px);
+          font-size: 24px;
           font-weight: 500;
           letter-spacing: -.03em;
         }
@@ -213,8 +213,8 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
         .principle p {
           max-width: 420px;
           margin: 0;
-          color: #8e8e8e;
-          font-size: clamp(14px, 1vw, 16px);
+          color: #fff;
+          font-size: 18px;
           line-height: 1.6;
         }
 
@@ -267,8 +267,8 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
         .development-copy p {
           max-width: 560px;
           margin: 0;
-          color: #999;
-          font-size: clamp(15px, 1.1vw, 17px);
+          color: #fff;
+          font-size: 18px;
           line-height: 1.6;
         }
 
@@ -375,6 +375,10 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
             font-size: 26px;
           }
 
+          .process-index {
+            font-size: 12px;
+          }
+
           .about-principles {
             padding: 70px 0;
           }
@@ -393,11 +397,15 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
           }
 
           .principle h3 {
-            font-size: 18px;
+            font-size: 20px;
           }
 
           .principle p {
-            font-size: 14px;
+            font-size: 16px;
+          }
+
+          .principle-index {
+            font-size: 12px;
           }
 
           .about-development {
@@ -417,7 +425,7 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
           }
 
           .development-copy p {
-            font-size: 15px;
+            font-size: 16px;
           }
 
           .about-statement {

@@ -75,7 +75,7 @@ export interface HomepageData {
 
 const DEFAULT_HOMEPAGE: HomepageData = {
   hero: {
-    eyebrow: 'Виготовляємо стабільно якісно з 2020 року',
+    eyebrow: 'Стабільно якісно з 2020 року',
     title: 'Преміальні\nавтоаксесуари Carzo',
     lead: 'Німецька автомобільна еко-шкіра створена для авто',
     materialTag: 'ВИСОКОЯКІСНА ТА ЗНОСОСТІЙКА',

@@ -63,7 +63,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
       <button
         type="button"
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-2 text-[15px] font-medium leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+        className="flex items-center gap-2 text-[18px] font-medium leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
         aria-expanded={open}
       >
         {item.label}
@@ -80,7 +80,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
                   setOpen(false);
                   onModalClick?.(child.label);
                 }}
-                className="block w-full px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
+                className="block w-full px-4 py-2 text-left text-[16px] text-[#A2A2A2] transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
               >
                 {child.label}
               </button>
@@ -89,7 +89,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
                 key={child.label}
                 href={child.href}
                 onClick={() => setOpen(false)}
-                className="block px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
+                className="block px-4 py-2 text-[16px] text-[#A2A2A2] transition-colors hover:bg-gray-50 hover:text-[#5ce4ab]"
               >
                 {child.label}
               </Link>
@@ -101,7 +101,7 @@ function DesktopDropdown({ item, onModalClick }: { item: NavItem; onModalClick?:
   );
 }
 
-export default function Header() {
+export default function Header({ sticky = true }: { sticky?: boolean }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileAccordion, setMobileAccordion] = useState<Record<string, boolean>>({ Каталог: true });
   const [openBlogModal, setOpenBlogModal] = useState(false);
@@ -131,7 +131,7 @@ export default function Header() {
 
   return (
     <>
-      <header className="relative z-50 h-14 bg-black">
+      <header className={`z-50 h-14 bg-black ${sticky ? 'sticky top-0' : 'relative'}`}>
         <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4">
           <div className="flex items-center gap-[7px] md:hidden">
             <button
@@ -165,7 +165,7 @@ export default function Header() {
                   key={item.label}
                   type="button"
                   onClick={() => setOpenBlogModal(true)}
-                  className="text-[15px] font-medium leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[18px] font-medium leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </button>
@@ -173,7 +173,7 @@ export default function Header() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="text-[15px] font-medium leading-5 tracking-[-0.01em] text-[#f2f2f2] transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
+                  className="text-[18px] font-medium leading-5 tracking-[-0.01em] text-white transition-colors hover:text-[#5ce4ab] focus-visible:text-[#5ce4ab]"
                 >
                   {item.label}
                 </Link>
@@ -248,7 +248,7 @@ export default function Header() {
                               setMobileOpen(false);
                               setOpenB2BModal(true);
                             }}
-                            className="mt-3 block w-full pl-6 text-left text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#5ce4ab]"
+                            className="mt-3 block w-full pl-6 text-left text-[16px] font-normal leading-5 text-[#A2A2A2] transition-colors hover:text-[#5ce4ab]"
                           >
                             {child.label}
                           </button>
@@ -257,7 +257,7 @@ export default function Header() {
                             key={child.label}
                             href={child.href}
                             onClick={() => setMobileOpen(false)}
-                            className="mt-3 block pl-6 text-base font-normal leading-5 text-gray-400 transition-colors hover:text-[#5ce4ab]"
+                            className="mt-3 block pl-6 text-[16px] font-normal leading-5 text-[#A2A2A2] transition-colors hover:text-[#5ce4ab]"
                           >
                             {child.label}
                           </Link>
