@@ -37,17 +37,17 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
                   <div className="mb-4 inline-block rounded-full bg-[#5ce4ab] px-3 py-1 text-sm text-black">
                     {feature.subtitle}
                   </div>
-                  <p className="leading-relaxed text-gray-300">{feature.description}</p>
+                  <p className="leading-relaxed text-white">{feature.description}</p>
                 </div>
 
                 {feature.additionalInfo && (
                   <div className="rounded-2xl border border-[#2a2a2a] bg-[#181818] p-6 shadow-sm">
                     <h4 className="mb-3 font-semibold text-white">{feature.additionalInfo.title}</h4>
-                    <p className="mb-3 leading-relaxed text-gray-300">{feature.additionalInfo.text}</p>
+                    <p className="mb-3 leading-relaxed text-[#a2a2a2]">{feature.additionalInfo.text}</p>
                     {feature.additionalInfo.list && (
                       <ul className="space-y-2">
                         {feature.additionalInfo.list.map(item => (
-                          <li key={item} className="flex items-start text-sm text-gray-400">
+                          <li key={item} className="flex items-start text-sm text-[#a2a2a2]">
                             <span className="mr-3 mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#5ce4ab]" aria-hidden="true" />
                             {item}
                           </li>

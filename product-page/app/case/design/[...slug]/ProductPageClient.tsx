@@ -16,7 +16,7 @@ export default function ProductPageClient({ params, content, siteFlag }: Product
 
   return (
     <div className="min-h-screen bg-white">
-      <Header sticky={false} siteFlag={siteFlag} />
+      <Header siteFlag={siteFlag} />
 
       <main>
         {/* Desktop: padded container with two columns */}
