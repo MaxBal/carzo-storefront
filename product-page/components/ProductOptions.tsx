@@ -214,7 +214,11 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           </span>
           <span className="text-sm font-medium leading-5 text-gray-900">{siteSettings.featureMagneticText}</span>
           <span className="flex h-5 w-5 items-center justify-center text-sm leading-5" aria-hidden="true">
-            {siteSettings.featureMaterialFlag}
+            {siteSettings.featureMaterialFlag.startsWith('/') ? (
+              <img src={siteSettings.featureMaterialFlag} alt="" width="16" height="12" className="inline-block" />
+            ) : (
+              siteSettings.featureMaterialFlag
+            )}
           </span>
           <span className="text-sm font-medium leading-5 text-gray-900">{siteSettings.featureMaterialText}</span>
         </section>

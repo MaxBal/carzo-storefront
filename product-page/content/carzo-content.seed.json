@@ -107,7 +107,7 @@
   "siteSettings": {
     "designInfoText": "Дизайни між собою нічим не відрізняються окрім візерунку.",
     "featureMagneticText": "Магнітна система фіксації кришки",
-    "featureMaterialFlag": "🇩🇪",
+    "featureMaterialFlag": "/flag-de.svg",
     "featureMaterialText": "Німецька автомобільна еко-шкіра",
     "richSignoff": "З повагою, команда Carzo"
   },
