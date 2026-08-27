@@ -65,6 +65,7 @@
   font-size: 13px;
   letter-spacing: 0;
   flex-shrink: 0;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }
 
 .hp-intro h1 {
