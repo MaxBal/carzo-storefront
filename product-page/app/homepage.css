@@ -62,11 +62,13 @@
 }
 
 .hp-hero-kicker span:first-child {
-  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', emoji, sans-serif;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
   font-size: 16px;
   line-height: 1;
   letter-spacing: 0;
   flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .hp-intro h1 {
