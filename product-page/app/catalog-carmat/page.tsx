@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Header from "@/components/Header";
 import VideoModal from "@/components/VideoModal";
 import '@/app/carmat.css';
 
@@ -43,6 +44,7 @@ export default function CarmatPage() {
 
   return (
     <>
+      <Header />
       {/* ── Hero ── */}
       <section className="cm-hero">
         {/* Cover */}
