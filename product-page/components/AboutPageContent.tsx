@@ -322,6 +322,10 @@ export default function AboutPageContent({ data }: AboutPageContentProps) {
             order: 0;
           }
 
+          .process-text p {
+            font-size: 16px;
+          }
+
           .process-text {
             max-width: none;
           }
