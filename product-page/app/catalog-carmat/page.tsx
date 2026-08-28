@@ -96,7 +96,7 @@ export default function CarmatPage() {
             </li>
             <li>
               <ShieldIcon />
-              Розраховані для щоденної експлуатації роками
+              Для щоденної експлуатації роками
             </li>
             <li>
               <CheckIcon />

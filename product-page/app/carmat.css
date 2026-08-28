@@ -124,15 +124,15 @@
 .cm-badge-dot {
   width: 5px;
   height: 5px;
-  border-radius: 50%;
-  background: var(--mint);
+  border-radius: 999px;
+  background: #5CE4AB;
   flex-shrink: 0;
 }
 
 /* ── H1 ── */
 .cm-h1 {
   margin: 0 0 12px;
-  font-size: 45px;
+  font-size: clamp(27px, 7vw, 34px);
   font-weight: 600;
   line-height: 0.96;
   letter-spacing: -0.065em;
@@ -235,21 +235,30 @@
 
 /* ── CTA button ── */
 .cm-cta {
-  display: block;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  padding: 9px 15px;
-  min-width: 112px;
+  height: 52px;
   border: none;
-  border-radius: 10px;
-  background: var(--mint);
-  color: #080808;
+  border-radius: 12px;
+  background: #5CE4AB;
+  color: #000000;
   font-family: inherit;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   letter-spacing: -0.01em;
-  text-align: center;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
+  transition: background 0.15s, transform 0.15s;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.cm-cta:hover,
+.cm-cta:focus,
+.cm-cta:active {
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 .cm-cta:hover {
@@ -371,10 +380,11 @@
       linear-gradient(90deg, rgba(0, 0, 0, 0.50) 0%, rgba(0, 0, 0, 0.28) 38%, rgba(0, 0, 0, 0.08) 68%, rgba(0, 0, 0, 0) 100%);
   }
 
-  /* Play button positioned over the visual center/product */
+  /* Play button centered over hero */
   .cm-play {
-    top: 48%;
-    left: 58%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 72px;
     height: 72px;
     background: rgba(0, 0, 0, 0.4);
@@ -431,12 +441,12 @@
   .cm-badge-dot {
     width: 5px;
     height: 5px;
-    background: var(--mint);
+    background: #5CE4AB;
   }
 
   /* High-impact H1 matching Main page style */
   .cm-h1 {
-    font-size: clamp(52px, 6.1vw, 108px);
+    font-size: clamp(39px, 4.575vw, 81px);
     font-weight: 700;
     line-height: 0.96;
     letter-spacing: -0.065em;
@@ -506,24 +516,38 @@
   }
 
   .cm-cta {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
-    width: min(100%, 560px);
-    min-height: 48px;
-    padding: 12px 24px;
+    max-width: 560px;
+    height: 52px;
+    border: none;
     border-radius: 12px;
-    font-size: 15px;
+    background: #5CE4AB;
+    color: #000000;
+    font-family: inherit;
+    font-size: 16px;
     font-weight: 600;
     letter-spacing: -0.01em;
-    background: var(--mint);
-    color: #080808;
     cursor: pointer;
+    transition: background 0.15s, transform 0.15s;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  .cm-cta:hover,
+  .cm-cta:focus,
+  .cm-cta:active {
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 
   .cm-cta:hover {
     background: #4dd69a;
-    box-shadow: 0 4px 20px rgba(92, 228, 171, 0.25);
+  }
+
+  .cm-cta:active {
+    transform: scale(0.985);
   }
 
   .vm-wrapper {
@@ -545,7 +569,7 @@
 
 @media (max-width: 380px) {
   .cm-h1 {
-    font-size: clamp(34px, 11vw, 45px);
+    font-size: clamp(26px, 8.25vw, 34px);
   }
 
   .cm-badge {
