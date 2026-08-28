@@ -200,15 +200,20 @@
 .cm-design-link {
   font-size: 14px;
   font-weight: 400;
-  color: #fff;
+  color: #5CE4AB;
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: rgba(255, 255, 255, 0.4);
+  text-decoration-color: rgba(92, 228, 171, 0.4);
   cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
 }
 
 .cm-design-link:hover {
-  text-decoration-color: rgba(255, 255, 255, 0.8);
+  text-decoration-color: rgba(92, 228, 171, 0.8);
+  opacity: 0.8;
 }
 
 .cm-design-info {

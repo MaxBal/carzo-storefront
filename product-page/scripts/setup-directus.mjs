@@ -595,6 +595,9 @@ const collections = [
     shortText('about_development_title'),
     longText('about_development_text'),
     longText('about_statement_text'),
+    shortText('car_mat_modal_title'),
+    longText('car_mat_modal_description'),
+    json('car_mat_designs', 'Варіанти дизайну автокилимків [{ code, title, altText, image (Directus file ID) }].'),
   ], { singleton: true, displayTemplate: 'Налаштування Carzo' }),
 ];
 
@@ -1433,6 +1436,17 @@ async function seedItems() {
       min_quantity: item.minQuantity, amount: item.amount,
     });
   }
+
+  // Car mat modal settings + designs in site_settings
+  await upsertSingleton('carzo_site_settings', {
+    car_mat_modal_title: 'Варіанти дизайну',
+    car_mat_modal_description: 'Виготовляємо тільки в чорному кольорі з чорною строчкою, можливий варіант зі зміною кольору окантовки або кольору строчки окантовки',
+    car_mat_designs: [
+      { code: '2.0', title: 'Дизайн Carzo 2.0', altText: 'Автокилимки Carzo дизайн 2.0', image: null },
+      { code: '3.0', title: 'Дизайн Carzo 3.0', altText: 'Автокилимки Carzo дизайн 3.0', image: null },
+      { code: '4.0', title: 'Дизайн Carzo 4.0', altText: 'Автокилимки Carzo дизайн 4.0', image: null },
+    ],
+  });
 
   const aboutProcessImage1Id = await ensureFile('public/about-design.png', folder.id);
   const aboutProcessImage2Id = await ensureFile('public/about-production.png', folder.id);
