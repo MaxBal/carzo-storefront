@@ -16,8 +16,6 @@ export interface DesignVariantsModalProps {
   isOpen: boolean;
   onClose: () => void;
   variants: DesignVariant[];
-  title: string;
-  description: string;
 }
 
 /* ─── Component ─────────────────────────────────────────────────── */
@@ -26,10 +24,9 @@ export default function DesignVariantsModal({
   isOpen,
   onClose,
   variants,
-  title,
-  description,
 }: DesignVariantsModalProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [imgError, setImgError] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -58,7 +55,6 @@ export default function DesignVariantsModal({
   useEffect(() => {
     if (isOpen) {
       triggerRef.current = document.activeElement as HTMLElement;
-      // Small delay so the DOM is painted before focusing
       const id = requestAnimationFrame(() => {
         closeButtonRef.current?.focus();
       });
@@ -116,10 +112,16 @@ export default function DesignVariantsModal({
     return () => window.removeEventListener('keydown', handleTab);
   }, [isOpen]);
 
-  /* ── Reset active index when variants change ── */
+  /* ── Reset state when variants change ── */
   useEffect(() => {
     setActiveIndex(0);
+    setImgError(false);
   }, [variants]);
+
+  /* ── Reset error when active variant changes ── */
+  useEffect(() => {
+    setImgError(false);
+  }, [activeIndex]);
 
   if (!isOpen || variants.length === 0) return null;
 
@@ -162,7 +164,7 @@ export default function DesignVariantsModal({
         @media (min-width: 900px) {
           .dvm-panel {
             flex-direction: row;
-            width: min(1120px, calc(100vw - 64px));
+            width: min(1100px, calc(100vw - 64px));
             max-height: calc(100dvh - 64px);
             border-radius: 16px;
           }
@@ -173,15 +175,14 @@ export default function DesignVariantsModal({
           position: relative;
           flex-shrink: 0;
           width: 100%;
-          aspect-ratio: 4 / 5;
+          aspect-ratio: 1 / 1;
           overflow: hidden;
-          background: #f5f5f5;
+          background: #e8e8e8;
         }
 
         @media (min-width: 900px) {
           .dvm-image-wrap {
-            width: 48%;
-            aspect-ratio: auto;
+            width: 50%;
             height: auto;
           }
         }
@@ -192,11 +193,18 @@ export default function DesignVariantsModal({
           object-fit: cover;
         }
 
+        /* ── Image fallback (error state) ── */
+        .dvm-img-fallback {
+          position: absolute;
+          inset: 0;
+          background: #e8e8e8;
+        }
+
         /* ── Close button (overlaid on image) ── */
         .dvm-close {
           position: absolute;
-          top: 12px;
-          right: 12px;
+          top: 16px;
+          right: 16px;
           z-index: 2;
           display: flex;
           width: 36px;
@@ -224,8 +232,6 @@ export default function DesignVariantsModal({
 
         @media (min-width: 900px) {
           .dvm-close {
-            top: 16px;
-            right: 16px;
             width: 34px;
             height: 34px;
           }
@@ -235,47 +241,16 @@ export default function DesignVariantsModal({
         .dvm-content {
           display: flex;
           flex-direction: column;
+          justify-content: center;
           flex: 1;
-          padding: 24px 20px 28px;
+          padding: 20px 20px 24px;
           overflow-y: auto;
           -webkit-overflow-scrolling: touch;
         }
 
         @media (min-width: 900px) {
           .dvm-content {
-            justify-content: center;
             padding: 40px 44px;
-          }
-        }
-
-        /* ── Title ── */
-        .dvm-title {
-          margin: 0;
-          color: #111;
-          font-size: 20px;
-          font-weight: 600;
-          line-height: 1.3;
-        }
-
-        @media (min-width: 900px) {
-          .dvm-title {
-            font-size: 24px;
-          }
-        }
-
-        /* ── Description ── */
-        .dvm-description {
-          margin: 8px 0 0;
-          color: #707070;
-          font-size: 14px;
-          font-weight: 400;
-          line-height: 1.55;
-        }
-
-        @media (min-width: 900px) {
-          .dvm-description {
-            margin-top: 10px;
-            font-size: 15px;
           }
         }
 
@@ -284,14 +259,6 @@ export default function DesignVariantsModal({
           display: flex;
           flex-direction: column;
           gap: 10px;
-          margin-top: 24px;
-        }
-
-        @media (min-width: 900px) {
-          .dvm-selectors {
-            gap: 12px;
-            margin-top: 28px;
-          }
         }
 
         /* ── Selector button ── */
@@ -300,15 +267,14 @@ export default function DesignVariantsModal({
           align-items: center;
           justify-content: center;
           width: 100%;
-          height: 54px;
-          border-radius: 10px;
+          height: 48px;
+          border-radius: 8px;
           background: #fff;
           cursor: pointer;
           transition:
             border-color 150ms ease,
             color 150ms ease,
-            font-weight 150ms ease,
-            box-shadow 150ms ease;
+            font-weight 150ms ease;
           font-family: inherit;
           font-size: 15px;
           line-height: 1;
@@ -328,7 +294,6 @@ export default function DesignVariantsModal({
           border: 1.5px solid #111;
           color: #111;
           font-weight: 500;
-          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
         }
 
         .dvm-selector-btn:focus-visible {
@@ -338,13 +303,13 @@ export default function DesignVariantsModal({
 
         @media (min-width: 900px) {
           .dvm-selector-btn {
-            height: 52px;
+            height: 50px;
           }
         }
 
         /* ── Crossfade image transition ── */
         .dvm-img-transition {
-          transition: opacity 200ms ease;
+          transition: opacity 150ms ease;
         }
       `}</style>
 
@@ -354,7 +319,7 @@ export default function DesignVariantsModal({
         className="dvm-overlay"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dvm-title"
+        aria-label="Варіанти дизайну"
         onClick={(e) => {
           if (e.target === backdropRef.current) onClose();
         }}
@@ -363,15 +328,20 @@ export default function DesignVariantsModal({
         <div ref={panelRef} className="dvm-panel" onClick={(e) => e.stopPropagation()}>
           {/* Image */}
           <div className="dvm-image-wrap">
-            <Image
-              key={active.code}
-              src={active.modalImage}
-              alt={active.altText}
-              fill
-              sizes="(max-width: 899px) 100vw, 48vw"
-              className="dvm-img-transition"
-              unoptimized
-            />
+            {!imgError ? (
+              <Image
+                key={active.code}
+                src={active.modalImage}
+                alt={active.altText}
+                fill
+                sizes="(max-width: 899px) 100vw, 550px"
+                className="dvm-img-transition"
+                unoptimized
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <div className="dvm-img-fallback" aria-hidden="true" />
+            )}
 
             {/* Close button */}
             <button
@@ -389,11 +359,6 @@ export default function DesignVariantsModal({
 
           {/* Content */}
           <div className="dvm-content">
-            <h2 id="dvm-title" className="dvm-title">
-              {title}
-            </h2>
-            <p className="dvm-description">{description}</p>
-
             {/* Selector buttons */}
             <div className="dvm-selectors" role="group" aria-label="Вибір дизайну">
               {variants.map((v, i) => {

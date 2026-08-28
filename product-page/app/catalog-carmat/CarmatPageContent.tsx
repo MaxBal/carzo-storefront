@@ -157,8 +157,6 @@ export default function CarmatPageContent({ designs }: CarmatPageContentProps) {
         isOpen={designModalOpen}
         onClose={() => setDesignModalOpen(false)}
         variants={designVariants}
-        title="Варіанти дизайну"
-        description="Виготовляємо тільки в чорному кольорі з чорною строчкою, можливий варіант зі зміною кольору окантовки або кольору строчки окантовки"
       />
     </>
   );
