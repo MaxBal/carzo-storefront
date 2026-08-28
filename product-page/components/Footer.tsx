@@ -65,7 +65,7 @@ export default function Footer({ siteFlag = '/flag-ua.svg' }: FooterProps) {
     <footer className="bg-black text-white">
       {/* Desktop Footer */}
       <div className="hidden md:block">
-        <div className="mx-auto max-w-[1280px] px-4 py-12 lg:px-8">
+        <div className="mx-auto max-w-[1550px] px-[2.2vw] py-12 max-[900px]:px-5 max-[560px]:px-4">
           <div className="grid grid-cols-5 gap-8">
             {/* Column 1: Каталог */}
             <div>
@@ -271,7 +271,7 @@ export default function Footer({ siteFlag = '/flag-ua.svg' }: FooterProps) {
 
       {/* Desktop copyright */}
       <div className="hidden md:block border-t border-white/10">
-        <div className="mx-auto max-w-[1280px] px-4 py-5 text-center text-[14px] text-[#A2A2A2] lg:px-8">
+        <div className="mx-auto max-w-[1550px] px-[2.2vw] py-5 text-center text-[14px] text-[#A2A2A2] max-[900px]:px-5 max-[560px]:px-4">
           © 2026 Carzo всі права захищені
         </div>
       </div>

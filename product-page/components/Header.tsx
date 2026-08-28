@@ -132,7 +132,7 @@ export default function Header({ siteFlag = '/flag-ua.svg' }: { siteFlag?: strin
   return (
     <>
       <header className="relative z-50 h-14 bg-black md:sticky md:top-0" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4">
+        <div className="mx-auto flex h-full max-w-[1550px] items-center justify-between px-[2.2vw] max-[900px]:px-5 max-[560px]:px-4">
           <div className="flex items-center gap-[7px] md:hidden">
             <button
               type="button"
