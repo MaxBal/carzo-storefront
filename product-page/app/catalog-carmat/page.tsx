@@ -73,12 +73,8 @@ export default function CarmatPage() {
 
         {/* Content */}
         <div className="cm-content">
-          {/* Badges */}
+          {/* Badge */}
           <div className="cm-badges">
-            <span className="cm-badge">
-              <span className="cm-badge-dot" />
-              ПРЕМІУМ ЯКІСТЬ
-            </span>
             <span className="cm-badge">
               <span className="cm-badge-dot" />
               MAX ЗНОСОСТІЙКІСТЬ
