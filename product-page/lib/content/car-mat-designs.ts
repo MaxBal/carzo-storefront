@@ -30,6 +30,16 @@ function assetUrl(file: unknown, fallback = '') {
     : `${directusUrl}/assets/${id}`;
 }
 
+function externalImageUrl(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'https:' ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 export interface CarMatDesign {
   code: string;
   title: string;
@@ -42,6 +52,8 @@ const DEFAULT_DESIGNS: CarMatDesign[] = [
   { code: '3.0', title: 'Дизайн Carzo 3.0', altText: 'Автокилимки Carzo дизайн 3.0', image: '' },
   { code: '4.0', title: 'Дизайн Carzo 4.0', altText: 'Автокилимки Carzo дизайн 4.0', image: '' },
 ];
+
+const DEFAULT_MEDIA_PLACEHOLDER = '/media/landscape-placeholder.svg';
 
 function parseDesigns(raw: unknown): CarMatDesign[] {
   if (!Array.isArray(raw)) return DEFAULT_DESIGNS;
@@ -73,5 +85,28 @@ export const getCarMatDesigns = cache(async (): Promise<CarMatDesign[]> => {
     return parseDesigns(data.car_mat_designs);
   } catch {
     return DEFAULT_DESIGNS;
+  }
+});
+
+export const getCarMatMediaPlaceholder = cache(async (): Promise<string> => {
+  const directusUrl = getDirectusUrl();
+  if (!directusUrl) return DEFAULT_MEDIA_PLACEHOLDER;
+
+  try {
+    const query = new URLSearchParams({ fields: 'image.id,external_url' });
+    const response = await fetch(`${directusUrl}/items/carzo_media_settings?${query}`, {
+      headers: directusHeaders(),
+      next: { revalidate: 60 },
+    });
+
+    if (!response.ok) return DEFAULT_MEDIA_PLACEHOLDER;
+
+    const payload = await response.json() as { data?: RecordValue };
+    const data = payload.data;
+    if (!data) return DEFAULT_MEDIA_PLACEHOLDER;
+
+    return assetUrl(data.image) || externalImageUrl(data.external_url) || DEFAULT_MEDIA_PLACEHOLDER;
+  } catch {
+    return DEFAULT_MEDIA_PLACEHOLDER;
   }
 });
