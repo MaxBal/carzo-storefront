@@ -222,7 +222,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           {['МАГНІТНА СИСТЕМА', 'НІМЕЦЬКА АВТО ЕКОШКІРА'].map(label => (
             <span
               key={label}
-              className="inline-flex w-fit max-w-full items-center gap-[7px] whitespace-nowrap rounded-full border border-[rgba(255,255,255,0.28)] bg-[#0a0a0a] px-[13px] py-[5px] text-[12px] font-[200] uppercase leading-[1.4] tracking-[0.14em] text-white [font-family:Inter,Arial,sans-serif] min-[901px]:px-[14px] max-[380px]:gap-[5px] max-[380px]:px-[10px] max-[380px]:py-[4px] max-[380px]:text-[10px]"
+              className="inline-flex w-fit max-w-full items-center gap-[7px] whitespace-nowrap rounded-full border border-[#0a0a0a] bg-transparent px-[13px] py-[5px] text-[12px] font-[200] uppercase leading-[1.4] tracking-[0.14em] text-[#0a0a0a] [font-family:Inter,Arial,sans-serif] min-[901px]:px-[14px] max-[380px]:gap-[5px] max-[380px]:px-[10px] max-[380px]:py-[4px] max-[380px]:text-[10px]"
             >
               <span className="h-[5px] w-[5px] shrink-0 rounded-full bg-[#5CE4AB]" aria-hidden="true" />
               {label}
