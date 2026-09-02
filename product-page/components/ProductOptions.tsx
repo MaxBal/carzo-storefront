@@ -3,7 +3,7 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Camera, ShoppingCart, Magnet, Check, ArrowUpRight, ChevronRight, Info } from 'lucide-react';
+import { Camera, ShoppingCart, Check, ArrowUpRight, ChevronRight, Info } from 'lucide-react';
 import BenefitCards from './BenefitCards';
 import InfoModal from './InfoModal';
 import LogoModal from './LogoModal';
@@ -215,22 +215,19 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
         {/* Key characteristics */}
         <section
-          className="mt-3 grid grid-cols-[20px_minmax(0,1fr)] items-center gap-x-2.5 gap-y-2 rounded-[12px] border border-[#1A1A1A] bg-white px-3.5 py-3"
+          className="mt-3 flex flex-col items-start gap-2"
           aria-label="Ключові характеристики"
           data-product-characteristics
         >
-          <span className="product-magnet-icon flex h-5 w-5 items-center justify-center" aria-hidden="true">
-            <Magnet size={16} strokeWidth={1.7} className="text-[#5ce4ab]" />
-          </span>
-          <span className="text-sm font-medium leading-5 text-[#111111]">{siteSettings.featureMagneticText}</span>
-          <span className="flex h-5 w-5 items-center justify-center text-sm leading-5" aria-hidden="true">
-            {siteSettings.featureMaterialFlag.startsWith('/') ? (
-              <img src={siteSettings.featureMaterialFlag} alt="" width="16" height="12" className="inline-block" />
-            ) : (
-              siteSettings.featureMaterialFlag
-            )}
-          </span>
-          <span className="text-sm font-medium leading-5 text-[#111111]">{siteSettings.featureMaterialText}</span>
+          {['МАГНІТНА СИСТЕМА', 'НІМЕЦЬКА АВТО ЕКОШКІРА'].map(label => (
+            <span
+              key={label}
+              className="inline-flex w-fit max-w-full items-center gap-[7px] whitespace-nowrap rounded-full border border-[rgba(255,255,255,0.28)] bg-black/20 px-[13px] py-[5px] text-[12px] font-[200] uppercase leading-[1.4] tracking-[0.14em] text-white backdrop-blur-[4px] [font-family:Inter,Arial,sans-serif] min-[901px]:px-[14px] max-[380px]:gap-[5px] max-[380px]:px-[10px] max-[380px]:py-[4px] max-[380px]:text-[10px]"
+            >
+              <span className="h-[5px] w-[5px] shrink-0 rounded-full bg-[#5CE4AB]" aria-hidden="true" />
+              {label}
+            </span>
+          ))}
         </section>
 
         {/* Price */}

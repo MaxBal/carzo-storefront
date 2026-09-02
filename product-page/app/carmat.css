@@ -274,72 +274,100 @@
   transform: scale(0.985);
 }
 
-/* ── Quote request modal ── */
+/* ── Quote request drawer ── */
 .cm-quote-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.62);
+  visibility: hidden;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0);
+  pointer-events: none;
+  transition:
+    background-color 240ms ease-out,
+    visibility 0s linear 240ms;
+}
+
+.cm-quote-overlay--open {
+  visibility: visible;
+  background: rgba(0, 0, 0, 0.35);
+  pointer-events: auto;
+  transition-delay: 0s;
 }
 
 .cm-quote-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
   display: flex;
-  width: 100%;
-  height: calc(100dvh - 56px);
-  max-height: calc(100dvh - 56px);
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 24px 24px 0 0;
+  border-radius: 0;
   background: #fff;
+  box-shadow: -16px 0 48px rgba(0, 0, 0, 0.12);
   color: #111827;
+  color-scheme: light;
+  transform: translateX(100%);
+  transition: transform 260ms ease-out;
+}
+
+.cm-quote-overlay--open .cm-quote-panel {
+  transform: translateX(0);
 }
 
 .cm-quote-header {
   display: flex;
+  min-height: calc(64px + env(safe-area-inset-top));
   flex-shrink: 0;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  border-bottom: 1px solid #f0f0f0;
-  padding: 20px;
+  gap: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px 20px;
+  background: #fff;
 }
 
 .cm-quote-header h2 {
   margin: 0;
+  color: #111827;
   font-size: 18px;
   font-weight: 600;
-  line-height: 1.25;
-}
-
-.cm-quote-header p {
-  margin: 5px 0 0;
-  color: #6b7280;
-  font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.35;
 }
 
 .cm-quote-header button {
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
   place-items: center;
   border: 0;
   border-radius: 50%;
   background: #f3f4f6;
-  color: #4b5563;
+  color: #111827;
   cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.cm-quote-header button:hover {
+  background: #e5e7eb;
+}
+
+.cm-quote-header button:active {
+  background: #d1d5db;
 }
 
 .cm-quote-header button:focus-visible,
 .cm-quote-field input:focus-visible,
 .cm-quote-field select:focus-visible,
 .cm-quote-field textarea:focus-visible,
-.cm-quote-submit button:focus-visible,
-.cm-quote-success button:focus-visible {
+.cm-quote-accordion-trigger:focus-visible,
+.cm-quote-check input:focus-visible,
+.cm-quote-submit button:focus-visible {
   outline: 2px solid #159e85;
   outline-offset: 2px;
 }
@@ -349,31 +377,63 @@
   min-height: 0;
   flex: 1;
   flex-direction: column;
+  background: #fff;
+}
+
+.cm-quote-content {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 16px 24px;
+  scroll-padding-block: 16px 32px;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cm-quote-intro {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8f8f8;
+  padding: 14px 16px;
+}
+
+.cm-quote-intro p {
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.cm-quote-intro p + p {
+  margin-top: 5px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 400;
 }
 
 .cm-quote-fields {
   display: grid;
-  min-height: 0;
-  flex: 1;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 20px;
-  -webkit-overflow-scrolling: touch;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 16px;
 }
 
 .cm-quote-field {
   position: relative;
   display: block;
+  min-width: 0;
 }
 
-.cm-quote-field > span {
+.cm-quote-field > span:not(.sr-only) {
   display: block;
-  margin-bottom: 7px;
+  margin-bottom: 8px;
   color: #1f2937;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 .cm-quote-field input,
@@ -381,7 +441,7 @@
 .cm-quote-field textarea {
   width: 100%;
   border: 1px solid #d1d5db;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #fff;
   color: #111827;
   font: inherit;
@@ -391,153 +451,335 @@
 
 .cm-quote-field input,
 .cm-quote-field select {
-  height: 50px;
-  padding: 0 14px;
+  height: 54px;
+  padding: 0 15px;
 }
 
 .cm-quote-field select {
   appearance: none;
-  padding-right: 42px;
+  padding-right: 44px;
+  cursor: pointer;
 }
 
 .cm-quote-field textarea {
-  min-height: 94px;
+  min-height: 88px;
   resize: vertical;
-  padding: 13px 14px;
+  padding: 15px;
+  line-height: 1.45;
 }
 
 .cm-quote-field input::placeholder,
 .cm-quote-field textarea::placeholder {
-  color: #9ca3af;
+  color: #858b96;
+  opacity: 1;
 }
 
 .cm-quote-field input:focus,
 .cm-quote-field select:focus,
 .cm-quote-field textarea:focus {
-  border-color: #6b7280;
+  border-color: #4b5563;
   box-shadow: 0 0 0 3px rgba(92, 228, 171, 0.2);
   outline: none;
 }
 
 .cm-quote-field--select > svg {
   position: absolute;
-  right: 14px;
-  bottom: 16px;
+  right: 15px;
+  bottom: 18px;
   pointer-events: none;
-  color: #9ca3af;
+  color: #6b7280;
 }
 
-.cm-quote-error {
-  margin: 0 20px;
-  border-radius: 10px;
-  background: #fef2f2;
-  padding: 11px 13px;
-  color: #b91c1c;
+.cm-quote-phone {
+  display: flex;
+  height: 54px;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 11px;
+  background: #fff;
+  padding-left: 15px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.cm-quote-phone:focus-within {
+  border-color: #4b5563;
+  box-shadow: 0 0 0 3px rgba(92, 228, 171, 0.2);
+}
+
+.cm-quote-phone input {
+  min-width: 0;
+  height: 52px;
+  flex: 1;
+  border: 0;
+  border-radius: 0 11px 11px 0;
+  padding: 0 15px 0 8px;
+  box-shadow: none;
+  outline: none;
+}
+
+.cm-quote-phone input:focus,
+.cm-quote-phone input:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+.cm-quote-ua-flag {
+  position: relative;
+  width: 22px;
+  height: 15px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 2px;
+  background: #ffd700;
+}
+
+.cm-quote-ua-flag::before {
+  position: absolute;
+  inset: 0 0 50%;
+  background: #0057b7;
+  content: '';
+}
+
+.cm-quote-phone-prefix {
+  margin-left: 9px;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cm-quote-accordions {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cm-quote-accordion {
+  overflow: hidden;
+  border: 1px solid #e2e4e8;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.cm-quote-accordion-trigger {
+  display: flex;
+  width: 100%;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  padding: 12px 12px 12px 15px;
+  color: #111827;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 150ms ease;
+}
+
+.cm-quote-accordion-trigger:hover {
+  background: #f3f4f6;
+}
+
+.cm-quote-accordion-trigger:active {
+  background: #eceef1;
+}
+
+.cm-quote-accordion-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.cm-quote-accordion-copy strong {
   font-size: 14px;
-  line-height: 1.45;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cm-quote-accordion-copy > span {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.cm-quote-disclosure {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 50%;
+  background: #eceef1;
+  color: #1f2937;
+}
+
+.cm-quote-disclosure svg {
+  transition: transform 220ms ease-out;
+}
+
+.cm-quote-accordion--open .cm-quote-disclosure svg {
+  transform: rotate(180deg);
+}
+
+.cm-quote-accordion-content {
+  display: grid;
+  visibility: hidden;
+  grid-template-rows: 0fr;
+  transition:
+    grid-template-rows 220ms ease-out,
+    visibility 0s linear 220ms;
+}
+
+.cm-quote-accordion--open .cm-quote-accordion-content {
+  visibility: visible;
+  grid-template-rows: 1fr;
+  transition-delay: 0s;
+}
+
+.cm-quote-accordion-content-inner {
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid transparent;
+  padding: 0 14px;
+  opacity: 0;
+  transition: border-color 180ms ease, opacity 160ms ease, padding 220ms ease-out;
+}
+
+.cm-quote-accordion--open .cm-quote-accordion-content-inner {
+  border-color: #e5e7eb;
+  padding-top: 8px;
+  padding-bottom: 10px;
+  opacity: 1;
+}
+
+.cm-quote-check {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 11px;
+  color: #242933;
+  font-size: 14px;
+  line-height: 1.35;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cm-quote-check--section {
+  margin-top: 4px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 4px;
+}
+
+.cm-quote-check input {
+  position: relative;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  appearance: none;
+  border: 1.5px solid #9ca3af;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cm-quote-check input::after {
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  content: '';
+  opacity: 0;
+  transform: rotate(45deg) scale(0.8);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.cm-quote-check input:checked {
+  border-color: #111827;
+  background: #111827;
+}
+
+.cm-quote-check input:checked::after {
+  opacity: 1;
+  transform: rotate(45deg) scale(1);
 }
 
 .cm-quote-submit {
   flex-shrink: 0;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #e5e7eb;
   background: #fff;
-  padding: 16px 20px calc(16px + env(safe-area-inset-bottom));
+  padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
 }
 
-.cm-quote-submit button,
-.cm-quote-success button {
+.cm-quote-submit button {
   display: flex;
   width: 100%;
-  min-height: 50px;
+  min-height: 54px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 11px;
   background: #000;
   color: #fff;
   font: inherit;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, opacity 150ms ease;
 }
 
-.cm-quote-submit button:disabled,
-.cm-quote-header button:disabled {
-  cursor: wait;
-  opacity: 0.55;
+.cm-quote-submit button:hover {
+  background: #1f2937;
 }
 
-.cm-quote-success {
-  display: flex;
-  min-height: 0;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 24px calc(24px + env(safe-area-inset-bottom));
-  text-align: center;
+.cm-quote-submit button:active {
+  background: #374151;
 }
 
-.cm-quote-success > svg {
-  color: #159e85;
-}
-
-.cm-quote-success h3 {
-  margin: 18px 0 0;
-  font-size: 24px;
-  font-weight: 700;
-}
-
-.cm-quote-success p {
-  max-width: 420px;
-  margin: 10px 0 24px;
-  color: #6b7280;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.cm-quote-success button {
-  max-width: 360px;
-}
-
-@media (min-width: 768px) {
-  .cm-quote-overlay {
-    align-items: center;
-    padding: 24px;
-  }
-
+@media (min-width: 1024px) {
   .cm-quote-panel {
-    width: min(100%, 720px);
-    height: auto;
-    max-height: calc(100dvh - 48px);
-    border-radius: 18px;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+    width: clamp(440px, 34vw, 520px);
   }
 
   .cm-quote-header {
-    padding: 22px 24px 18px;
+    min-height: 66px;
+    padding: 11px 18px 11px 22px;
   }
 
   .cm-quote-header h2 {
-    font-size: 20px;
+    font-size: 19px;
+  }
+
+  .cm-quote-content {
+    padding: 18px 22px 28px;
   }
 
   .cm-quote-fields {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    padding: 22px 24px;
-  }
-
-  .cm-quote-field--wide {
-    grid-column: 1 / -1;
-  }
-
-  .cm-quote-error {
-    margin: 0 24px;
+    gap: 15px;
+    margin-top: 18px;
   }
 
   .cm-quote-submit {
-    padding: 18px 24px 20px;
+    padding: 16px 22px 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-quote-overlay,
+  .cm-quote-panel,
+  .cm-quote-disclosure svg,
+  .cm-quote-accordion-content,
+  .cm-quote-accordion-content-inner,
+  .cm-quote-check input::after {
+    transition-duration: 0.01ms !important;
   }
 }
 
