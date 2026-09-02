@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Camera, ShoppingCart, Magnet, Check, ArrowUpRight, ChevronRight, Info } from 'lucide-react';
@@ -17,7 +17,7 @@ import type { ProductParams, ResolvedProductContent, SizeId } from '@/lib/conten
 import { useCart } from '@/components/cart/cart-context';
 
 const selectClasses =
-  'w-full appearance-none bg-white border border-gray-200 rounded-[12px] px-4 py-3 text-sm text-gray-900 pr-10 cursor-pointer focus:outline-none focus:border-gray-400';
+  'w-full appearance-none rounded-[12px] border border-gray-200 bg-white px-4 py-3 pr-10 text-sm text-[#111111] cursor-pointer focus:border-gray-400 focus:outline-none';
 
 const MOBILE_VIEWPORT_QUERY = '(max-width: 767px)';
 const GALLERY_SUBJECT_START_RATIO = 0.18;
@@ -74,11 +74,24 @@ function scrollToUpdatedMobileGallery(expectedSelection: string) {
 
 function SelectChevron() {
   return (
-    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+    <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#777777]">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </div>
+  );
+}
+
+function ConfiguratorHeading({ step, children }: { step: number; children: ReactNode }) {
+  return (
+    <span className="block min-w-0">
+      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777777]">
+        Крок {step}
+      </span>
+      <span className="block truncate text-[16px] font-semibold tracking-[-0.02em] text-[#111111]">
+        {children}
+      </span>
+    </span>
   );
 }
 
@@ -201,7 +214,9 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
     <>
       <div className="flex flex-col">
         {/* Title */}
-        <h1 className="text-2xl font-bold text-gray-900 leading-tight">{productTitle}</h1>
+        <h1 className="text-[28px] font-bold leading-[1.08] tracking-[-0.055em] text-[#080808] sm:text-[32px] lg:text-[38px]">
+          {productTitle}
+        </h1>
 
         {/* Key characteristics */}
         <section
@@ -210,9 +225,9 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           data-product-characteristics
         >
           <span className="product-magnet-icon flex h-5 w-5 items-center justify-center" aria-hidden="true">
-            <Magnet size={16} strokeWidth={1.7} className="text-[#28C5A6]" />
+            <Magnet size={16} strokeWidth={1.7} className="text-[#5ce4ab]" />
           </span>
-          <span className="text-sm font-medium leading-5 text-gray-900">{siteSettings.featureMagneticText}</span>
+          <span className="text-sm font-medium leading-5 text-[#111111]">{siteSettings.featureMagneticText}</span>
           <span className="flex h-5 w-5 items-center justify-center text-sm leading-5" aria-hidden="true">
             {siteSettings.featureMaterialFlag.startsWith('/') ? (
               <img src={siteSettings.featureMaterialFlag} alt="" width="16" height="12" className="inline-block" />
@@ -220,14 +235,14 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
               siteSettings.featureMaterialFlag
             )}
           </span>
-          <span className="text-sm font-medium leading-5 text-gray-900">{siteSettings.featureMaterialText}</span>
+          <span className="text-sm font-medium leading-5 text-[#111111]">{siteSettings.featureMaterialText}</span>
         </section>
 
         {/* Price */}
         <div className="mt-4 flex flex-wrap items-center gap-[14px]">
-          <span className="text-[28px] font-bold leading-none text-gray-900 md:text-[36px]">{currentPrice} ₴</span>
-          <span className="ml-0.5 text-[17px] font-medium text-[#5A5A5A] line-through md:text-[20px]">{oldPrice} ₴</span>
-          <span className="ml-3 whitespace-nowrap rounded-full bg-[#ffe3cc] px-[13px] py-[5px] text-sm font-semibold leading-none text-[#f97316]">
+          <span className="text-[30px] font-bold leading-none tracking-[-0.06em] text-[#080808] md:text-[38px]">{currentPrice} ₴</span>
+          <span className="ml-2 text-[16px] font-medium text-[#777777] line-through md:text-[18px]">{oldPrice} ₴</span>
+          <span className="inline-flex whitespace-nowrap rounded-full bg-[#5ce4ab] px-2.5 py-1 text-[12px] font-semibold uppercase leading-none tracking-[0.04em] text-[#080808]">
             SALE {oldPrice - currentPrice}₴
           </span>
         </div>
@@ -236,8 +251,8 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         <div className="mt-6">
           <div className="mb-3 flex min-h-[44px] items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="h-2 w-2 shrink-0 rounded-full bg-[#28C5A6] shadow-[0_0_6px_2px_rgba(40,197,166,0.45)]" aria-hidden="true" />
-              <span className="truncate text-base font-semibold text-gray-900">Дизайн {selectedDesignVersion}</span>
+              <span className="h-2 w-2 shrink-0 rounded-full bg-[#5ce4ab] shadow-[0_0_6px_2px_rgba(92,228,171,0.45)]" aria-hidden="true" />
+              <ConfiguratorHeading step={1}>Дизайн {selectedDesignVersion}</ConfiguratorHeading>
             </div>
             <button
               type="button"
@@ -260,7 +275,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                   aria-label={`Обрати дизайн ${design.version}`}
                   aria-pressed={active}
                   data-design-slug={design.slug}
-                  className={`design-option relative flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border-[1.5px] transition-[border-color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#858585] focus-visible:ring-offset-2 ${
+                  className={`design-option relative flex h-[60px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border-[1.5px] transition-[border-color,background-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#777777] focus-visible:ring-offset-2 ${
                     active
                       ? 'border-[#1A1A1A]'
                       : 'border-[#E5E7EB]'
@@ -275,7 +290,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                     unoptimized
                   />
                   {active ? (
-                    <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-black" aria-hidden="true">
+                    <span className="absolute right-1 top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-[#080808]" aria-hidden="true">
                       <Check size={9} color="white" strokeWidth={3} />
                     </span>
                   ) : null}
@@ -288,7 +303,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* Size section */}
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-base font-semibold text-gray-900">Розмір</span>
+            <ConfiguratorHeading step={2}>Розмір</ConfiguratorHeading>
             <button
               className="overview-btn"
               onClick={() => setOpenModal('size')}
@@ -317,14 +332,14 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                   }}
                 >
                   {active && (
-                    <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-black flex items-center justify-center">
+                    <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[#080808]">
                       <Check size={11} color="white" strokeWidth={3} />
                     </span>
                   )}
-                  <div className="text-sm font-medium leading-snug" style={{ color: active ? '#111' : '#596170' }}>{s.label}</div>
+                  <div className="text-sm font-medium leading-snug" style={{ color: active ? '#111111' : '#555555' }}>{s.label}</div>
                   <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="text-sm font-semibold text-gray-900">{variant.price} ₴</span>
-                    <span className="text-xs text-gray-400 line-through">{variant.oldPrice} ₴</span>
+                    <span className="text-sm font-semibold text-[#111111]">{variant.price} ₴</span>
+                    <span className="text-xs text-[#777777] line-through">{variant.oldPrice} ₴</span>
                   </div>
                 </button>
               );
@@ -335,7 +350,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* Fixation section */}
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <span className="text-base font-semibold text-gray-900">Фіксація</span>
+            <ConfiguratorHeading step={3}>Фіксація</ConfiguratorHeading>
             <button
               className="overview-btn"
               onClick={() => setOpenModal('fixation')}
@@ -365,11 +380,11 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* Brand selector section */}
         <div className="mt-6">
           <div>
-            <span className="text-base font-semibold text-gray-900">Марка автомобіля</span>
+            <ConfiguratorHeading step={4}>Марка автомобіля</ConfiguratorHeading>
           </div>
           <div className="mb-[11px] mt-[5px] flex items-center gap-1.5">
-            <Info size={13} strokeWidth={1.5} className="flex-shrink-0 text-[#626975]" />
-            <span className="text-[14px] font-normal leading-[18px] text-[#626975]">Оберіть марку, щоб переглянути фото лого</span>
+            <Info size={13} strokeWidth={1.5} className="flex-shrink-0 text-[#777777]" />
+            <span className="text-[12px] font-light leading-[1.45] tracking-[0.06em] text-[#777777] sm:text-[13px]">Оберіть марку, щоб переглянути фото лого</span>
           </div>
 
           <div className="relative">
@@ -398,7 +413,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
               style={{
                 height: 48,
                 background: '#F0FCF9',
-                border: '1.5px solid #28C5A6',
+                border: '1.5px solid #5ce4ab',
                 borderRadius: 12,
                 color: '#159E85',
                 padding: '0 16px',
@@ -410,12 +425,12 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                 className="flex-shrink-0 flex items-center justify-center rounded-full"
                 style={{ width: 30, height: 30, background: 'rgba(40, 197, 166, 0.12)' }}
               >
-                <Camera size={18} color="#28C5A6" />
+                <Camera size={18} color="#5ce4ab" />
               </span>
               <span className="flex-1 text-left" style={{ color: '#159E85' }}>
                 Переглянути {selectedBrand.name}
               </span>
-              <ArrowUpRight size={20} color="#28C5A6" className="flex-shrink-0" />
+              <ArrowUpRight size={20} color="#5ce4ab" className="flex-shrink-0" />
             </button>
           )}
         </div>
@@ -423,8 +438,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* CTA Button */}
         <button
           onClick={handleBuy}
-          className="mt-6 flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-black text-base font-semibold text-white transition-colors hover:bg-gray-900 active:bg-gray-800"
-          style={{ height: 52, fontSize: 16, fontWeight: 600 }}
+          className="mt-6 flex h-[48px] w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#080808] text-[15px] font-semibold tracking-[-0.01em] text-white transition-colors hover:bg-gray-800 active:bg-gray-900"
         >
           <ShoppingCart size={19} strokeWidth={2} />
           Купити {currentPrice} ₴

@@ -5,20 +5,30 @@ interface ProductRichContentProps {
   data: ResolvedProductContent['richContent'];
 }
 
+const sectionEyebrows: Record<string, string> = {
+  'rich-materials': 'Матеріали',
+  'rich-magnets': 'Система',
+  'rich-edging': 'Окантовка',
+  'rich-handles': 'Ручки',
+};
+
 export default function ProductRichContent({ data }: ProductRichContentProps) {
   return (
-    <section className="mt-16 bg-black py-16" aria-label="Особливості автокейсу">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="space-y-16">
+    <section
+      className="mt-16 bg-[#0a0a0a] px-4 py-[90px] text-white sm:px-[2.5vw] lg:px-[3vw] lg:py-[140px]"
+      aria-label="Особливості автокейсу"
+    >
+      <div className="mx-auto max-w-[1450px]">
+        <div className="space-y-[90px] lg:space-y-[140px]">
           {data.sections.map((feature, index) => (
             <article
               key={feature.key}
-              className={`flex flex-col items-center gap-8 lg:gap-12 ${
+              className={`flex flex-col items-center gap-8 lg:gap-16 ${
                 index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
               }`}
             >
               <div className="w-full lg:w-1/2">
-                <div className="aspect-[4/3] overflow-hidden rounded-2xl shadow-lg">
+                <div className="aspect-[4/3] overflow-hidden rounded-[18px] border border-[#282828]">
                   <ManagedProductImage
                     src={feature.image}
                     fallbackSrc={feature.fallbackSrc}
@@ -31,24 +41,31 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
                 </div>
               </div>
 
-              <div className="w-full space-y-6 lg:w-1/2">
+              <div className="w-full lg:w-1/2">
                 <div>
-                  <h3 className="mb-2 text-2xl font-bold text-white">{feature.title}</h3>
-                  <div className="mb-4 inline-block rounded-full bg-[#5ce4ab] px-3 py-1 text-sm text-black">
+                  <p className="mb-2 text-[11px] font-light uppercase tracking-[0.14em] text-[#5ce4ab]">
+                    {String(index + 1).padStart(2, '0')} / {sectionEyebrows[feature.key] ?? 'Особливість'}
+                  </p>
+                  <h3 className="mb-3 text-[26px] font-semibold leading-[1.1] tracking-[-0.045em] text-white lg:text-[34px]">
+                    {feature.title}
+                  </h3>
+                  <div className="mb-4 inline-flex items-center rounded-full border border-[#333333] px-3 py-1 text-[11px] font-extralight uppercase tracking-[0.14em] text-white">
                     {feature.subtitle}
                   </div>
-                  <p className="leading-relaxed text-white">{feature.description}</p>
+                  <p className="text-[16px] leading-[1.6] text-[#a2a2a2]">{feature.description}</p>
                 </div>
 
                 {feature.additionalInfo && (
-                  <div className="rounded-2xl border border-[#2a2a2a] bg-[#181818] p-6 shadow-sm">
-                    <h4 className="mb-3 font-semibold text-white">{feature.additionalInfo.title}</h4>
-                    <p className="mb-3 leading-relaxed text-[#a2a2a2]">{feature.additionalInfo.text}</p>
+                  <div className="mt-6 rounded-[16px] border border-[#292929] bg-[#141414] p-6">
+                    <h4 className="mb-2 text-[16px] font-semibold tracking-[-0.02em] text-white">{feature.additionalInfo.title}</h4>
+                    <p className={`text-[14px] leading-[1.55] text-[#888888] ${feature.additionalInfo.list ? 'mb-3' : ''}`}>
+                      {feature.additionalInfo.text}
+                    </p>
                     {feature.additionalInfo.list && (
                       <ul className="space-y-2">
                         {feature.additionalInfo.list.map(item => (
-                          <li key={item} className="flex items-start text-sm text-[#a2a2a2]">
-                            <span className="mr-3 mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-[#5ce4ab]" aria-hidden="true" />
+                          <li key={item} className="flex items-start text-[14px] leading-[1.55] text-[#888888]">
+                            <span className="mr-3 mt-[7px] h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[#5ce4ab]" aria-hidden="true" />
                             {item}
                           </li>
                         ))}
@@ -60,8 +77,6 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
             </article>
           ))}
         </div>
-
-
       </div>
     </section>
   );

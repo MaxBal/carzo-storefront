@@ -20,10 +20,14 @@ function formatDate(dateStr: string): string {
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <span className="mb-3 flex gap-1" aria-label={`Оцінка: ${rating} з 5`}>
+    <span className="mb-3 flex gap-1 text-[#080808]" aria-label={`Оцінка: ${rating} з 5`}>
       <span aria-hidden="true">{'★'.repeat(rating)}{'☆'.repeat(5 - rating)}</span>
     </span>
   );
+}
+
+function withoutLeadingEmoji(title: string): string {
+  return title.replace(/^[^\p{L}\p{N}]+/u, '');
 }
 
 function ReviewsModal({ data, onClose }: { data: ReviewsData; onClose: () => void }) {
@@ -102,16 +106,16 @@ export default function CaseReviewsSection({ data }: CaseReviewsSectionProps) {
 
   return (
     <>
-      <section className="bg-white" aria-label="Відгуки клієнтів">
-        <div className="mx-auto max-w-7xl px-4 py-[88px] sm:px-6 sm:py-[100px] lg:px-8 lg:py-[112px]">
-          <h2 className="mb-3 text-center text-[28px] font-bold leading-tight text-black sm:text-[32px] lg:text-[36px] lg:leading-[1.15]">
-            {data.settings.title}
-          </h2>
-          <div className="mx-auto mb-10 max-w-[780px] text-center">
-            <p className="text-[14px] leading-relaxed text-gray-600 sm:text-[16px] lg:text-[16px]">
-              {data.settings.descriptionLine1}
-            </p>
-            <p className="mt-1 text-[14px] leading-relaxed text-gray-600 sm:text-[16px] lg:text-[16px]">
+      <section className="bg-[#f0f0ee] px-4 py-[90px] sm:px-[2.5vw] lg:px-[3vw] lg:py-[140px]" aria-label="Відгуки клієнтів">
+        <div className="mx-auto max-w-[1450px]">
+          <div className="mx-auto mb-12 max-w-[620px] text-center lg:mb-16">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777777]">Досвід клієнтів</p>
+            <h2 className="mb-4 text-[36px] font-semibold leading-[1] tracking-[-0.06em] text-[#111111] lg:text-[48px]">
+              {withoutLeadingEmoji(data.settings.title)}
+            </h2>
+            <p className="text-[16px] font-normal leading-[1.5] text-[#555555] sm:text-[18px]">
+              {data.settings.descriptionLine1}{' '}
+              <br className="hidden sm:block" />
               {data.settings.descriptionLine2}{' '}
               <span className="font-semibold">{data.settings.instagramHandle}</span>
             </p>
@@ -119,22 +123,22 @@ export default function CaseReviewsSection({ data }: CaseReviewsSectionProps) {
 
           <div className="mb-10 grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-3 md:gap-6">
             {displayItems.map(item => (
-              <div
+              <article
                 key={item.key}
-                className="rounded-[16px] border border-gray-200 bg-[#fafafa] p-5"
+                className="rounded-[16px] border border-[#d2d2d0] bg-white p-6 shadow-none"
               >
                 <Stars rating={item.rating} />
-                <p className="mb-4 text-[16px] leading-relaxed text-gray-700">{item.reviewText}</p>
-                <div className="flex items-center gap-3 border-t border-gray-200 pt-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                    <User size={16} className="text-gray-400" />
+                <p className="mb-4 text-[15px] font-normal leading-[1.55] text-[#333333] sm:text-[16px]">{item.reviewText}</p>
+                <div className="flex items-center gap-3 border-t border-[#d2d2d0] pt-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f0f0ee]">
+                    <User size={16} className="text-[#777777]" />
                   </div>
                   <div>
-                    <p className="text-[14px] font-medium text-gray-900">{item.customerName}</p>
-                    <p className="text-[12px] text-gray-500">{formatDate(item.reviewDate)}</p>
+                    <p className="text-[14px] font-semibold text-[#111111]">{item.customerName}</p>
+                    <p className="text-[12px] font-normal text-[#777777]">{formatDate(item.reviewDate)}</p>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
 
@@ -144,7 +148,7 @@ export default function CaseReviewsSection({ data }: CaseReviewsSectionProps) {
                 ref={triggerRef}
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="inline-flex h-[40px] w-[224px] items-center justify-center rounded-[800px] border border-[#5ce4ab] bg-[#5ce4ab] px-[23px] text-[14px] font-medium leading-[20px] text-[#181818] transition-colors hover:bg-[#4cd99d] active:bg-[#3cc48e]"
+                className="inline-flex h-[40px] items-center justify-center rounded-[800px] bg-[#5ce4ab] px-[24px] text-[14px] font-semibold tracking-[-0.01em] text-[#080808] transition-colors hover:bg-[#4cd99d] active:bg-[#3cc48e]"
               >
                 {data.settings.ctaLabel}
               </button>

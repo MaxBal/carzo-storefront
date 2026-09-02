@@ -8,7 +8,7 @@ import { siteOrigin } from '@/lib/seo';
 import { getBenefitModals } from '@/lib/content/global-modals';
 import { getSiteFlag } from '@/lib/content/site-flag';
 
-const inter = Inter({ subsets: ['latin', 'cyrillic'] });
+const inter = Inter({ subsets: ['latin', 'cyrillic'], fallback: ['Arial', 'sans-serif'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin()),
