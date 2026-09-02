@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import VideoModal from "@/components/VideoModal";
 import DesignVariantsModal from "@/components/DesignVariantsModal";
+import CarMatQuoteModal from "@/components/CarMatQuoteModal";
 import type { CarMatDesign } from "@/lib/content/car-mat-designs";
 import '@/app/carmat.css';
 
@@ -47,6 +48,7 @@ interface CarmatPageContentProps {
 export default function CarmatPageContent({ designs }: CarmatPageContentProps) {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [designModalOpen, setDesignModalOpen] = useState(false);
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
   const designLinkRef = useRef<HTMLSpanElement>(null);
 
   const designVariants = designs.map(d => ({
@@ -139,7 +141,7 @@ export default function CarmatPageContent({ designs }: CarmatPageContentProps) {
           </div>
 
           {/* CTA */}
-          <button className="cm-cta" type="button">
+          <button className="cm-cta" type="button" onClick={() => setQuoteModalOpen(true)}>
             Розрахувати вартість
           </button>
         </div>
@@ -157,6 +159,11 @@ export default function CarmatPageContent({ designs }: CarmatPageContentProps) {
         isOpen={designModalOpen}
         onClose={() => setDesignModalOpen(false)}
         variants={designVariants}
+      />
+
+      <CarMatQuoteModal
+        isOpen={quoteModalOpen}
+        onClose={() => setQuoteModalOpen(false)}
       />
     </>
   );
