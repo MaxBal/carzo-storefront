@@ -18,6 +18,8 @@ export interface DesignVariantsModalProps {
   variants: DesignVariant[];
 }
 
+type ImageStatus = 'loading' | 'loaded' | 'error';
+
 /* ─── Component ─────────────────────────────────────────────────── */
 
 export default function DesignVariantsModal({
@@ -26,7 +28,9 @@ export default function DesignVariantsModal({
   variants,
 }: DesignVariantsModalProps) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [imgError, setImgError] = useState(false);
+  const [imageStatus, setImageStatus] = useState<ImageStatus>(() => (
+    variants[0]?.modalImage?.trim() ? 'loading' : 'error'
+  ));
   const backdropRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -115,17 +119,19 @@ export default function DesignVariantsModal({
   /* ── Reset state when variants change ── */
   useEffect(() => {
     setActiveIndex(0);
-    setImgError(false);
+    setImageStatus(variants[0]?.modalImage?.trim() ? 'loading' : 'error');
   }, [variants]);
-
-  /* ── Reset error when active variant changes ── */
-  useEffect(() => {
-    setImgError(false);
-  }, [activeIndex]);
 
   if (!isOpen || variants.length === 0) return null;
 
   const active = variants[activeIndex] ?? variants[0];
+  const hasActiveImage = Boolean(active.modalImage?.trim());
+
+  const handleVariantChange = (index: number) => {
+    if (index === activeIndex) return;
+    setImageStatus(variants[index]?.modalImage?.trim() ? 'loading' : 'error');
+    setActiveIndex(index);
+  };
 
   return (
     <>
@@ -155,7 +161,8 @@ export default function DesignVariantsModal({
           display: flex;
           flex-direction: column;
           width: 100%;
-          max-height: calc(100dvh - 32px);
+          height: auto;
+          max-height: 100dvh;
           overflow: hidden;
           background: #fff;
           border-radius: 20px 20px 0 0;
@@ -164,7 +171,8 @@ export default function DesignVariantsModal({
         @media (min-width: 900px) {
           .dvm-panel {
             flex-direction: row;
-            width: min(1100px, calc(100vw - 64px));
+            width: min(1100px, calc(100vw - 64px), calc(200dvh - 128px));
+            aspect-ratio: 2 / 1;
             max-height: calc(100dvh - 64px);
             border-radius: 16px;
           }
@@ -182,8 +190,9 @@ export default function DesignVariantsModal({
 
         @media (min-width: 900px) {
           .dvm-image-wrap {
+            flex: 0 0 50%;
             width: 50%;
-            height: auto;
+            height: 100%;
           }
         }
 
@@ -200,15 +209,15 @@ export default function DesignVariantsModal({
           background: #e8e8e8;
         }
 
-        /* ── Close button (overlaid on image) ── */
+        /* ── Close button (overlaid on image mobile / white panel desktop) ── */
         .dvm-close {
           position: absolute;
           top: 16px;
           right: 16px;
           z-index: 2;
           display: flex;
-          width: 36px;
-          height: 36px;
+          width: 46px;
+          height: 46px;
           align-items: center;
           justify-content: center;
           border: none;
@@ -230,27 +239,23 @@ export default function DesignVariantsModal({
           outline-offset: 2px;
         }
 
-        @media (min-width: 900px) {
-          .dvm-close {
-            width: 34px;
-            height: 34px;
-          }
-        }
-
         /* ── Content area ── */
         .dvm-content {
           display: flex;
           flex-direction: column;
           justify-content: center;
           flex: 1;
-          padding: 20px 20px 24px;
-          overflow-y: auto;
-          -webkit-overflow-scrolling: touch;
+          min-height: 0;
+          padding: 18px 18px 20px;
+          overflow: hidden;
         }
 
         @media (min-width: 900px) {
           .dvm-content {
-            padding: 40px 44px;
+            flex: 0 0 50%;
+            width: 50%;
+            height: 100%;
+            padding: 44px;
           }
         }
 
@@ -309,7 +314,18 @@ export default function DesignVariantsModal({
 
         /* ── Crossfade image transition ── */
         .dvm-img-transition {
+          opacity: 0;
           transition: opacity 150ms ease;
+        }
+
+        .dvm-img-transition--loaded {
+          opacity: 1;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dvm-img-transition {
+            transition: none;
+          }
         }
       `}</style>
 
@@ -327,34 +343,21 @@ export default function DesignVariantsModal({
         {/* Panel */}
         <div ref={panelRef} className="dvm-panel" onClick={(e) => e.stopPropagation()}>
           {/* Image */}
-          <div className="dvm-image-wrap">
-            {!imgError ? (
+          <div className="dvm-image-wrap" aria-busy={imageStatus === 'loading'}>
+            <div className="dvm-img-fallback" aria-hidden="true" />
+            {hasActiveImage ? (
               <Image
                 key={active.code}
                 src={active.modalImage}
                 alt={active.altText}
                 fill
                 sizes="(max-width: 899px) 100vw, 550px"
-                className="dvm-img-transition"
+                className={`dvm-img-transition ${imageStatus === 'loaded' ? 'dvm-img-transition--loaded' : ''}`}
                 unoptimized
-                onError={() => setImgError(true)}
+                onLoad={() => setImageStatus('loaded')}
+                onError={() => setImageStatus('error')}
               />
-            ) : (
-              <div className="dvm-img-fallback" aria-hidden="true" />
-            )}
-
-            {/* Close button */}
-            <button
-              ref={closeButtonRef}
-              type="button"
-              className="dvm-close"
-              onClick={onClose}
-              aria-label="Закрити"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
+            ) : null}
           </div>
 
           {/* Content */}
@@ -369,7 +372,7 @@ export default function DesignVariantsModal({
                     type="button"
                     className={`dvm-selector-btn ${isActive ? 'dvm-selector-btn--active' : 'dvm-selector-btn--inactive'}`}
                     aria-pressed={isActive}
-                    onClick={() => setActiveIndex(i)}
+                    onClick={() => handleVariantChange(i)}
                   >
                     {v.title}
                   </button>
@@ -377,6 +380,19 @@ export default function DesignVariantsModal({
               })}
             </div>
           </div>
+
+          {/* Close button */}
+          <button
+            ref={closeButtonRef}
+            type="button"
+            className="dvm-close"
+            onClick={onClose}
+            aria-label="Закрити"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       </div>
     </>
