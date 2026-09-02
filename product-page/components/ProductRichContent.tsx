@@ -5,13 +5,6 @@ interface ProductRichContentProps {
   data: ResolvedProductContent['richContent'];
 }
 
-const sectionEyebrows: Record<string, string> = {
-  'rich-materials': 'Матеріали',
-  'rich-magnets': 'Система',
-  'rich-edging': 'Окантовка',
-  'rich-handles': 'Ручки',
-};
-
 export default function ProductRichContent({ data }: ProductRichContentProps) {
   return (
     <section
@@ -43,13 +36,10 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
 
               <div className="w-full lg:w-1/2">
                 <div>
-                  <p className="mb-2 text-[11px] font-light uppercase tracking-[0.14em] text-[#5ce4ab]">
-                    {String(index + 1).padStart(2, '0')} / {sectionEyebrows[feature.key] ?? 'Особливість'}
-                  </p>
                   <h3 className="mb-3 text-[26px] font-semibold leading-[1.1] tracking-[-0.045em] text-white lg:text-[34px]">
                     {feature.title}
                   </h3>
-                  <div className="mb-4 inline-flex items-center rounded-full border border-[#333333] px-3 py-1 text-[11px] font-extralight uppercase tracking-[0.14em] text-white">
+                  <div className="mb-4 inline-flex items-center rounded-full border border-[#333333] px-3 py-1 text-[11px] font-extralight uppercase tracking-[0.14em] text-[#5ce4ab]">
                     {feature.subtitle}
                   </div>
                   <p className="text-[16px] leading-[1.6] text-[#a2a2a2]">{feature.description}</p>

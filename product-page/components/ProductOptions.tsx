@@ -82,15 +82,10 @@ function SelectChevron() {
   );
 }
 
-function ConfiguratorHeading({ step, children }: { step: number; children: ReactNode }) {
+function ConfiguratorHeading({ children }: { children: ReactNode }) {
   return (
-    <span className="block min-w-0">
-      <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-[#777777]">
-        Крок {step}
-      </span>
-      <span className="block truncate text-[16px] font-semibold tracking-[-0.02em] text-[#111111]">
-        {children}
-      </span>
+    <span className="block min-w-0 truncate text-[16px] font-semibold tracking-[-0.02em] text-[#111111]">
+      {children}
     </span>
   );
 }
@@ -252,7 +247,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           <div className="mb-3 flex min-h-[44px] items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
               <span className="h-2 w-2 shrink-0 rounded-full bg-[#5ce4ab] shadow-[0_0_6px_2px_rgba(92,228,171,0.45)]" aria-hidden="true" />
-              <ConfiguratorHeading step={1}>Дизайн {selectedDesignVersion}</ConfiguratorHeading>
+              <ConfiguratorHeading>Дизайн {selectedDesignVersion}</ConfiguratorHeading>
             </div>
             <button
               type="button"
@@ -303,7 +298,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* Size section */}
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <ConfiguratorHeading step={2}>Розмір</ConfiguratorHeading>
+            <ConfiguratorHeading>Розмір</ConfiguratorHeading>
             <button
               className="overview-btn"
               onClick={() => setOpenModal('size')}
@@ -350,7 +345,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* Fixation section */}
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <ConfiguratorHeading step={3}>Фіксація</ConfiguratorHeading>
+            <ConfiguratorHeading>Фіксація</ConfiguratorHeading>
             <button
               className="overview-btn"
               onClick={() => setOpenModal('fixation')}
@@ -380,7 +375,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* Brand selector section */}
         <div className="mt-6">
           <div>
-            <ConfiguratorHeading step={4}>Марка автомобіля</ConfiguratorHeading>
+            <ConfiguratorHeading>Марка автомобіля</ConfiguratorHeading>
           </div>
           <div className="mb-[11px] mt-[5px] flex items-center gap-1.5">
             <Info size={13} strokeWidth={1.5} className="flex-shrink-0 text-[#777777]" />
