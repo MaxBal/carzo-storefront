@@ -4,6 +4,17 @@ const baseUrl = process.env.DIRECTUS_URL?.replace(/\/$/, '');
 const adminToken = process.env.DIRECTUS_ADMIN_TOKEN;
 if (!baseUrl || !adminToken) throw new Error('DIRECTUS_URL and DIRECTUS_ADMIN_TOKEN are required');
 
+const magneticCoverFields = ['2-0', '3-0', '4-0'].flatMap(designSlug => (
+  ['S', 'M', 'L', 'XL'].map(size => (
+    `magnetic_system_cover_${designSlug.replace('-', '_')}_${size.toLowerCase()}`
+  ))
+));
+const magneticMediaFields = [
+  'magnetic_system_video',
+  'magnetic_system_default_cover',
+  ...magneticCoverFields,
+];
+
 async function request(path) {
   const response = await fetch(`${baseUrl}${path}`, {
     headers: { Authorization: `Bearer ${adminToken}` },
@@ -17,11 +28,14 @@ const [gallery, templates, richMedia, mediaSettings, galleryAlt, galleryDesign, 
   request('/items/carzo_gallery_images?limit=-1&fields=key,status,sort,alt,design.slug,size.code,image,external_url'),
   request('/items/carzo_rich_sections?limit=-1&fields=key,status,sort,title'),
   request('/items/carzo_rich_section_images?limit=-1&fields=key,status,design.slug,section.key,image,external_url'),
-  request('/items/carzo_media_settings?fields=status,image,external_url'),
+  request(`/items/carzo_media_settings?fields=status,image,external_url,${magneticMediaFields.join(',')}`),
   request('/fields/carzo_gallery_images/alt'),
   request('/fields/carzo_gallery_images/design'),
   request('/fields/carzo_gallery_images/size'),
 ]);
+const magneticFieldDefinitions = await Promise.all(
+  magneticMediaFields.map(field => request(`/fields/carzo_media_settings/${field}`)),
+);
 
 const legacyFallbacks = gallery.filter(item => item.key.startsWith('gallery-fallback-'));
 assert.equal(legacyFallbacks.length, 4, 'Expected the four legacy gallery records to remain auditable');
@@ -52,6 +66,18 @@ assert.equal(galleryAlt.schema.is_nullable, true, 'Gallery alt override must be 
 assert.equal(galleryAlt.meta.required, false, 'Gallery alt override must be optional in Studio');
 assert.equal(galleryDesign.meta.required, true, 'Gallery design must be required in Studio');
 assert.equal(gallerySize.meta.required, true, 'Gallery size must be required in Studio');
+assert.equal(
+  magneticFieldDefinitions[0].meta.interface,
+  'file',
+  'The global magnetic-system asset must accept a video file',
+);
+for (const definition of magneticFieldDefinitions.slice(1)) {
+  assert.equal(definition.meta.interface, 'file-image', `${definition.field} must accept an image file`);
+}
+
+const configuredMagneticCovers = magneticCoverFields.filter(field => mediaSettings?.[field]).length;
+assert.equal(configuredMagneticCovers, 12, 'All 12 magnetic-system poster slots must be initialized');
+assert(mediaSettings?.magnetic_system_default_cover, 'A default magnetic-system poster must be configured');
 
 console.log(JSON.stringify({
   ok: true,
@@ -63,4 +89,7 @@ console.log(JSON.stringify({
     richMedia.filter(item => item.status === 'published' && item.design?.slug === designSlug).length,
   ])),
   placeholderConfigured: true,
+  magneticVideoConfigured: Boolean(mediaSettings?.magnetic_system_video),
+  magneticDefaultCoverConfigured: Boolean(mediaSettings?.magnetic_system_default_cover),
+  configuredMagneticCovers,
 }, null, 2));

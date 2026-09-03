@@ -107,6 +107,11 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     src: item.imagePath,
     alt: `${item.title} — Carzo ${designSlug.replace('-', '.')}`,
   }))),
+  magneticSystemMedia: {
+    video: '',
+    defaultPoster: '',
+    posters: {},
+  },
   benefitModals: seed.benefitModals.map((item, index) => ({
     type: item.key,
     cardLabel: item.cardLabel,

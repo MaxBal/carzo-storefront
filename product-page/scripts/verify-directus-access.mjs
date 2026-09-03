@@ -19,6 +19,16 @@ if (!baseUrl || !adminToken) {
   throw new Error('DIRECTUS_URL and DIRECTUS_ADMIN_TOKEN are required');
 }
 
+const magneticMediaRelationFields = [
+  'magnetic_system_video',
+  'magnetic_system_default_cover',
+  ...['2-0', '3-0', '4-0'].flatMap(designSlug => (
+    ['S', 'M', 'L', 'XL'].map(size => (
+      `magnetic_system_cover_${designSlug.replace('-', '_')}_${size.toLowerCase()}`
+    ))
+  )),
+];
+
 async function request(path) {
   const response = await fetch(`${baseUrl}${path}`, {
     headers: { Authorization: `Bearer ${adminToken}` },
@@ -203,6 +213,9 @@ for (const field of [
 
 for (const expected of [
   ['carzo_media_settings', 'image', 'directus_files', 'SET NULL'],
+  ...magneticMediaRelationFields.map(field => (
+    ['carzo_media_settings', field, 'directus_files', 'SET NULL']
+  )),
   ['carzo_rich_section_images', 'design', 'carzo_designs', 'CASCADE'],
   ['carzo_rich_section_images', 'section', 'carzo_rich_sections', 'CASCADE'],
   ['carzo_rich_section_images', 'image', 'directus_files', 'SET NULL'],

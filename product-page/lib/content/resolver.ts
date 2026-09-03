@@ -140,6 +140,26 @@ function resolveRichContent(params: ProductParams, source: ContentSource): Resol
   });
 }
 
+function resolveMagneticSystemMedia(
+  params: ProductParams,
+  source: ContentSource,
+  sections: ResolvedRichContentSection[],
+): ResolvedProductContent['richContent']['magneticSystemMedia'] {
+  const exactPoster = source.magneticSystemMedia.posters[`${params.designSlug}:${params.size}`];
+  const existingSectionPoster = sections.find(section => section.key === 'rich-magnets')?.image;
+  const poster = exactPoster
+    || source.magneticSystemMedia.defaultPoster
+    || existingSectionPoster
+    || source.siteSettings.mediaPlaceholder;
+
+  return {
+    video: source.magneticSystemMedia.video,
+    poster,
+    fallbackPoster: source.siteSettings.mediaPlaceholder,
+    isPosterPlaceholder: poster === source.siteSettings.mediaPlaceholder,
+  };
+}
+
 function fallbackVariant(designSlug: string, size: SizeId): ProductVariant {
   return DEFAULT_CONTENT_SOURCE.variants.find(item => item.designSlug === designSlug && item.size === size)
     ?? DEFAULT_CONTENT_SOURCE.variants.find(item => item.size === size)!;
@@ -184,6 +204,8 @@ export function resolveProductContent(
     warnFallback('brand logo', selectedBrand.id, 'logo fallback image');
   }
 
+  const richSections = resolveRichContent(params, source);
+
   return {
     catalog: getProductCatalog(source),
     gallery: resolveGallery(params, source),
@@ -199,8 +221,9 @@ export function resolveProductContent(
       faqs: faqs('logo', source),
     },
     richContent: {
-      sections: resolveRichContent(params, source),
+      sections: richSections,
       signoff: source.siteSettings.richSignoff,
+      magneticSystemMedia: resolveMagneticSystemMedia(params, source, richSections),
     },
     benefitModals: source.benefitModals,
     discountTiers: sorted(source.discountTiers),

@@ -810,12 +810,12 @@
         "collapse": "open",
         "collection": "carzo_media_settings",
         "color": null,
-        "display_template": "Плейсхолдер медіа",
+        "display_template": "Глобальні медіа товару",
         "group": "carzo_group_product_content",
         "hidden": false,
-        "icon": "image",
+        "icon": "video_library",
         "item_duplication_fields": null,
-        "note": "Єдиний плейсхолдер для відсутніх або недоступних фото галереї та rich content.",
+        "note": "Глобальне відео магнітної системи, його обкладинки та єдиний плейсхолдер для відсутніх медіа.",
         "preview_url": null,
         "singleton": true,
         "sort": 4,
@@ -824,15 +824,15 @@
         "translations": [
           {
             "language": "en-US",
-            "translation": "Плейсхолдер медіа"
+            "translation": "Глобальні медіа товару"
           },
           {
             "language": "uk-UA",
-            "translation": "Плейсхолдер медіа"
+            "translation": "Глобальні медіа товару"
           },
           {
             "language": "ru-RU",
-            "translation": "Плейсхолдер медіа"
+            "translation": "Глобальні медіа товару"
           }
         ],
         "unarchive_value": "draft",
@@ -5792,6 +5792,832 @@
         "has_auto_increment": false,
         "foreign_key_table": null,
         "foreign_key_column": null
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_video",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_video",
+        "group": null,
+        "hidden": false,
+        "interface": "file",
+        "note": "Одне глобальне відео для всіх дизайнів і розмірів. Рекомендований формат: MP4 (H.264).",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 5,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Магнітна система · глобальне відео"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Магнітна система · глобальне відео"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Магнітна система · глобальне відео"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_video",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_default_cover",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_default_cover",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Резервна обкладинка, якщо точну комбінацію дизайн × розмір не заповнено.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 6,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Магнітна система · резервна обкладинка"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Магнітна система · резервна обкладинка"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Магнітна система · резервна обкладинка"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_default_cover",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_s",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_2_0_s",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 2.0 розміру S.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 7,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · S"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · S"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · S"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_2_0_s",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_m",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_2_0_m",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 2.0 розміру M.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 8,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · M"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · M"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · M"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_2_0_m",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_l",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_2_0_l",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 2.0 розміру L.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 9,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · L"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · L"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · L"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_2_0_l",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_xl",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_2_0_xl",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 2.0 розміру XL.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 10,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · XL"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · XL"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 2.0 · XL"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_2_0_xl",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_s",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_3_0_s",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 3.0 розміру S.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 11,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · S"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · S"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · S"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_3_0_s",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_m",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_3_0_m",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 3.0 розміру M.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 12,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · M"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · M"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · M"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_3_0_m",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_l",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_3_0_l",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 3.0 розміру L.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 13,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · L"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · L"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · L"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_3_0_l",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_xl",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_3_0_xl",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 3.0 розміру XL.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 14,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · XL"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · XL"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 3.0 · XL"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_3_0_xl",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_s",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_4_0_s",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 4.0 розміру S.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 15,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · S"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · S"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · S"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_4_0_s",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_m",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_4_0_m",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 4.0 розміру M.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 16,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · M"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · M"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · M"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_4_0_m",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_l",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_4_0_l",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 4.0 розміру L.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 17,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · L"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · L"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · L"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_4_0_l",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_xl",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "magnetic_system_cover_4_0_xl",
+        "group": null,
+        "hidden": false,
+        "interface": "file-image",
+        "note": "Показується тільки для Carzo 4.0 розміру XL.",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 18,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · XL"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · XL"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Обкладинка магнітної системи · Carzo 4.0 · XL"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "magnetic_system_cover_4_0_xl",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
       }
     },
     {
@@ -14871,6 +15697,356 @@
         "foreign_key_table": "directus_files",
         "foreign_key_column": "id",
         "constraint_name": "carzo_media_settings_image_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_video",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_video",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_video",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_video_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_default_cover",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_default_cover",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_default_cover",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_default_cover_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_s",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_2_0_s",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_2_0_s",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_2_0_s_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_m",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_2_0_m",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_2_0_m",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_2_0_m_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_l",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_2_0_l",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_2_0_l",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_2_0_l_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_2_0_xl",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_2_0_xl",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_2_0_xl",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_2_0_xl_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_s",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_3_0_s",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_3_0_s",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_3_0_s_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_m",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_3_0_m",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_3_0_m",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_3_0_m_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_l",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_3_0_l",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_3_0_l",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_3_0_l_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_3_0_xl",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_3_0_xl",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_3_0_xl",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_3_0_xl_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_s",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_4_0_s",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_4_0_s",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_4_0_s_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_m",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_4_0_m",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_4_0_m",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_4_0_m_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_l",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_4_0_l",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_4_0_l",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_4_0_l_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "magnetic_system_cover_4_0_xl",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "magnetic_system_cover_4_0_xl",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "magnetic_system_cover_4_0_xl",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_magnetic_system_cover_4_0_xl_foreign",
         "on_update": "NO ACTION",
         "on_delete": "SET NULL"
       }

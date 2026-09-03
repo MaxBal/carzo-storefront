@@ -26,6 +26,14 @@ const pageSeed = JSON.parse(await readFile(resolve(root, 'content/carzo-pages.se
 const headers = { Authorization: `Bearer ${adminToken}` };
 const ORDER_NOTIFICATION_FLOW_NAME = 'Carzo — Нове замовлення';
 const ORDER_NOTIFICATION_OPERATION_KEY = 'carzo_new_order_notification';
+const MAGNETIC_SYSTEM_COVER_FIELDS = ['2-0', '3-0', '4-0'].flatMap(designSlug => (
+  ['S', 'M', 'L', 'XL'].map(size => ({
+    designSlug,
+    size,
+    field: `magnetic_system_cover_${designSlug.replace('-', '_')}_${size.toLowerCase()}`,
+    label: `Обкладинка магнітної системи · Carzo ${designSlug.replace('-', '.')} · ${size}`,
+  }))
+));
 
 async function request(path, options = {}) {
   const response = await fetch(`${baseUrl}${path}`, {
@@ -192,10 +200,19 @@ function relationField(name, note, { required = false, unique = false } = {}) {
   });
 }
 
-function imageField(name, note) {
+function imageField(name, note, label) {
   return field(name, 'uuid', 'file-image', { is_nullable: true }, {
     special: ['file'],
     note,
+    translations: label ? studioTranslations(label) : undefined,
+  });
+}
+
+function fileField(name, note, label) {
+  return field(name, 'uuid', 'file', { is_nullable: true }, {
+    special: ['file'],
+    note,
+    translations: label ? studioTranslations(label) : undefined,
   });
 }
 
@@ -413,11 +430,26 @@ const collections = [
     shortText('external_url', { note: 'Пряме HTTPS-посилання. Використовується лише якщо файл не завантажено.' }),
     shortText('alt', { note: 'Необов’язково. Порожнє значення створюється автоматично із заголовка блока та дизайну.' }),
   ], { displayTemplate: '{{design}} · {{section}}' }),
-  collection('carzo_media_settings', 'image', 'Єдиний плейсхолдер для відсутніх або недоступних фото галереї та rich content.', [
+  collection('carzo_media_settings', 'video_library', 'Глобальне відео магнітної системи, його обкладинки та єдиний плейсхолдер для відсутніх медіа.', [
     idField(), statusField(),
     imageField('image', 'SVG, PNG, JPEG, WebP або інший підтримуваний Directus формат. Файл має пріоритет.'),
     shortText('external_url', { note: 'Пряме HTTPS-посилання, якщо файл не завантажено.' }),
-  ], { singleton: true, displayTemplate: 'Плейсхолдер медіа' }),
+    fileField(
+      'magnetic_system_video',
+      'Одне глобальне відео для всіх дизайнів і розмірів. Рекомендований формат: MP4 (H.264).',
+      'Магнітна система · глобальне відео',
+    ),
+    imageField(
+      'magnetic_system_default_cover',
+      'Резервна обкладинка, якщо точну комбінацію дизайн × розмір не заповнено.',
+      'Магнітна система · резервна обкладинка',
+    ),
+    ...MAGNETIC_SYSTEM_COVER_FIELDS.map(item => imageField(
+      item.field,
+      `Показується тільки для Carzo ${item.designSlug.replace('-', '.')} розміру ${item.size}.`,
+      item.label,
+    )),
+  ], { singleton: true, displayTemplate: 'Глобальні медіа товару' }),
   collection('carzo_benefit_modals', 'featured_play_list', 'Глобальні модалки переваг товару.', [
     idField(), statusField(), sortField(), keyField(),
     shortText('card_label', { required: true }), shortText('title', { required: true }),
@@ -650,6 +682,13 @@ const relations = [
   { collection: 'carzo_rich_section_images', field: 'section', relatedCollection: 'carzo_rich_sections', schema: { on_delete: 'CASCADE' } },
   { collection: 'carzo_rich_section_images', field: 'image', relatedCollection: 'directus_files' },
   { collection: 'carzo_media_settings', field: 'image', relatedCollection: 'directus_files' },
+  { collection: 'carzo_media_settings', field: 'magnetic_system_video', relatedCollection: 'directus_files' },
+  { collection: 'carzo_media_settings', field: 'magnetic_system_default_cover', relatedCollection: 'directus_files' },
+  ...MAGNETIC_SYSTEM_COVER_FIELDS.map(item => ({
+    collection: 'carzo_media_settings',
+    field: item.field,
+    relatedCollection: 'directus_files',
+  })),
   { collection: 'carzo_site_settings', field: 'about_process_image_1', relatedCollection: 'directus_files' },
   { collection: 'carzo_site_settings', field: 'about_process_image_2', relatedCollection: 'directus_files' },
   { collection: 'carzo_site_settings', field: 'about_process_image_3', relatedCollection: 'directus_files' },
@@ -665,6 +704,9 @@ const relations = [
 
 const physicalRelationRepairKeys = new Set([
   'carzo_media_settings.image',
+  'carzo_media_settings.magnetic_system_video',
+  'carzo_media_settings.magnetic_system_default_cover',
+  ...MAGNETIC_SYSTEM_COVER_FIELDS.map(item => `carzo_media_settings.${item.field}`),
   'carzo_rich_section_images.design',
   'carzo_rich_section_images.section',
   'carzo_rich_section_images.image',
@@ -936,9 +978,8 @@ async function ensureRelations() {
 
     if (schemaMatches && metaMatches) continue;
 
-    // Only these four relations had physical foreign keys in the checked-in
-    // baseline. Leave older metadata-only relations unchanged so this setup
-    // does not broaden the checkout migration into unrelated database DDL.
+    // Repair only relations explicitly covered by verification. Leave older
+    // metadata-only relations unchanged so setup does not broaden unrelated DDL.
     if (!found.schema && !physicalRelationRepairKeys.has(key)) continue;
 
     if (!found.schema) {
@@ -1526,6 +1567,37 @@ async function seedItems() {
   if (!relatedId(mediaSettings?.image) && !mediaSettings?.external_url) {
     await upsertSingleton('carzo_media_settings', {
       status: 'published', image: mediaPlaceholderFileId, external_url: null,
+    });
+  }
+
+  const magneticPosterFileByDesign = new Map();
+  for (const designSlug of ['2-0', '3-0', '4-0']) {
+    const richMedia = await findOne(
+      'carzo_rich_section_images',
+      'key',
+      `${designSlug}:rich-magnets`,
+    );
+    const posterFileId = relatedId(richMedia?.image);
+    if (posterFileId) magneticPosterFileByDesign.set(designSlug, posterFileId);
+  }
+
+  const magneticMediaDefaults = {};
+  for (const item of MAGNETIC_SYSTEM_COVER_FIELDS) {
+    if (relatedId(mediaSettings?.[item.field])) continue;
+    const posterFileId = magneticPosterFileByDesign.get(item.designSlug);
+    if (posterFileId) magneticMediaDefaults[item.field] = posterFileId;
+  }
+  if (!relatedId(mediaSettings?.magnetic_system_default_cover)) {
+    const defaultPosterFileId = magneticPosterFileByDesign.get('2-0')
+      || magneticPosterFileByDesign.values().next().value;
+    if (defaultPosterFileId) {
+      magneticMediaDefaults.magnetic_system_default_cover = defaultPosterFileId;
+    }
+  }
+  if (Object.keys(magneticMediaDefaults).length > 0) {
+    await upsertSingleton('carzo_media_settings', {
+      status: 'published',
+      ...magneticMediaDefaults,
     });
   }
 

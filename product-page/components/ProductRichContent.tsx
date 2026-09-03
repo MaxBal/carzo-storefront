@@ -1,5 +1,6 @@
 import type { ResolvedProductContent } from '@/lib/content/types';
 import ManagedProductImage from '@/components/ManagedProductImage';
+import MagneticSystemVideo from '@/components/MagneticSystemVideo';
 
 interface ProductRichContentProps {
   data: ResolvedProductContent['richContent'];
@@ -22,15 +23,27 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
             >
               <div className="w-full lg:w-1/2">
                 <div className="aspect-[4/3] overflow-hidden rounded-[18px] border border-[#282828]">
-                  <ManagedProductImage
-                    src={feature.image}
-                    fallbackSrc={feature.fallbackSrc}
-                    isPlaceholder={feature.isPlaceholder}
-                    alt={feature.imageAlt}
-                    width={1200}
-                    height={900}
-                    className="h-full w-full"
-                  />
+                  {feature.key === 'rich-magnets' ? (
+                    <MagneticSystemVideo
+                      key={`${data.magneticSystemMedia.video}:${data.magneticSystemMedia.poster}`}
+                      videoSrc={data.magneticSystemMedia.video}
+                      posterSrc={data.magneticSystemMedia.poster}
+                      fallbackPosterSrc={data.magneticSystemMedia.fallbackPoster}
+                      isPosterPlaceholder={data.magneticSystemMedia.isPosterPlaceholder}
+                      alt={feature.imageAlt}
+                    />
+                  ) : (
+                    <ManagedProductImage
+                      src={feature.image}
+                      fallbackSrc={feature.fallbackSrc}
+                      isPlaceholder={feature.isPlaceholder}
+                      alt={feature.imageAlt}
+                      width={1200}
+                      height={900}
+                      sizes="(max-width: 1023px) 100vw, 50vw"
+                      className="h-full w-full"
+                    />
+                  )}
                 </div>
               </div>
 

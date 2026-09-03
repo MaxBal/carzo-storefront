@@ -11,6 +11,29 @@ import type {
 
 type RecordValue = Record<string, unknown>;
 
+const MAGNETIC_SYSTEM_POSTER_FIELDS = [
+  { designSlug: '2-0', size: 'S', field: 'magnetic_system_cover_2_0_s' },
+  { designSlug: '2-0', size: 'M', field: 'magnetic_system_cover_2_0_m' },
+  { designSlug: '2-0', size: 'L', field: 'magnetic_system_cover_2_0_l' },
+  { designSlug: '2-0', size: 'XL', field: 'magnetic_system_cover_2_0_xl' },
+  { designSlug: '3-0', size: 'S', field: 'magnetic_system_cover_3_0_s' },
+  { designSlug: '3-0', size: 'M', field: 'magnetic_system_cover_3_0_m' },
+  { designSlug: '3-0', size: 'L', field: 'magnetic_system_cover_3_0_l' },
+  { designSlug: '3-0', size: 'XL', field: 'magnetic_system_cover_3_0_xl' },
+  { designSlug: '4-0', size: 'S', field: 'magnetic_system_cover_4_0_s' },
+  { designSlug: '4-0', size: 'M', field: 'magnetic_system_cover_4_0_m' },
+  { designSlug: '4-0', size: 'L', field: 'magnetic_system_cover_4_0_l' },
+  { designSlug: '4-0', size: 'XL', field: 'magnetic_system_cover_4_0_xl' },
+] as const;
+
+const MEDIA_SETTINGS_FIELDS = [
+  '*',
+  'image.id',
+  'magnetic_system_video.id',
+  'magnetic_system_default_cover.id',
+  ...MAGNETIC_SYSTEM_POSTER_FIELDS.map(item => `${item.field}.id`),
+].join(',');
+
 function getDirectusUrl() {
   return process.env.DIRECTUS_URL?.replace(/\/$/, '') || null;
 }
@@ -139,7 +162,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     readCollection('carzo_benefit_modals'),
     readCollection('carzo_discount_tiers'),
     readCollection('carzo_site_settings'),
-    readCollection('carzo_media_settings', '*,image.id'),
+    readCollection('carzo_media_settings', MEDIA_SETTINGS_FIELDS),
   ]);
 
   const brandPricingBySlug = new Map(
@@ -154,6 +177,15 @@ async function loadDirectusSource(): Promise<ContentSource> {
         externalImageUrl(mediaSettings[0].external_url),
       ) || DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder
     : DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder;
+  const mediaSettingsItem = mediaSettings[0];
+  const magneticSystemPosters = MAGNETIC_SYSTEM_POSTER_FIELDS.reduce<Record<string, string>>(
+    (posters, item) => {
+      const poster = assetUrl(mediaSettingsItem?.[item.field]);
+      if (poster) posters[`${item.designSlug}:${item.size}`] = poster;
+      return posters;
+    },
+    {},
+  );
 
   const remote: ContentSource = {
     origin: 'directus',
@@ -247,6 +279,13 @@ async function loadDirectusSource(): Promise<ContentSource> {
       src: assetUrl(item.image, externalImageUrl(item.external_url)),
       alt: string(item.alt),
     })).filter(item => item.designSlug && item.sectionKey && item.src),
+    magneticSystemMedia: mediaSettingsItem
+      ? {
+          video: assetUrl(mediaSettingsItem.magnetic_system_video),
+          defaultPoster: assetUrl(mediaSettingsItem.magnetic_system_default_cover),
+          posters: magneticSystemPosters,
+        }
+      : DEFAULT_CONTENT_SOURCE.magneticSystemMedia,
     benefitModals: benefitModals.map(item => ({
       type: string(item.key), cardLabel: string(item.card_label), title: string(item.title),
       subtitle: string(item.subtitle),
@@ -297,6 +336,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     faqItems: mergeByKey(DEFAULT_CONTENT_SOURCE.faqItems, remote.faqItems, item => item.key),
     richSections: remote.richSections,
     richSectionImages: remote.richSectionImages,
+    magneticSystemMedia: remote.magneticSystemMedia,
     benefitModals: mergeByKey(DEFAULT_CONTENT_SOURCE.benefitModals, remote.benefitModals, item => item.type),
     discountTiers: mergeByKey(DEFAULT_CONTENT_SOURCE.discountTiers, remote.discountTiers, item => item.key),
     reviews: {

@@ -166,6 +166,19 @@ export interface ResolvedRichContentSection extends RichContentSection {
   isPlaceholder: boolean;
 }
 
+export interface MagneticSystemMedia {
+  video: string;
+  defaultPoster: string;
+  posters: Record<string, string>;
+}
+
+export interface ResolvedMagneticSystemMedia {
+  video: string;
+  poster: string;
+  fallbackPoster: string;
+  isPosterPlaceholder: boolean;
+}
+
 export type BenefitIcon =
   | 'wallet'
   | 'shield'
@@ -282,6 +295,7 @@ export interface ContentSource extends ProductCatalog {
   logoPlacements: LogoPlacement[];
   richSections: RichContentSection[];
   richSectionImages: RichContentSectionImage[];
+  magneticSystemMedia: MagneticSystemMedia;
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
   reviews: ReviewsData;
@@ -305,7 +319,11 @@ export interface ResolvedProductContent {
   insideModal: InfoModalData;
   fixationModal: InfoModalData;
   logoModal: LogoModalData;
-  richContent: { sections: ResolvedRichContentSection[]; signoff: string };
+  richContent: {
+    sections: ResolvedRichContentSection[];
+    signoff: string;
+    magneticSystemMedia: ResolvedMagneticSystemMedia;
+  };
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
   reviews: ReviewsData;
