@@ -31,6 +31,9 @@ const MEDIA_SETTINGS_FIELDS = [
   'image.id',
   'magnetic_system_video.id',
   'magnetic_system_default_cover.id',
+  'materials_video.id',
+  'edging_video.id',
+  'fixation_video.id',
   ...MAGNETIC_SYSTEM_POSTER_FIELDS.map(item => `${item.field}.id`),
 ].join(',');
 
@@ -286,6 +289,13 @@ async function loadDirectusSource(): Promise<ContentSource> {
           posters: magneticSystemPosters,
         }
       : DEFAULT_CONTENT_SOURCE.magneticSystemMedia,
+    richContentVideos: mediaSettingsItem
+      ? {
+          'rich-materials': assetUrl(mediaSettingsItem.materials_video),
+          'rich-edging': assetUrl(mediaSettingsItem.edging_video),
+        }
+      : DEFAULT_CONTENT_SOURCE.richContentVideos,
+    fixationVideo: mediaSettingsItem ? assetUrl(mediaSettingsItem.fixation_video) : DEFAULT_CONTENT_SOURCE.fixationVideo,
     benefitModals: benefitModals.map(item => ({
       type: string(item.key), cardLabel: string(item.card_label), title: string(item.title),
       subtitle: string(item.subtitle),

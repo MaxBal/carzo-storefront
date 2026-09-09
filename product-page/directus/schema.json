@@ -6621,6 +6621,183 @@
       }
     },
     {
+      "collection": "carzo_media_settings",
+      "field": "materials_video",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "materials_video",
+        "group": null,
+        "hidden": false,
+        "interface": "file",
+        "note": "Одне глобальне відео для блоку «Основні матеріали». Рекомендований формат: MP4 (H.264).",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 19,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Основні матеріали · глобальне відео"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Основні матеріали · глобальне відео"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Основні матеріали · глобальне відео"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "materials_video",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "edging_video",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "edging_video",
+        "group": null,
+        "hidden": false,
+        "interface": "file",
+        "note": "Одне глобальне відео для блоку «Якісна окантовка». Рекомендований формат: MP4 (H.264).",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 20,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Якісна окантовка · глобальне відео"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Якісна окантовка · глобальне відео"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Якісна окантовка · глобальне відео"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "edging_video",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "fixation_video",
+      "type": "uuid",
+      "meta": {
+        "collection": "carzo_media_settings",
+        "conditions": null,
+        "display": null,
+        "display_options": null,
+        "field": "fixation_video",
+        "group": null,
+        "hidden": false,
+        "interface": "file",
+        "note": "Одне глобальне відео для модалки «Фіксація з багажником». Рекомендований формат: MP4 (H.264).",
+        "options": null,
+        "readonly": false,
+        "required": false,
+        "searchable": true,
+        "sort": 21,
+        "special": [
+          "file"
+        ],
+        "translations": [
+          {
+            "language": "en-US",
+            "translation": "Фіксація · глобальне відео"
+          },
+          {
+            "language": "uk-UA",
+            "translation": "Фіксація · глобальне відео"
+          },
+          {
+            "language": "ru-RU",
+            "translation": "Фіксація · глобальне відео"
+          }
+        ],
+        "validation": null,
+        "validation_message": null,
+        "width": "full"
+      },
+      "schema": {
+        "name": "fixation_video",
+        "table": "carzo_media_settings",
+        "data_type": "uuid",
+        "default_value": null,
+        "max_length": null,
+        "numeric_precision": null,
+        "numeric_scale": null,
+        "is_nullable": true,
+        "is_unique": false,
+        "is_indexed": false,
+        "is_primary_key": false,
+        "is_generated": false,
+        "generation_expression": null,
+        "has_auto_increment": false,
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id"
+      }
+    },
+    {
       "collection": "carzo_notification_settings",
       "field": "id",
       "type": "uuid",
@@ -16047,6 +16224,81 @@
         "foreign_key_table": "directus_files",
         "foreign_key_column": "id",
         "constraint_name": "carzo_media_settings_magnetic_system_cover_4_0_xl_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "materials_video",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "materials_video",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "materials_video",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_materials_video_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "edging_video",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "edging_video",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "edging_video",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_edging_video_foreign",
+        "on_update": "NO ACTION",
+        "on_delete": "SET NULL"
+      }
+    },
+    {
+      "collection": "carzo_media_settings",
+      "field": "fixation_video",
+      "related_collection": "directus_files",
+      "meta": {
+        "junction_field": null,
+        "many_collection": "carzo_media_settings",
+        "many_field": "fixation_video",
+        "one_allowed_collections": null,
+        "one_collection": "directus_files",
+        "one_collection_field": null,
+        "one_deselect_action": "nullify",
+        "one_field": null,
+        "sort_field": null
+      },
+      "schema": {
+        "table": "carzo_media_settings",
+        "column": "fixation_video",
+        "foreign_key_table": "directus_files",
+        "foreign_key_column": "id",
+        "constraint_name": "carzo_media_settings_fixation_video_foreign",
         "on_update": "NO ACTION",
         "on_delete": "SET NULL"
       }

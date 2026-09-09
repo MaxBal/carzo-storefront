@@ -106,7 +106,9 @@ function resolveFixationModal(params: ProductParams, source: ContentSource) {
   if (resolved.designSlug !== params.designSlug || resolved.size !== params.size) {
     warnFallback('fixation modal', `${params.designSlug}:${params.size}`, resolved.key);
   }
-  return toModal(resolved, params.size, 'fixation', source);
+  const modal = toModal(resolved, params.size, 'fixation', source);
+  if (source.fixationVideo) modal.globalVideo = source.fixationVideo;
+  return modal;
 }
 
 function resolvePlacement(params: ProductParams, source: ContentSource) {
@@ -224,6 +226,7 @@ export function resolveProductContent(
       sections: richSections,
       signoff: source.siteSettings.richSignoff,
       magneticSystemMedia: resolveMagneticSystemMedia(params, source, richSections),
+      richContentVideos: source.richContentVideos,
     },
     benefitModals: source.benefitModals,
     discountTiers: sorted(source.discountTiers),

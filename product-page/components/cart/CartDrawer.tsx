@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, ChevronDown, Info, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown, Info, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
 import { createOrder } from '@/app/actions/checkout';
 import { CONTACT_METHOD_OPTIONS, type ContactMethod } from '@/lib/cart/contact-method';
+import { checkLoyaltyDiscount, normalizePhone } from '@/lib/cart/loyalty';
 import { formatUkrainePhoneInput, UKRAINE_PHONE_MASK_PREFIX, UKRAINE_PHONE_PATTERN } from '@/lib/cart/phone';
 import type { CheckoutDelivery, CheckoutResult } from '@/lib/cart/types';
 import NovaPoshtaSelector from './NovaPoshtaSelector';
@@ -40,8 +41,13 @@ export default function CartDrawer() {
   const [delivery, setDelivery] = useState<CheckoutDelivery>({ method: 'BRANCH', cityRef: '', pointRef: '' });
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [loyaltyOpen, setLoyaltyOpen] = useState(false);
+  const [loyaltyPhone, setLoyaltyPhone] = useState(UKRAINE_PHONE_MASK_PREFIX);
+  const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
+  const [loyaltyDiscount, setLoyaltyDiscount] = useState<{ percent: number; amount: number } | null>(null);
+  const [loyaltyChecking, setLoyaltyChecking] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
-  const { viewportRef, scrollRef } = useCartViewport(isOpen, checkout);
+  const { viewportRef, scrollRef } = useCartViewport(isOpen, checkout || loyaltyOpen);
 
   const closeSurface = useCallback(() => {
     if (!window.matchMedia(MOBILE_MEDIA_QUERY).matches) {
@@ -69,6 +75,11 @@ export default function CartDrawer() {
       setSubmitError(null);
       setSubmitAttempted(false);
       setDelivery({ method: 'BRANCH', cityRef: '', pointRef: '' });
+      setLoyaltyOpen(false);
+      setLoyaltyPhone(UKRAINE_PHONE_MASK_PREFIX);
+      setLoyaltyError(null);
+      setLoyaltyDiscount(null);
+      setLoyaltyChecking(false);
       return;
     }
     const body = document.body;
@@ -138,6 +149,31 @@ export default function CartDrawer() {
     setSubmitError(result.message);
   };
 
+  const applyLoyalty = async () => {
+    if (!cart.quote) return;
+    setLoyaltyChecking(true);
+    setLoyaltyError(null);
+    try {
+      const result = await checkLoyaltyDiscount(loyaltyPhone);
+      if (result.eligible) {
+        const base = cart.quote.subtotal - cart.quote.quantityDiscount;
+        const amount = Math.trunc(base * result.discountPercent / 100);
+        setLoyaltyDiscount({ percent: result.discountPercent, amount });
+      } else {
+        setLoyaltyDiscount(null);
+        setLoyaltyError('На жаль, знижку не вдалося застосувати.');
+      }
+    } finally {
+      setLoyaltyChecking(false);
+    }
+  };
+
+  const handleLoyaltyPhoneChange = (value: string) => {
+    setLoyaltyPhone(value);
+    setLoyaltyError(null);
+    setLoyaltyDiscount(null);
+  };
+
   return (
     <>
       {cart.isOpen && (
@@ -146,7 +182,7 @@ export default function CartDrawer() {
             <button type="button" aria-label="Закрити кошик" className="absolute inset-0 hidden bg-black/55 backdrop-blur-[1px] sm:block" onClick={closeSurface} />
             <aside role="dialog" aria-modal="true" aria-labelledby="cart-title" className="absolute inset-y-0 right-0 flex h-full w-full max-w-none flex-col overflow-hidden bg-white sm:max-w-[520px] sm:shadow-2xl">
             <div data-checkout-header>
-              <div data-checkout-header-inner className="flex h-16 shrink-0 items-center justify-between border-b border-gray-200 px-4 sm:px-6">
+              <div data-checkout-header-inner className="flex h-[52px] sm:h-16 shrink-0 items-center justify-between border-b border-gray-200 px-4 sm:px-6">
                 <div className="flex items-center gap-2.5">
                   <ShoppingBag size={20} />
                   <h2 id="cart-title" className="text-lg font-bold">{checkout ? 'Оформлення замовлення' : 'Кошик'}</h2>
@@ -216,13 +252,14 @@ export default function CartDrawer() {
                   {submitError && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{submitError}</div>}
                 </form>
               ) : (
+                <>
                 <div className="space-y-4">
                   {(cart.quote?.lines ?? []).map(line => (
                     <article key={line.itemKey} className="rounded-2xl border border-gray-200 p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <Link href={line.productUrl} onClick={closeSurface} className="font-semibold leading-5 hover:underline">{line.title}</Link>
-                          <p className="mt-1 text-xs leading-5 text-gray-500">{line.sizeLabel} · {line.brandName}<br />{line.fixationLabel}</p>
+                          <p className="mt-1 text-[13px] leading-[1.4] text-gray-500 min-[901px]:text-[14px]">{line.sizeLabel} · {line.brandName}<br />{line.fixationLabel}</p>
                         </div>
                         <button type="button" onClick={() => cart.removeItem(line.itemKey)} className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-red-600" aria-label={`Видалити ${line.title}`}><Trash2 size={17} /></button>
                       </div>
@@ -243,6 +280,39 @@ export default function CartDrawer() {
                   {cart.quoteLoading && !cart.quote && <div className="flex items-center justify-center gap-2 py-12 text-sm text-gray-500"><Loader2 className="animate-spin" size={18} /> Перераховуємо кошик…</div>}
                   {cart.quoteError && <div className="rounded-xl bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">{cart.quoteError}</div>}
                 </div>
+                {cart.quote && (
+                <div className="mt-4 rounded-2xl border border-gray-200">
+                  <button type="button" onClick={() => setLoyaltyOpen(v => !v)} aria-expanded={loyaltyOpen} className="flex w-full items-center justify-between px-4 py-3 text-left" aria-label="Знижка постійного клієнта">
+                    <div className="min-w-0">
+                      <p className="font-semibold leading-5 text-gray-900">Знижка постійного клієнта</p>
+                      <p className="mt-0.5 text-[13px] leading-[1.4] text-gray-500 min-[901px]:text-[14px]">{loyaltyOpen ? 'Введіть номер телефону, щоб застосувати знижку.' : 'Вже замовляли у Carzo? Отримайте −5%'}</p>
+                    </div>
+                    <ChevronDown size={18} className={`ml-3 shrink-0 text-gray-400 transition-transform ${loyaltyOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {loyaltyOpen && (
+                    <div className="px-4 pb-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="tel"
+                          inputMode="tel"
+                          autoComplete="tel"
+                          maxLength={19}
+                          placeholder="+38 (0__) ___-__-__"
+                          value={loyaltyPhone}
+                          onChange={event => handleLoyaltyPhoneChange(formatUkrainePhoneInput(event.target.value))}
+                          onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyLoyalty(); } }}
+                          className="h-10 flex-1 min-w-0 rounded-xl border border-gray-200 px-3 text-base outline-none focus:border-gray-500"
+                        />
+                        <button type="button" onClick={applyLoyalty} disabled={loyaltyChecking} aria-label="Застосувати знижку" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-white disabled:opacity-50">
+                          {loyaltyChecking ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} strokeWidth={2.5} />}
+                        </button>
+                      </div>
+                      {loyaltyError && <p className="mt-2 text-xs text-[#ca423d]">{loyaltyError}</p>}
+                    </div>
+                  )}
+                </div>
+                )}
+                </>
               )}
             </div>
 
@@ -259,8 +329,14 @@ export default function CartDrawer() {
               <div className="shrink-0 border-t border-gray-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-4">
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-gray-600"><span>Товари ({cart.quote.itemsQuantity})</span><span>{money(cart.quote.subtotal)} ₴</span></div>
-                  {cart.quote.quantityDiscount > 0 && <div className="flex justify-between font-medium text-[#159e85]"><span>Разом дешевше</span><span>−{money(cart.quote.quantityDiscount)} ₴</span></div>}
-                  <div className="flex justify-between border-t border-gray-100 pt-3 text-lg font-bold"><span>Разом</span><span>{money(cart.quote.total)} ₴</span></div>
+                  {cart.quote.quantityDiscount > 0 && <div className="flex justify-between font-medium text-[#00a382]"><span>Разом дешевше</span><span>−{money(cart.quote.quantityDiscount)} ₴</span></div>}
+                  {loyaltyDiscount && (
+                    <div className="flex justify-between font-medium text-[#ca423d]">
+                      <span className="flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="rounded-full" /> Знижку {loyaltyDiscount.percent}% застосовано</span>
+                      <span>−{money(loyaltyDiscount.amount)} ₴</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-gray-100 pt-3 text-lg font-bold"><span>Разом</span><span>{money(cart.quote.total - (loyaltyDiscount?.amount ?? 0))} ₴</span></div>
                 </div>
                 <button type="button" onClick={() => setCheckout(true)} disabled={cart.quoteLoading || !cart.quote.canCheckout} className="mt-4 w-full rounded-xl bg-black px-4 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Оформити замовлення</button>
                 <NovaPoshtaTrustRow />

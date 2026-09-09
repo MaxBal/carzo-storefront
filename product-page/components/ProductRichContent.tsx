@@ -32,6 +32,15 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
                       isPosterPlaceholder={data.magneticSystemMedia.isPosterPlaceholder}
                       alt={feature.imageAlt}
                     />
+                  ) : data.richContentVideos[feature.key] ? (
+                    <MagneticSystemVideo
+                      key={`${data.richContentVideos[feature.key]}:${feature.image}`}
+                      videoSrc={data.richContentVideos[feature.key]}
+                      posterSrc={feature.image}
+                      fallbackPosterSrc={feature.fallbackSrc}
+                      isPosterPlaceholder={feature.isPlaceholder}
+                      alt={feature.imageAlt}
+                    />
                   ) : (
                     <ManagedProductImage
                       src={feature.image}
@@ -55,7 +64,7 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
                   <div className="mb-4 inline-flex items-center rounded-full border border-[#333333] px-3 py-1 text-[11px] font-extralight uppercase tracking-[0.14em] text-[#5ce4ab]">
                     {feature.subtitle}
                   </div>
-                  <p className="text-[16px] leading-[1.6] text-[#a2a2a2]">{feature.description}</p>
+                  <p className="text-[16px] leading-[1.6] text-white">{feature.description}</p>
                 </div>
 
                 {feature.additionalInfo && (

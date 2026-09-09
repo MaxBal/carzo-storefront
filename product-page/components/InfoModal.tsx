@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Info } from 'lucide-react';
 import Image from 'next/image';
+import InlineVideoPlayer from '@/components/InlineVideoPlayer';
 import type { InfoModalData } from '@/lib/content/types';
 
 export type { InfoModalData } from '@/lib/content/types';
@@ -128,35 +129,48 @@ export default function InfoModal(props: InfoModalProps) {
             ))}
 
             {/* Content sections */}
-            {tab?.sections?.map(section => (
+            {tab?.sections?.map((section, sectionIndex) => {
+              const isLastSection = tab.sections && sectionIndex === tab.sections.length - 1;
+              const hasGlobalVideo = !isSimple && isLastSection && props.data.globalVideo;
+
+              return (
               <div key={section.key} className="flex flex-col gap-3">
-                {/* Image or safe placeholder */}
-                <div
-                  className="modal-image-container flex items-center justify-center"
-                  style={{
-                    aspectRatio: '16/9',
-                    minHeight: 180,
-                  }}
-                >
-                  {section.image ? (
-                    <Image
-                      src={section.image}
-                      alt={section.title}
-                      width={1200}
-                      height={675}
-                      className="h-full w-full object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <span className="modal-secondary-text">{section.imagePlaceholder || ''}</span>
-                  )}
-                </div>
+                {/* Image, video, or safe placeholder */}
+                {hasGlobalVideo ? (
+                  <InlineVideoPlayer
+                    src={props.data.globalVideo!}
+                    poster={section.image}
+                    alt={section.title}
+                  />
+                ) : (
+                  <div
+                    className="modal-image-container flex items-center justify-center"
+                    style={{
+                      aspectRatio: '16/9',
+                      minHeight: 180,
+                    }}
+                  >
+                    {section.image ? (
+                      <Image
+                        src={section.image}
+                        alt={section.title}
+                        width={1200}
+                        height={675}
+                        className="h-full w-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="modal-secondary-text">{section.imagePlaceholder || ''}</span>
+                    )}
+                  </div>
+                )}
 
                 {/* Text */}
                 <h3 className="modal-card-title">{section.title}</h3>
                 <p className="modal-body-text -mt-1">{section.text}</p>
               </div>
-            ))}
+              );
+            })}
 
           </div>
         </div>

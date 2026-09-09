@@ -6,6 +6,7 @@ import DesignVariantsModal from "@/components/DesignVariantsModal";
 import CarMatQuoteModal from "@/components/CarMatQuoteModal";
 import type { CarMatDesign } from "@/lib/content/car-mat-designs";
 import '@/app/carmat.css';
+import '@/app/video-modal.css';
 
 /* ── Inline SVG helpers ── */
 const PlayIcon = () => (

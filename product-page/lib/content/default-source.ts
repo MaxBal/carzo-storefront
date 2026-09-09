@@ -112,6 +112,8 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     defaultPoster: '',
     posters: {},
   },
+  richContentVideos: {},
+  fixationVideo: '',
   benefitModals: seed.benefitModals.map((item, index) => ({
     type: item.key,
     cardLabel: item.cardLabel,

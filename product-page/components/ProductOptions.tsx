@@ -215,19 +215,39 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
         {/* Key characteristics */}
         <section
-          className="mt-3 flex flex-col items-start gap-2"
+          className="mt-3"
           aria-label="Ключові характеристики"
           data-product-characteristics
         >
-          {['МАГНІТНА СИСТЕМА', 'НІМЕЦЬКА АВТО ЕКОШКІРА'].map(label => (
-            <span
-              key={label}
-              className="inline-flex w-fit max-w-full items-center gap-[7px] whitespace-nowrap rounded-full border border-[#0a0a0a] bg-transparent px-[13px] py-[5px] text-[12px] font-[200] uppercase leading-[1.4] tracking-[0.14em] text-[#0a0a0a] antialiased [font-family:Inter,Arial,sans-serif] min-[901px]:px-[14px] max-[380px]:gap-[5px] max-[380px]:px-[10px] max-[380px]:py-[4px] max-[380px]:text-[10px]"
-            >
-              <span className="h-[5px] w-[5px] shrink-0 rounded-full bg-[#5CE4AB]" aria-hidden="true" />
-              {label}
-            </span>
-          ))}
+          <div className="w-full max-w-full rounded-[12px] border border-[#D9DDE3] bg-[#f0f0ee] px-3 py-[15px] [font-family:Inter,Arial,sans-serif] min-[901px]:w-fit min-[901px]:px-[14px] min-[901px]:py-[15px]">
+            {[
+              {
+                label: 'МАГНІТНА СИСТЕМА ФІКСАЦІЇ КРИШКИ',
+                icon: (
+                  <svg viewBox="0 0 24 24" className="h-[11px] w-[15px] min-[901px]:w-[17px] min-[901px]:h-3" fill="none" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                  </svg>
+                ),
+              },
+              {
+                label: 'НІМЕЦЬКА АВТОМОБІЛЬНА ЕКО-ШКІРА',
+                icon: (
+                  <svg viewBox="0 0 24 16" className="h-[11px] w-[16px] min-[901px]:w-[18px] min-[901px]:h-3" aria-hidden="true">
+                    <rect y="0" width="24" height="5.33" rx="0.5" fill="#111827" />
+                    <rect y="5.33" width="24" height="5.34" rx="0.5" fill="#E63946" />
+                    <rect y="10.67" width="24" height="5.33" rx="0.5" fill="#FFCC00" />
+                  </svg>
+                ),
+              },
+            ].map(({ label, icon }) => (
+              <div key={label} className="flex items-center gap-2 text-[12px] font-[200] uppercase leading-[1.3] tracking-[0.14em] text-[#111827] antialiased [&+div]:mt-[7px] min-[901px]:[&+div]:mt-2">
+                <span className="flex h-[15px] w-[15px] shrink-0 items-center justify-center min-[901px]:h-4 min-[901px]:w-4" aria-hidden="true">
+                  {icon}
+                </span>
+                {label}
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Price */}

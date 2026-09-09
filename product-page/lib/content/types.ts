@@ -106,6 +106,7 @@ export interface InfoModalTab {
 export interface InfoModalData {
   title: string;
   tabs: [InfoModalTab, InfoModalTab];
+  globalVideo?: string;
 }
 
 export interface LogoSpec {
@@ -296,6 +297,8 @@ export interface ContentSource extends ProductCatalog {
   richSections: RichContentSection[];
   richSectionImages: RichContentSectionImage[];
   magneticSystemMedia: MagneticSystemMedia;
+  richContentVideos: Record<string, string>;
+  fixationVideo: string;
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
   reviews: ReviewsData;
@@ -323,6 +326,7 @@ export interface ResolvedProductContent {
     sections: ResolvedRichContentSection[];
     signoff: string;
     magneticSystemMedia: ResolvedMagneticSystemMedia;
+    richContentVideos: Record<string, string>;
   };
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];

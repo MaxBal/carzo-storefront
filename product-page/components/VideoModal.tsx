@@ -42,6 +42,13 @@ export default function VideoModal({ src, isOpen, onClose }: VideoModalProps) {
     }
   }, [isOpen]);
 
+  /* autoplay on open */
+  useEffect(() => {
+    if (isOpen && videoRef.current) {
+      videoRef.current.play().catch(() => {});
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
