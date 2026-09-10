@@ -220,10 +220,10 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           data-product-characteristics
         >
           <div className="flex flex-row flex-nowrap items-center gap-1.5 [font-family:Inter,Arial,sans-serif]">
-            <span className="inline-flex shrink-0 rounded-[8px] border border-[#080808] px-[12px] py-[6px] text-[11px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[14px] min-[901px]:py-[7px] min-[901px]:text-[12px]">
+            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[10px] py-[4px] text-[11px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-[#5ce4ab] min-[901px]:px-[12px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
               Магнітна система
             </span>
-            <span className="inline-flex shrink-0 rounded-[8px] border border-[#080808] px-[12px] py-[6px] text-[11px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[14px] min-[901px]:py-[7px] min-[901px]:text-[12px]">
+            <span className="inline-flex shrink-0 rounded-[8px] border border-[#080808] px-[10px] py-[4px] text-[11px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[12px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
               Max зносостійкість
             </span>
           </div>
