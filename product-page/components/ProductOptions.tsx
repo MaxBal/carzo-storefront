@@ -219,29 +219,30 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           aria-label="Ключові характеристики"
           data-product-characteristics
         >
-          <div className="w-full max-w-full rounded-[12px] border border-[#D9DDE3] bg-[#f0f0ee] px-3 py-[15px] [font-family:Inter,Arial,sans-serif] min-[901px]:w-fit min-[901px]:px-[14px] min-[901px]:py-[15px]">
+          <div className="flex flex-col gap-2 [font-family:Inter,Arial,sans-serif]">
             {[
               {
-                label: 'МАГНІТНА СИСТЕМА ФІКСАЦІЇ КРИШКИ',
+                label: 'Магнітна система фіксації кришки',
                 icon: (
-                  <svg viewBox="0 0 24 24" className="h-[11px] w-[15px] min-[901px]:w-[17px] min-[901px]:h-3" fill="none" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 min-[901px]:h-[22px] min-[901px]:w-[22px]" aria-hidden="true">
+                    <rect x="0" y="0" width="24" height="24" rx="6" fill="#080808" />
+                    <path d="M7 12.5l3.2 3.2L17 8.5" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 ),
               },
               {
-                label: 'НІМЕЦЬКА АВТОМОБІЛЬНА ЕКО-ШКІРА',
+                label: 'Німецька автомобільна екошкіра',
                 icon: (
-                  <svg viewBox="0 0 24 16" className="h-[11px] w-[16px] min-[901px]:w-[18px] min-[901px]:h-3" aria-hidden="true">
-                    <rect y="0" width="24" height="5.33" rx="0.5" fill="#111827" />
-                    <rect y="5.33" width="24" height="5.34" rx="0.5" fill="#E63946" />
-                    <rect y="10.67" width="24" height="5.33" rx="0.5" fill="#FFCC00" />
+                  <svg viewBox="0 0 24 16" className="h-5 w-[22px] min-[901px]:h-[22px] min-[901px]:w-6" aria-hidden="true">
+                    <rect y="0" width="24" height="5.33" rx="1" fill="#111827" />
+                    <rect y="5.33" width="24" height="5.34" rx="1" fill="#E63946" />
+                    <rect y="10.67" width="24" height="5.33" rx="1" fill="#FFCC00" />
                   </svg>
                 ),
               },
             ].map(({ label, icon }) => (
-              <div key={label} className="flex items-center gap-2 text-[12px] font-[200] uppercase leading-[1.3] tracking-[0.14em] text-[#111827] antialiased [&+div]:mt-[7px] min-[901px]:[&+div]:mt-2">
-                <span className="flex h-[15px] w-[15px] shrink-0 items-center justify-center min-[901px]:h-4 min-[901px]:w-4" aria-hidden="true">
+              <div key={label} className="flex items-center gap-2.5 text-[14px] font-normal leading-[1.35] text-[#111827] antialiased min-[901px]:text-[16px]">
+                <span className="relative top-[0.02em] flex shrink-0 items-center justify-center" aria-hidden="true">
                   {icon}
                 </span>
                 {label}
