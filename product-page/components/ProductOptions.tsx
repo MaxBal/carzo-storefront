@@ -219,35 +219,13 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           aria-label="Ключові характеристики"
           data-product-characteristics
         >
-          <div className="flex flex-col gap-2 [font-family:Inter,Arial,sans-serif]">
-            {[
-              {
-                label: 'Магнітна система фіксації кришки',
-                icon: (
-                  <svg viewBox="0 0 24 24" className="h-5 w-5 min-[901px]:h-[22px] min-[901px]:w-[22px]" aria-hidden="true">
-                    <rect x="0" y="0" width="24" height="24" rx="6" fill="#080808" />
-                    <path d="M7 12.5l3.2 3.2L17 8.5" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ),
-              },
-              {
-                label: 'Німецька автомобільна екошкіра',
-                icon: (
-                  <svg viewBox="0 0 24 16" className="h-5 w-[22px] min-[901px]:h-[22px] min-[901px]:w-6" aria-hidden="true">
-                    <rect y="0" width="24" height="5.33" rx="1" fill="#111827" />
-                    <rect y="5.33" width="24" height="5.34" rx="1" fill="#E63946" />
-                    <rect y="10.67" width="24" height="5.33" rx="1" fill="#FFCC00" />
-                  </svg>
-                ),
-              },
-            ].map(({ label, icon }) => (
-              <div key={label} className="flex items-center gap-2.5 text-[16px] font-normal leading-[1.35] text-[#111827] antialiased">
-                <span className="relative top-[0.02em] flex shrink-0 items-center justify-center" aria-hidden="true">
-                  {icon}
-                </span>
-                {label}
-              </div>
-            ))}
+          <div className="flex flex-row flex-nowrap items-center gap-1.5 [font-family:Inter,Arial,sans-serif]">
+            <span className="inline-flex shrink-0 rounded-[8px] border border-[#080808] px-[12px] py-[6px] text-[11px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[14px] min-[901px]:py-[7px] min-[901px]:text-[12px]">
+              Магнітна система
+            </span>
+            <span className="inline-flex shrink-0 rounded-[8px] border border-[#080808] px-[12px] py-[6px] text-[11px] font-bold uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[14px] min-[901px]:py-[7px] min-[901px]:text-[12px]">
+              Max зносостійкість
+            </span>
           </div>
         </section>
 
