@@ -241,7 +241,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
                 ),
               },
             ].map(({ label, icon }) => (
-              <div key={label} className="flex items-center gap-2.5 text-[14px] font-normal leading-[1.35] text-[#111827] antialiased min-[901px]:text-[16px]">
+              <div key={label} className="flex items-center gap-2.5 text-[16px] font-normal leading-[1.35] text-[#111827] antialiased">
                 <span className="relative top-[0.02em] flex shrink-0 items-center justify-center" aria-hidden="true">
                   {icon}
                 </span>
