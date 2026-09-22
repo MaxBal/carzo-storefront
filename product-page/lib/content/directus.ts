@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { DEFAULT_CONTENT_SOURCE } from './default-source';
+import { resolveMediaUrl, resolveJsonMediaUrl, normalizeExternalUrl } from '@/lib/media';
 import type {
   BenefitModalData,
   ContentSource,
@@ -60,26 +61,6 @@ function relationValue(value: unknown, field: string): string | null {
   return typeof value === 'string' ? value : null;
 }
 
-function assetUrl(file: unknown, fallback = '') {
-  const directusUrl = getDirectusUrl();
-  if (!directusUrl || !file) return fallback;
-  const id = typeof file === 'string' ? file : (file as RecordValue).id;
-  if (typeof id !== 'string') return fallback;
-  return getDirectusToken()
-    ? `/api/directus-assets/${encodeURIComponent(id)}`
-    : `${directusUrl}/assets/${id}`;
-}
-
-function externalImageUrl(value: unknown) {
-  if (typeof value !== 'string' || !value.trim()) return '';
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' ? url.toString() : '';
-  } catch {
-    return '';
-  }
-}
-
 async function readCollection(name: string, fields = '*'): Promise<RecordValue[]> {
   const directusUrl = getDirectusUrl();
   if (!directusUrl) throw new Error('DIRECTUS_URL is not configured');
@@ -131,11 +112,7 @@ function parseReviewScreenshots(raw: unknown): ContentSource['reviews']['screens
   if (!Array.isArray(raw)) return [];
   return raw.map((item, index) => ({
     key: string(item.key) || `screenshot-${index}`,
-    image: typeof item.image === 'string'
-      ? (item.image.startsWith('http') || item.image.startsWith('/api/')
-        ? item.image
-        : assetUrl(item.image))
-      : assetUrl(item.image),
+    image: resolveJsonMediaUrl(item as { image?: unknown; imageUrl?: unknown }),
     altText: string(item.altText || item.alt_text),
     sort: number(item.sort, index + 1),
   })).filter(item => item.image);
@@ -175,15 +152,19 @@ async function loadDirectusSource(): Promise<ContentSource> {
     sizeShipping.map(item => [relationValue(item.size, 'code'), item]),
   );
   const mediaPlaceholder = mediaSettings[0]
-    ? assetUrl(
+    ? resolveMediaUrl(
+        mediaSettings[0].external_url,
         mediaSettings[0].image,
-        externalImageUrl(mediaSettings[0].external_url),
-      ) || DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder
+        DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder,
+      )
     : DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder;
   const mediaSettingsItem = mediaSettings[0];
   const magneticSystemPosters = MAGNETIC_SYSTEM_POSTER_FIELDS.reduce<Record<string, string>>(
     (posters, item) => {
-      const poster = assetUrl(mediaSettingsItem?.[item.field]);
+      const poster = resolveMediaUrl(
+        mediaSettingsItem?.[`${item.field}_url`],
+        mediaSettingsItem?.[item.field],
+      );
       if (poster) posters[`${item.designSlug}:${item.size}`] = poster;
       return posters;
     },
@@ -194,7 +175,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     origin: 'directus',
     designs: designs.map(item => ({
       slug: string(item.slug), version: string(item.version), label: string(item.label),
-      selectorImage: assetUrl(item.selector_image, '/Без_имени-1.jpg'), sort: number(item.sort),
+      selectorImage: resolveMediaUrl(item.selector_image_url, item.selector_image, '/Без_имени-1.jpg'), sort: number(item.sort),
     })),
     sizes: sizes.map(item => {
       const shipping = sizeShippingByCode.get(string(item.code));
@@ -218,7 +199,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     brands: brands.map(item => ({
       id: string(item.slug), name: item.name === null ? null : string(item.name), flag: string(item.flag),
       price: number(brandPricingBySlug.get(string(item.slug))?.logo_extra),
-      logoImage: assetUrl(item.logo_image), sort: number(item.sort),
+      logoImage: resolveMediaUrl(item.logo_image_url, item.logo_image), sort: number(item.sort),
     })),
     fixations: fixations.map(item => ({
       value: string(item.key), label: string(item.label), extra: number(item.extra), sort: number(item.sort),
@@ -232,7 +213,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     galleryImages: galleryImages.map(item => ({
       key: string(item.key), designSlug: relationValue(item.design, 'slug'),
       size: relationValue(item.size, 'code') as SizeId | null,
-      src: assetUrl(item.image, externalImageUrl(item.external_url)), alt: string(item.alt), sort: number(item.sort),
+      src: resolveMediaUrl(item.external_url, item.image, ''), alt: string(item.alt), sort: number(item.sort),
       fallbackSrc: mediaPlaceholder, isPlaceholder: false,
     })),
     contentSets: contentSets.map(item => ({
@@ -245,7 +226,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     contentSections: contentSections.map(item => ({
       key: string(item.key), contentSetKey: relationValue(item.content_set, 'key') || '',
       title: string(item.title), text: string(item.text),
-      image: assetUrl(item.image, string(item.external_url)) || undefined,
+      image: resolveMediaUrl(item.external_url, item.image) || undefined,
       imagePlaceholder: string(item.image_placeholder) || undefined, sort: number(item.sort),
     })),
     faqItems: faqItems.map(item => ({
@@ -255,14 +236,14 @@ async function loadDirectusSource(): Promise<ContentSource> {
     logoSettings: logoSettings[0]
       ? {
           title: string(logoSettings[0].title), infoText: string(logoSettings[0].info_text),
-          fallbackImage: assetUrl(logoSettings[0].fallback_image, '/Без_имени-1.jpg'),
+          fallbackImage: resolveMediaUrl(logoSettings[0].fallback_image_url, logoSettings[0].fallback_image, '/Без_имени-1.jpg'),
           specs: Array.isArray(logoSettings[0].specs) ? logoSettings[0].specs as ContentSource['logoSettings']['specs'] : [],
         }
       : DEFAULT_CONTENT_SOURCE.logoSettings,
     logoPlacements: logoPlacements.map(item => ({
       key: string(item.key), designSlug: relationValue(item.design, 'slug'),
       size: relationValue(item.size, 'code') as SizeId | null,
-      image: assetUrl(item.image, string(item.external_url)), sort: number(item.sort),
+      image: resolveMediaUrl(item.external_url, item.image), sort: number(item.sort),
     })),
     richSections: richSections.map(item => ({
       key: string(item.key), title: string(item.title),
@@ -279,23 +260,25 @@ async function loadDirectusSource(): Promise<ContentSource> {
       key: string(item.key),
       designSlug: relationValue(item.design, 'slug') || '',
       sectionKey: relationValue(item.section, 'key') || '',
-      src: assetUrl(item.image, externalImageUrl(item.external_url)),
+      src: resolveMediaUrl(item.external_url, item.image),
       alt: string(item.alt),
     })).filter(item => item.designSlug && item.sectionKey && item.src),
     magneticSystemMedia: mediaSettingsItem
       ? {
-          video: assetUrl(mediaSettingsItem.magnetic_system_video),
-          defaultPoster: assetUrl(mediaSettingsItem.magnetic_system_default_cover),
+          video: resolveMediaUrl(mediaSettingsItem.magnetic_system_video_url, mediaSettingsItem.magnetic_system_video),
+          defaultPoster: resolveMediaUrl(mediaSettingsItem.magnetic_system_default_cover_url, mediaSettingsItem.magnetic_system_default_cover),
           posters: magneticSystemPosters,
         }
       : DEFAULT_CONTENT_SOURCE.magneticSystemMedia,
     richContentVideos: mediaSettingsItem
       ? {
-          'rich-materials': assetUrl(mediaSettingsItem.materials_video),
-          'rich-edging': assetUrl(mediaSettingsItem.edging_video),
+          'rich-materials': resolveMediaUrl(mediaSettingsItem.materials_video_url, mediaSettingsItem.materials_video),
+          'rich-edging': resolveMediaUrl(mediaSettingsItem.edging_video_url, mediaSettingsItem.edging_video),
         }
       : DEFAULT_CONTENT_SOURCE.richContentVideos,
-    fixationVideo: mediaSettingsItem ? assetUrl(mediaSettingsItem.fixation_video) : DEFAULT_CONTENT_SOURCE.fixationVideo,
+    fixationVideo: mediaSettingsItem
+      ? resolveMediaUrl(mediaSettingsItem.fixation_video_url, mediaSettingsItem.fixation_video) || DEFAULT_CONTENT_SOURCE.fixationVideo
+      : DEFAULT_CONTENT_SOURCE.fixationVideo,
     benefitModals: benefitModals.map(item => ({
       type: string(item.key), cardLabel: string(item.card_label), title: string(item.title),
       subtitle: string(item.subtitle),
@@ -328,7 +311,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
           featureMaterialText: string(siteSettings[0].feature_material_text),
           richSignoff: string(siteSettings[0].rich_signoff),
           mediaPlaceholder,
-          siteFlag: assetUrl(siteSettings[0].site_flag, DEFAULT_CONTENT_SOURCE.siteSettings.siteFlag),
+          siteFlag: resolveMediaUrl(siteSettings[0].site_flag_url, siteSettings[0].site_flag, DEFAULT_CONTENT_SOURCE.siteSettings.siteFlag),
         }
       : DEFAULT_CONTENT_SOURCE.siteSettings,
   };

@@ -216,6 +216,17 @@ function fileField(name, note, label) {
   });
 }
 
+function urlField(name, note, label) {
+  return field(name, 'string', 'input', {
+    is_nullable: true,
+    max_length: 512,
+  }, {
+    width: 'full',
+    note,
+    translations: label ? studioTranslations(label) : undefined,
+  });
+}
+
 function aliasField(name, interfaceName, fieldMeta = {}) {
   return {
     field: name,
@@ -284,6 +295,7 @@ const collections = [
     shortText('seo_title', { note: 'Заголовок для пошукових систем та вкладки браузера.' }),
     longText('seo_description', { note: 'Опис сторінки для пошукових систем.' }),
     imageField('seo_image', 'Зображення для соціальних мереж.'),
+    urlField('seo_image_url', 'Пряме HTTPS-посилання на SEO-зображення (Cloudflare R2). Має пріоритет над файлом Directus.', 'SEO зображення · Cloudflare URL'),
     toggle('show_header', true, 'Показувати шапку сайту.'),
     toggle('show_footer', true, 'Показувати підвал сайту.'),
     toggle('no_index', false, 'Заборонити індексацію пошуковими системами.'),
@@ -320,6 +332,7 @@ const collections = [
     longText('subtitle'),
     richText('body', { note: 'Форматований текст блока.' }),
     imageField('image', 'Зображення блока.'),
+    urlField('image_url', 'Пряме HTTPS-посилання на зображення блока (Cloudflare R2). Має пріоритет над файлом Directus.', 'Фото блока · Cloudflare URL'),
     shortText('image_alt', { note: 'Опис зображення для доступності та SEO.' }),
     choice('image_position', [
       { text: 'Ліворуч', value: 'left' },
@@ -336,6 +349,7 @@ const collections = [
     shortText('version', { required: true, width: 'half' }),
     shortText('label', { required: true }),
     imageField('selector_image', 'Зображення у вікні вибору дизайну.'),
+    urlField('selector_image_url', 'Пряме HTTPS-посилання на зображення (Cloudflare R2). Має пріоритет над файлом Directus.', 'Вибір дизайну · Cloudflare URL'),
   ], { displayTemplate: '{{label}}' }),
   collection('carzo_sizes', 'straighten', 'Розміри виробу та їх контентні характеристики.', [
     idField(), statusField(), sortField(), keyField('code'),
@@ -348,6 +362,7 @@ const collections = [
     idField(), statusField(), sortField(), keyField('slug'),
     shortText('name', { width: 'half' }), shortText('flag', { width: 'half' }),
     imageField('logo_image', 'Фото логотипа конкретної марки; порожнє значення використовує резервне фото.'),
+    urlField('logo_image_url', 'Пряме HTTPS-посилання на фото логотипа (Cloudflare R2). Має пріоритет над файлом Directus.', 'Логотип марки · Cloudflare URL'),
   ], { displayTemplate: '{{flag}} {{name}}' }),
   collection('carzo_brand_pricing', 'price_change', 'Комерційні доплати за логотип автомобільної марки.', [
     idField(), statusField(),
@@ -379,8 +394,8 @@ const collections = [
     idField(), statusField(), sortField(), keyField(),
     relationField('design', 'Дизайн товарної конфігурації.', { required: true }),
     relationField('size', 'Розмір товарної конфігурації.', { required: true }),
-    imageField('image', 'Файл Directus має пріоритет над зовнішнім URL.'),
-    shortText('external_url', { note: 'Пряме HTTPS-посилання. Використовується лише якщо файл не завантажено.' }),
+    imageField('image', 'Файл Directus. Зовнішній URL має пріоритет.'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }),
     shortText('alt', { note: 'Необов’язково. Порожнє значення створюється автоматично з дизайну, розміру та номера фото.' }),
   ], { displayTemplate: '{{design}} · {{size}} · фото {{sort}}' }),
   collection('carzo_content_sets', 'view_carousel', 'Набори контенту модалок наповнення та фіксації.', [
@@ -398,7 +413,7 @@ const collections = [
     idField(), statusField(), sortField(), keyField(),
     relationField('content_set', 'Батьківський набір контенту.'),
     imageField('image', 'Зображення секції.'),
-    shortText('external_url'), shortText('image_placeholder'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }), shortText('image_placeholder'),
     shortText('title', { required: true }), longText('text', { required: true }),
   ], { displayTemplate: '{{title}}' }),
   collection('carzo_faq_items', 'quiz', 'Глобальні FAQ для модалок наповнення, фіксації та логотипа.', [
@@ -409,11 +424,12 @@ const collections = [
   collection('carzo_logo_settings', 'branding_watermark', 'Глобальні тексти, характеристики та резервне фото логотипа.', [
     idField(), statusField(), shortText('title', { required: true }), longText('info_text', { required: true }),
     imageField('fallback_image', 'Резерв для фото логотипа та його розміщення.'),
+    urlField('fallback_image_url', 'Пряме HTTPS-посилання на резервне фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Резервне фото · Cloudflare URL'),
     json('specs', 'Список характеристик [{ label, value }].'),
   ], { singleton: true, displayTemplate: '{{title}}' }),
   collection('carzo_logo_placements', 'pin_drop', 'Фото розміщення логотипа за матрицею дизайн × розмір.', [
     idField(), statusField(), sortField(), keyField(),
-    relationField('design'), relationField('size'), imageField('image'), shortText('external_url'),
+    relationField('design'), relationField('size'), imageField('image'), shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }),
   ], { displayTemplate: '{{key}}' }),
   collection('carzo_rich_sections', 'view_agenda', 'Єдиний впорядковуваний текстовий шаблон rich content для всіх дизайнів і розмірів.', [
     idField(), statusField(), sortField(), keyField(),
@@ -426,44 +442,56 @@ const collections = [
     idField(), statusField(), keyField(),
     relationField('design', 'Дизайн, для якого показується фото.', { required: true }),
     relationField('section', 'Блок глобального текстового шаблону.', { required: true }),
-    imageField('image', 'Файл Directus має пріоритет над зовнішнім URL.'),
-    shortText('external_url', { note: 'Пряме HTTPS-посилання. Використовується лише якщо файл не завантажено.' }),
+    imageField('image', 'Файл Directus. Зовнішній URL має пріоритет.'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }),
     shortText('alt', { note: 'Необов’язково. Порожнє значення створюється автоматично із заголовка блока та дизайну.' }),
   ], { displayTemplate: '{{design}} · {{section}}' }),
   collection('carzo_media_settings', 'video_library', 'Глобальне відео магнітної системи, його обкладинки та єдиний плейсхолдер для відсутніх медіа.', [
     idField(), statusField(),
-    imageField('image', 'SVG, PNG, JPEG, WebP або інший підтримуваний Directus формат. Файл має пріоритет.'),
-    shortText('external_url', { note: 'Пряме HTTPS-посилання, якщо файл не завантажено.' }),
+    imageField('image', 'SVG, PNG, JPEG, WebP або інший підтримуваний Directus формат. Зовнішній URL має пріоритет.'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання на плейсхолдер (Cloudflare R2). Має пріоритет над файлом.' }),
     fileField(
       'magnetic_system_video',
       'Одне глобальне відео для всіх дизайнів і розмірів. Рекомендований формат: MP4 (H.264).',
       'Магнітна система · глобальне відео',
     ),
+    urlField('magnetic_system_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Магнітна система · URL відео'),
     imageField(
       'magnetic_system_default_cover',
       'Резервна обкладинка, якщо точну комбінацію дизайн × розмір не заповнено.',
       'Магнітна система · резервна обкладинка',
     ),
-    ...MAGNETIC_SYSTEM_COVER_FIELDS.map(item => imageField(
-      item.field,
-      `Показується тільки для Carzo ${item.designSlug.replace('-', '.')} розміру ${item.size}.`,
-      item.label,
-    )),
+    urlField('magnetic_system_default_cover_url', 'Пряме HTTPS-посилання на резервну обкладинку (Cloudflare R2).', 'Магнітна система · URL резервної обкладинки'),
+    ...MAGNETIC_SYSTEM_COVER_FIELDS.flatMap(item => [
+      imageField(
+        item.field,
+        `Показується тільки для Carzo ${item.designSlug.replace('-', '.')} розміру ${item.size}.`,
+        item.label,
+      ),
+      urlField(
+        `${item.field}_url`,
+        `Пряме HTTPS-посилання на обкладинку (Cloudflare R2). Пріоритет над файлом.`,
+        `${item.label} · URL`,
+      ),
+    ]),
     fileField(
       'materials_video',
       'Одне глобальне відео для блоку «Основні матеріали». Рекомендований формат: MP4 (H.264).',
       'Основні матеріали · глобальне відео',
     ),
+    urlField('materials_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Основні матеріали · URL відео'),
     fileField(
       'edging_video',
       'Одне глобальне відео для блоку «Якісна окантовка». Рекомендований формат: MP4 (H.264).',
       'Якісна окантовка · глобальне відео',
     ),
+    urlField('edging_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Якісна окантовка · URL відео'),
     fileField(
       'fixation_video',
       'Одне глобальне відео для модалки «Фіксація з багажником». Рекомендований формат: MP4 (H.264).',
       'Фіксація · глобальне відео',
     ),
+    urlField('fixation_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Фіксація · URL відео'),
   ], { singleton: true, displayTemplate: 'Глобальні медіа товару' }),
   collection('carzo_benefit_modals', 'featured_play_list', 'Глобальні модалки переваг товару.', [
     idField(), statusField(), sortField(), keyField(),
@@ -600,6 +628,7 @@ const collections = [
     shortText('feature_material_text', { required: true }),
     shortText('rich_signoff', { required: true }),
     imageField('site_flag', 'Прапор країни (SVG/PNG). Використовується в хедері, футері та на головній.'),
+    urlField('site_flag_url', 'Пряме HTTPS-посилання на прапор (Cloudflare R2). Має пріоритет над файлом Directus.', 'Прапор · Cloudflare URL'),
     longText('checkout_payment_details', {
       note: 'Показується під способом зв’язку під час оформлення замовлення. Порожнє значення приховує блок на сайті.',
       placeholder: 'Тут треба вставити реквізити',
@@ -613,16 +642,17 @@ const collections = [
     shortText('reviews_modal_title'),
     shortText('reviews_modal_description'),
     json('reviews_items', 'Текстові відгуки [{ reviewText, customerName, reviewDate, rating, sort }].'),
-    json('reviews_screenshots', 'Скріншоти відгуків [{ image (Directus file ID), altText, sort }].'),
+    json('reviews_screenshots', 'Скріншоти відгуків [{ image (Directus file ID або URL), imageUrl (Cloudflare R2 URL), altText, sort }].'),
     shortText('homepage_hero_eyebrow'),
     shortText('homepage_hero_title'),
     longText('homepage_hero_lead'),
     shortText('homepage_hero_material_tag'),
-    json('homepage_hero_products', 'Масив продуктів [{ image, alt, href, tag, title }].'),
+    json('homepage_hero_products', 'Масив продуктів [{ image (шлях або URL), alt, href, tag, title }].'),
     shortText('homepage_badges_eyebrow'),
     shortText('homepage_badges_title'),
     longText('homepage_badges_description'),
     imageField('homepage_badges_video', 'Відео шильдів (MP4).'),
+    urlField('homepage_badges_video_url', 'Пряме HTTPS-посилання на відео шильдів (Cloudflare R2). Має пріоритет над файлом Directus.', 'Відео шильдів · Cloudflare URL'),
     shortText('homepage_badges_size_label'),
     json('homepage_badges_features', 'Масив фіч [{ number, title, description }].'),
     shortText('homepage_quality_eyebrow'),
@@ -634,8 +664,11 @@ const collections = [
     longText('about_hero_paragraph_2'),
     json('about_process_blocks', 'Масив блоків процесу [{ index, title, paragraph1, paragraph2 }].'),
     imageField('about_process_image_1', 'Фото для блоку «Розробляємо самостійно».'),
+    urlField('about_process_image_1_url', 'Пряме HTTPS-посилання на фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Про нас · фото 1 · Cloudflare URL'),
     imageField('about_process_image_2', 'Фото для блоку «Виготовляємо на власному виробництві».'),
+    urlField('about_process_image_2_url', 'Пряме HTTPS-посилання на фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Про нас · фото 2 · Cloudflare URL'),
     imageField('about_process_image_3', 'Фото для блоку «Перевіряємо на практиці».'),
+    urlField('about_process_image_3_url', 'Пряме HTTPS-посилання на фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Про нас · фото 3 · Cloudflare URL'),
     shortText('about_principles_eyebrow'),
     shortText('about_principles_title'),
     json('about_principles_items', 'Масив принципів [{ index, title, description }].'),
@@ -644,7 +677,7 @@ const collections = [
     longText('about_statement_text'),
     shortText('car_mat_modal_title'),
     longText('car_mat_modal_description'),
-    json('car_mat_designs', 'Варіанти дизайну автокилимків [{ code, title, altText, image (Directus file ID) }].'),
+    json('car_mat_designs', 'Варіанти дизайну автокилимків [{ code, title, altText, image (Directus file ID або URL), imageUrl (Cloudflare R2 URL) }].'),
   ], { singleton: true, displayTemplate: 'Налаштування Carzo' }),
 ];
 

@@ -1,5 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
+import { resolveMediaUrl } from '@/lib/media';
 
 type RecordValue = Record<string, unknown>;
 
@@ -18,16 +19,6 @@ function directusHeaders() {
 
 function string(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback;
-}
-
-function assetUrl(file: unknown, fallback = '') {
-  const directusUrl = getDirectusUrl();
-  if (!directusUrl || !file) return fallback;
-  const id = typeof file === 'string' ? file : (file as RecordValue).id;
-  if (typeof id !== 'string') return fallback;
-  return getDirectusToken()
-    ? `/api/directus-assets/${encodeURIComponent(id)}`
-    : `${directusUrl}/assets/${id}`;
 }
 
 export interface HomepageProduct {
@@ -109,13 +100,16 @@ const DEFAULT_HOMEPAGE: HomepageData = {
 
 function parseProducts(raw: unknown): HomepageProduct[] {
   if (!Array.isArray(raw)) return DEFAULT_HOMEPAGE.hero.products;
-  return raw.map((item, index) => ({
-    image: string(item.image) || DEFAULT_HOMEPAGE.hero.products[index]?.image || '/case.jpg',
-    alt: string(item.alt) || DEFAULT_HOMEPAGE.hero.products[index]?.alt || '',
-    href: string(item.href) || DEFAULT_HOMEPAGE.hero.products[index]?.href || '#',
-    tag: string(item.tag) || DEFAULT_HOMEPAGE.hero.products[index]?.tag || '',
-    title: string(item.title) || DEFAULT_HOMEPAGE.hero.products[index]?.title || '',
-  }));
+  return raw.map((item, index) => {
+    const imageValue = string(item.image) || string(item.imageUrl);
+    return {
+      image: imageValue || DEFAULT_HOMEPAGE.hero.products[index]?.image || '/case.jpg',
+      alt: string(item.alt) || DEFAULT_HOMEPAGE.hero.products[index]?.alt || '',
+      href: string(item.href) || DEFAULT_HOMEPAGE.hero.products[index]?.href || '#',
+      tag: string(item.tag) || DEFAULT_HOMEPAGE.hero.products[index]?.tag || '',
+      title: string(item.title) || DEFAULT_HOMEPAGE.hero.products[index]?.title || '',
+    };
+  });
 }
 
 function parseFeatures(raw: unknown): HomepageFeature[] {
@@ -153,7 +147,7 @@ export const getHomepageData = cache(async (): Promise<HomepageData> => {
     const data = payload.data;
     if (!data) return DEFAULT_HOMEPAGE;
 
-    const videoUrl = assetUrl(data.homepage_badges_video, DEFAULT_HOMEPAGE.badges.videoUrl);
+    const videoUrl = resolveMediaUrl(data.homepage_badges_video_url, data.homepage_badges_video, DEFAULT_HOMEPAGE.badges.videoUrl);
 
     return {
       hero: {

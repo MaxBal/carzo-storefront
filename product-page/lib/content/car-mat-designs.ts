@@ -1,5 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
+import { resolveMediaUrl, resolveJsonMediaUrl, normalizeExternalUrl } from '@/lib/media';
 
 type RecordValue = Record<string, unknown>;
 
@@ -18,26 +19,6 @@ function directusHeaders() {
 
 function string(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback;
-}
-
-function assetUrl(file: unknown, fallback = '') {
-  const directusUrl = getDirectusUrl();
-  if (!directusUrl || !file) return fallback;
-  const id = typeof file === 'string' ? file : (file as RecordValue).id;
-  if (typeof id !== 'string') return fallback;
-  return getDirectusToken()
-    ? `/api/directus-assets/${encodeURIComponent(id)}`
-    : `${directusUrl}/assets/${id}`;
-}
-
-function externalImageUrl(value: unknown) {
-  if (typeof value !== 'string' || !value.trim()) return '';
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === 'https:' ? url.toString() : '';
-  } catch {
-    return '';
-  }
 }
 
 export interface CarMatDesign {
@@ -61,7 +42,7 @@ function parseDesigns(raw: unknown): CarMatDesign[] {
     code: string(item.code) || DEFAULT_DESIGNS[index]?.code || '',
     title: string(item.title) || DEFAULT_DESIGNS[index]?.title || '',
     altText: string(item.altText) || DEFAULT_DESIGNS[index]?.altText || '',
-    image: assetUrl(item.image),
+    image: resolveJsonMediaUrl(item as { image?: unknown; imageUrl?: unknown }),
   }));
 }
 
@@ -105,7 +86,7 @@ export const getCarMatMediaPlaceholder = cache(async (): Promise<string> => {
     const data = payload.data;
     if (!data) return DEFAULT_MEDIA_PLACEHOLDER;
 
-    return assetUrl(data.image) || externalImageUrl(data.external_url) || DEFAULT_MEDIA_PLACEHOLDER;
+    return resolveMediaUrl(data.external_url, data.image, DEFAULT_MEDIA_PLACEHOLDER);
   } catch {
     return DEFAULT_MEDIA_PLACEHOLDER;
   }

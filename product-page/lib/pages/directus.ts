@@ -45,8 +45,17 @@ function number(value: unknown, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function assetPath(value: unknown) {
+function assetPath(value: unknown, externalUrl?: unknown) {
+  // External URL (e.g. Cloudflare R2) takes priority
+  if (typeof externalUrl === 'string' && externalUrl.trim()) {
+    try {
+      const url = new URL(externalUrl.trim());
+      if (url.protocol === 'https:') return url.toString();
+    } catch { /* not a valid URL */ }
+  }
   if (!value) return null;
+  // Plain URL string in the file field
+  if (typeof value === 'string' && /^https:\/\//.test(value)) return value;
   const id = typeof value === 'string' ? value : (value as DirectusRecord).id;
   return typeof id === 'string' && UUID_PATTERN.test(id)
     ? `/api/directus-assets/${encodeURIComponent(id)}`
@@ -84,7 +93,7 @@ function mapBlock(record: DirectusRecord): CmsPageBlock | null {
     title: nullableText(record.title),
     subtitle: nullableText(record.subtitle),
     body: nullableText(record.body),
-    image: assetPath(record.image),
+    image: assetPath(record.image, record.image_url),
     imageAlt: text(record.image_alt),
     imagePosition: record.image_position === 'left' ? 'left' : 'right',
     primaryLabel: nullableText(record.primary_label),
@@ -127,7 +136,7 @@ async function readPage(
 
   const pageQuery = new URLSearchParams({
     limit: '1',
-    fields: 'id,status,key,title,slug,page_type,seo_title,seo_description,seo_image.id,show_header,show_footer,no_index',
+    fields: 'id,status,key,title,slug,page_type,seo_title,seo_description,seo_image.id,seo_image_url,show_header,show_footer,no_index',
     [`filter[${filterField}][_eq]`]: filterValue,
   });
   if (!preview) pageQuery.set('filter[status][_eq]', 'published');
@@ -138,7 +147,7 @@ async function readPage(
   const blockQuery = new URLSearchParams({
     limit: '-1',
     sort: 'sort',
-    fields: 'id,status,sort,key,block_type,theme,anchor,eyebrow,title,subtitle,body,image.id,image_alt,image_position,primary_label,primary_url,secondary_label,secondary_url,items',
+    fields: 'id,status,sort,key,block_type,theme,anchor,eyebrow,title,subtitle,body,image.id,image_url,image_alt,image_position,primary_label,primary_url,secondary_label,secondary_url,items',
     'filter[page][_eq]': text(pageRecord.id),
   });
   if (!preview) blockQuery.set('filter[status][_eq]', 'published');
@@ -155,7 +164,7 @@ async function readPage(
     pageType: PAGE_TYPES.has(pageTypeValue) ? pageTypeValue : 'content',
     seoTitle: text(pageRecord.seo_title, text(pageRecord.title)),
     seoDescription: text(pageRecord.seo_description),
-    seoImage: assetPath(pageRecord.seo_image),
+    seoImage: assetPath(pageRecord.seo_image, pageRecord.seo_image_url),
     showHeader: bool(pageRecord.show_header, true),
     showFooter: bool(pageRecord.show_footer, true),
     noIndex: bool(pageRecord.no_index, false),

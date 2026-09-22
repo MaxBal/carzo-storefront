@@ -1,5 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
+import { resolveMediaUrl } from '@/lib/media';
 
 type RecordValue = Record<string, unknown>;
 
@@ -18,16 +19,6 @@ function directusHeaders() {
 
 function string(value: unknown, fallback = '') {
   return typeof value === 'string' ? value : fallback;
-}
-
-function assetUrl(file: unknown, fallback = '') {
-  const directusUrl = getDirectusUrl();
-  if (!directusUrl || !file) return fallback;
-  const id = typeof file === 'string' ? file : (file as RecordValue).id;
-  if (typeof id !== 'string') return fallback;
-  return getDirectusToken()
-    ? `/api/directus-assets/${encodeURIComponent(id)}`
-    : `${directusUrl}/assets/${id}`;
 }
 
 export interface AboutProcessBlock {
@@ -177,9 +168,9 @@ export const getAboutData = cache(async (): Promise<AboutData> => {
         paragraph2: string(data.about_hero_paragraph_2, DEFAULT_ABOUT.hero.paragraph2),
       },
       processBlocks: parseProcessBlocks(data.about_process_blocks),
-      processImage1: assetUrl(data.about_process_image_1, DEFAULT_ABOUT.processImage1),
-      processImage2: assetUrl(data.about_process_image_2, DEFAULT_ABOUT.processImage2),
-      processImage3: assetUrl(data.about_process_image_3, DEFAULT_ABOUT.processImage3),
+      processImage1: resolveMediaUrl(data.about_process_image_1_url, data.about_process_image_1, DEFAULT_ABOUT.processImage1),
+      processImage2: resolveMediaUrl(data.about_process_image_2_url, data.about_process_image_2, DEFAULT_ABOUT.processImage2),
+      processImage3: resolveMediaUrl(data.about_process_image_3_url, data.about_process_image_3, DEFAULT_ABOUT.processImage3),
       principles: {
         eyebrow: string(data.about_principles_eyebrow, DEFAULT_ABOUT.principles.eyebrow),
         title: string(data.about_principles_title, DEFAULT_ABOUT.principles.title),
