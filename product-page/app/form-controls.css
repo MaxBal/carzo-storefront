@@ -11,7 +11,7 @@
   background: #fff;
   color: #111827;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
@@ -87,7 +87,7 @@
   background: transparent;
   color: #111827;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   box-shadow: none;
   outline: none;
 }
@@ -127,18 +127,97 @@
 .form-phone-prefix {
   flex-shrink: 0;
   color: #111827;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
 }
 
-/* Section heading — matches old label style (task: "Контактні дані" / "Адреса доставки") */
+/* Section heading — matches loyalty accordion title (16px/600/leading-5) */
 .form-section-label {
   display: block;
   margin: 0;
-  color: #1f2937;
-  font-size: 14px;
+  color: #111827;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.25;
+}
+
+/* Collapsible comment block — clean header, no card chrome */
+.form-collapse-trigger {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #111827;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.form-collapse-trigger:focus-visible {
+  outline: 2px solid #159e85;
+  outline-offset: 2px;
+}
+
+.form-collapse-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.form-collapse-copy strong {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.form-collapse-copy > span {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.form-collapse-chevron {
+  flex-shrink: 0;
+  color: #6b7280;
+  transition: transform 220ms ease-out;
+}
+
+.form-collapse--open .form-collapse-chevron {
+  transform: rotate(180deg);
+}
+
+.form-collapse-content {
+  display: grid;
+  visibility: hidden;
+  grid-template-rows: 0fr;
+  transition:
+    grid-template-rows 220ms ease-out,
+    visibility 0s linear 220ms;
+}
+
+.form-collapse--open .form-collapse-content {
+  visibility: visible;
+  grid-template-rows: 1fr;
+  transition-delay: 0s;
+}
+
+.form-collapse-content-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 160ms ease, padding 220ms ease-out;
+}
+
+.form-collapse--open .form-collapse-content-inner {
+  padding-top: 12px;
+  opacity: 1;
 }
 
 /* Close button — matches .cm-quote-header button */
@@ -183,7 +262,7 @@
   background: #000;
   color: #fff;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;

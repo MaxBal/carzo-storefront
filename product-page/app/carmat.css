@@ -333,9 +333,9 @@
 .cm-quote-header h2 {
   margin: 0;
   color: #111827;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.25;
 }
 
 .cm-quote-header button {
@@ -430,10 +430,10 @@
 .cm-quote-field > span:not(.sr-only) {
   display: block;
   margin-bottom: 8px;
-  color: #1f2937;
-  font-size: 14px;
+  color: #111827;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.4;
+  line-height: 1.25;
 }
 
 .cm-quote-field input,
@@ -445,7 +445,7 @@
   background: #fff;
   color: #111827;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
@@ -545,7 +545,7 @@
 .cm-quote-phone-prefix {
   margin-left: 9px;
   color: #111827;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -596,9 +596,9 @@
 }
 
 .cm-quote-accordion-copy strong {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.25;
 }
 
 .cm-quote-accordion-copy > span {
@@ -729,7 +729,7 @@
   background: #000;
   color: #fff;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;

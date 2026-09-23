@@ -43,6 +43,7 @@ export default function CartDrawer() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(false);
   const [loyaltyPhone, setLoyaltyPhone] = useState('');
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
   const [loyaltyDiscount, setLoyaltyDiscount] = useState<{ percent: number; amount: number } | null>(null);
@@ -77,6 +78,7 @@ export default function CartDrawer() {
       setSubmitAttempted(false);
       setDelivery({ method: 'BRANCH', cityRef: '', pointRef: '' });
       setLoyaltyOpen(false);
+      setCommentOpen(false);
       setLoyaltyPhone('');
       setLoyaltyError(null);
       setLoyaltyDiscount(null);
@@ -180,7 +182,7 @@ export default function CartDrawer() {
               <div data-checkout-header-inner className="flex h-[52px] sm:h-16 shrink-0 items-center justify-between border-b border-gray-200 px-4 sm:px-6">
                 <div className="flex items-center gap-2.5">
                   <ShoppingCart size={20} strokeWidth={1.6} />
-                  <h2 id="cart-title" className="text-lg font-bold">{checkout ? 'Оформлення замовлення' : 'Кошик'}</h2>
+                  <h2 id="cart-title" className="text-base font-semibold leading-5">{checkout ? 'Оформлення замовлення' : 'Кошик'}</h2>
                   {!checkout && cart.itemsQuantity > 0 && <span className="rounded-full bg-black px-2 py-0.5 text-xs font-semibold text-white">{cart.itemsQuantity}</span>}
                 </div>
                 <button type="button" onClick={closeSurface} className="form-close-btn" aria-label="Закрити">
@@ -231,12 +233,22 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  <label className="form-field block border-t border-gray-100 pt-5">
-                    <span className="form-section-label">Коментар до замовлення</span>
-                    <div className="mt-3">
-                      <textarea value={customerComment} onChange={event => setCustomerComment(event.target.value)} maxLength={1000} rows={3} placeholder="Коментар (не обов’язково)" />
+                  <div className={`form-collapse${commentOpen ? ' form-collapse--open' : ''} border-t border-gray-100 pt-5`}>
+                    <button type="button" className="form-collapse-trigger" aria-expanded={commentOpen} onClick={() => setCommentOpen(v => !v)}>
+                      <span className="form-collapse-copy">
+                        <strong>Коментар до замовлення</strong>
+                        <span>(не обов’язково)</span>
+                      </span>
+                      <ChevronDown size={18} className="form-collapse-chevron" aria-hidden="true" />
+                    </button>
+                    <div className="form-collapse-content">
+                      <div className="form-collapse-content-inner">
+                        <div className="form-field">
+                          <textarea value={customerComment} onChange={event => setCustomerComment(event.target.value)} maxLength={1000} rows={3} placeholder="Коментар (не обов’язково)" />
+                        </div>
+                      </div>
                     </div>
-                  </label>
+                  </div>
 
                   <label className="form-field relative block border-t border-gray-100 pt-5">
                     <span className="form-section-label">Спосіб зв’язку *</span>
