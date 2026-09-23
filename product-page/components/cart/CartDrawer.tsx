@@ -222,12 +222,13 @@ export default function CartDrawer() {
                   <div className="border-t border-gray-100 pt-5">
                     <h3 className="form-section-label">Адреса доставки</h3>
                     <div className="mt-3">
-                    <NovaPoshtaSelector
-                      allowPostomat={Boolean(cart.quote?.allowPostomat)}
-                      value={delivery}
-                      showErrors={submitAttempted}
-                      onChange={setDelivery}
-                    />
+                      <NovaPoshtaSelector
+                        allowPostomat={Boolean(cart.quote?.allowPostomat)}
+                        value={delivery}
+                        showErrors={submitAttempted}
+                        onChange={setDelivery}
+                      />
+                    </div>
                   </div>
 
                   <label className="form-field block border-t border-gray-100 pt-5">
