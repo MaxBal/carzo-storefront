@@ -25,7 +25,7 @@ const DELIVERY_METHODS: Array<{ value: DeliveryMethod; label: string }> = [
   { value: 'POSTOMAT', label: 'У поштомат' },
 ];
 
-const INPUT_BASE = 'h-12 w-full rounded-xl border bg-white px-3 text-base outline-none transition focus:border-gray-500 sm:text-sm';
+const INPUT_BASE = 'form-field-input';
 
 function deliveryForMethod(method: DeliveryMethod, cityRef: string): CheckoutDelivery {
   if (method === 'COURIER') {
@@ -316,7 +316,7 @@ export default function NovaPoshtaSelector({
   return (
     <div className="space-y-4">
       <fieldset>
-        <legend className="mb-1.5 block text-sm font-medium text-gray-900">Спосіб доставки *</legend>
+        <legend className="sr-only">Спосіб доставки</legend>
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Спосіб доставки">
           {DELIVERY_METHODS.map(method => {
             const selected = value.method === method.value;
@@ -351,11 +351,7 @@ export default function NovaPoshtaSelector({
                       ?.focus();
                   });
                 }}
-                className={`min-h-11 rounded-xl border px-2 py-2 text-xs font-medium leading-4 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2 ${
-                  selected
-                    ? 'border-black bg-black text-white'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400'
-                }`}
+                className={`form-delivery-btn ${selected ? 'form-delivery-btn--active' : 'form-delivery-btn--inactive'}`}
               >
                 {method.label}
               </button>
@@ -368,9 +364,9 @@ export default function NovaPoshtaSelector({
       </fieldset>
 
       <div data-keyboard-dropdown>
-        <label htmlFor={`${id}-city`} className="mb-1.5 block text-sm font-medium text-gray-900">Місто *</label>
-        <div className="relative">
-          <MapPin aria-hidden="true" className="absolute left-3 top-3.5 text-gray-400" size={17} />
+        <label htmlFor={`${id}-city`} className="sr-only">Місто</label>
+        <div className="form-field relative">
+          <MapPin aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
           <input
             id={`${id}-city`}
             value={cityQuery}
@@ -406,10 +402,10 @@ export default function NovaPoshtaSelector({
             aria-activedescendant={cityActiveIndex >= 0 ? `${id}-city-option-${cityActiveIndex}` : undefined}
             aria-invalid={cityInvalid}
             aria-describedby={cityInvalid ? `${id}-city-error` : undefined}
-            className={`${INPUT_BASE} pl-10 pr-10 ${cityInvalid ? 'border-red-400 focus:border-red-500' : 'border-gray-200'}`}
+            className={`${INPUT_BASE} pl-10 pr-10 ${cityInvalid ? 'border-red-400 focus:border-red-500' : ''}`}
           />
-          {cityLoading && <Loader2 aria-label="Завантаження міст" className="absolute right-3 top-3.5 animate-spin text-gray-400" size={17} />}
-          {value.cityRef && <Check aria-hidden="true" className="absolute right-3 top-3.5 text-[#159e85]" size={17} />}
+          {cityLoading && <Loader2 aria-label="Завантаження міст" className="absolute right-3.5 top-1/2 -translate-y-1/2 animate-spin text-gray-400" size={17} />}
+          {value.cityRef && <Check aria-hidden="true" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#159e85]" size={17} />}
         </div>
         {cityInvalid && <p id={`${id}-city-error`} className="mt-1.5 text-xs text-red-600">Оберіть місто зі списку.</p>}
         {cities.length > 0 && (
@@ -430,7 +426,7 @@ export default function NovaPoshtaSelector({
 
       {isPointDelivery(value) && (
         <div data-keyboard-dropdown>
-          <label id={`${id}-point-label`} className="mb-1.5 block text-sm font-medium text-gray-900">{pointLabel}</label>
+          <label id={`${id}-point-label`} className="sr-only">{pointLabel}</label>
           <button
             type="button"
             role="combobox"
@@ -452,9 +448,9 @@ export default function NovaPoshtaSelector({
               setPointActiveIndex(-1);
               setPointError(null);
             }}
-            className={`flex h-12 w-full items-center justify-between gap-3 rounded-xl border bg-white px-3 text-left text-base outline-none transition focus:border-gray-500 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400 sm:text-sm ${pointInvalid ? 'border-red-400' : 'border-gray-200'}`}
+            className={`form-field-input flex items-center justify-between gap-3 text-left ${pointInvalid ? 'border-red-400' : ''}`}
           >
-            <span id={`${id}-point-value`} className={`min-w-0 truncate ${selectedPoint ? 'text-gray-900' : 'text-gray-400'}`}>
+            <span id={`${id}-point-value`} className={`min-w-0 truncate ${selectedPoint ? 'text-gray-900' : 'text-[#858b96]'}`}>
               {selectedPoint
                 ? `${selectedPoint.name}${selectedPoint.address !== selectedPoint.name ? ` — ${selectedPoint.address}` : ''}`
                 : pointPlaceholder}
@@ -501,7 +497,7 @@ export default function NovaPoshtaSelector({
                   aria-expanded={true}
                   aria-controls={`${id}-point-listbox`}
                   aria-activedescendant={pointActiveIndex >= 0 ? `${id}-point-option-${pointActiveIndex}` : undefined}
-                  className="h-12 w-full rounded-lg border border-gray-200 bg-white pl-10 pr-10 text-base outline-none focus:border-gray-500 sm:text-sm"
+                  className="form-field-input pl-10 pr-10"
                 />
                 {pointLoading && <Loader2 aria-label="Завантаження точок доставки" className="absolute right-3 top-3.5 animate-spin text-gray-400" size={17} />}
               </div>
@@ -530,8 +526,8 @@ export default function NovaPoshtaSelector({
       {value.method === 'COURIER' && (
         <div className="space-y-4">
           <div data-keyboard-dropdown>
-            <label htmlFor={`${id}-street`} className="mb-1.5 block text-sm font-medium text-gray-900">Вулиця *</label>
-            <div className="relative">
+            <label htmlFor={`${id}-street`} className="sr-only">Вулиця</label>
+            <div className="form-field relative">
               <input
                 id={`${id}-street`}
                 value={streetQuery}
@@ -576,10 +572,10 @@ export default function NovaPoshtaSelector({
                 aria-controls={streets.length > 0 ? `${id}-street-listbox` : undefined}
                 aria-activedescendant={streetActiveIndex >= 0 ? `${id}-street-option-${streetActiveIndex}` : undefined}
                 aria-invalid={streetInvalid}
-                className={`${INPUT_BASE} pr-10 disabled:bg-gray-100 ${streetInvalid ? 'border-red-400 focus:border-red-500' : 'border-gray-200'}`}
+                className={`${INPUT_BASE} pr-10 disabled:bg-gray-100 ${streetInvalid ? 'border-red-400 focus:border-red-500' : ''}`}
               />
-              {streetLoading && <Loader2 aria-label="Завантаження вулиць" className="absolute right-3 top-3.5 animate-spin text-gray-400" size={17} />}
-              {value.streetRef && <Check aria-hidden="true" className="absolute right-3 top-3.5 text-[#159e85]" size={17} />}
+              {streetLoading && <Loader2 aria-label="Завантаження вулиць" className="absolute right-3.5 top-1/2 -translate-y-1/2 animate-spin text-gray-400" size={17} />}
+              {value.streetRef && <Check aria-hidden="true" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#159e85]" size={17} />}
             </div>
             {streetInvalid && <p className="mt-1.5 text-xs text-red-600">Оберіть вулицю зі списку.</p>}
             {streets.length > 0 && (
@@ -599,26 +595,28 @@ export default function NovaPoshtaSelector({
 
           <div className="grid grid-cols-2 gap-3">
             <label>
-              <span className="mb-1.5 block text-sm font-medium text-gray-900">Будинок *</span>
+              <span className="sr-only">Будинок</span>
               <input
                 value={value.house}
                 onBlur={() => markTouched('house')}
                 onChange={event => onChange({ ...value, house: event.target.value })}
                 maxLength={30}
                 autoComplete="address-line2"
+                placeholder="Будинок"
                 aria-invalid={houseInvalid}
-                className={`${INPUT_BASE} ${houseInvalid ? 'border-red-400 focus:border-red-500' : 'border-gray-200'}`}
+                className={`${INPUT_BASE} ${houseInvalid ? 'border-red-400 focus:border-red-500' : ''}`}
               />
               {houseInvalid && <span className="mt-1.5 block text-xs text-red-600">Вкажіть номер будинку.</span>}
             </label>
             <label>
-              <span className="mb-1.5 block text-sm font-medium text-gray-900">Квартира</span>
+              <span className="sr-only">Квартира</span>
               <input
                 value={value.apartment || ''}
                 onChange={event => onChange({ ...value, apartment: event.target.value })}
                 maxLength={30}
                 autoComplete="address-line3"
-                className={`${INPUT_BASE} border-gray-200`}
+                placeholder="Квартира"
+                className={INPUT_BASE}
               />
             </label>
           </div>

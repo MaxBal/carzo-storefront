@@ -1,0 +1,253 @@
+/* Shared form controls — extracted from cm-quote ethalon (carmat.css).
+   Used by CartDrawer / NovaPoshtaSelector to match CarMatQuoteModal 1:1. */
+
+.form-field input,
+.form-field select,
+.form-field textarea,
+.form-field-input {
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 11px;
+  background: #fff;
+  color: #111827;
+  font: inherit;
+  font-size: 16px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.form-field input,
+.form-field select,
+.form-field-input {
+  height: 54px;
+  padding: 0 15px;
+}
+
+.form-field select {
+  appearance: none;
+  padding-right: 44px;
+  cursor: pointer;
+}
+
+.form-field textarea {
+  min-height: 88px;
+  resize: vertical;
+  padding: 15px;
+  line-height: 1.45;
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder,
+.form-field-input::placeholder {
+  color: #858b96;
+  opacity: 1;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus,
+.form-field-input:focus {
+  border-color: #4b5563;
+  box-shadow: 0 0 0 3px rgba(92, 228, 171, 0.2);
+  outline: none;
+}
+
+.form-field input:disabled,
+.form-field select:disabled,
+.form-field textarea:disabled,
+.form-field-input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Phone composite (UA flag + prefix) — matches .cm-quote-phone */
+.form-phone {
+  display: flex;
+  height: 54px;
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 11px;
+  background: #fff;
+  padding-left: 15px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.form-phone:focus-within {
+  border-color: #4b5563;
+  box-shadow: 0 0 0 3px rgba(92, 228, 171, 0.2);
+}
+
+.form-phone input {
+  min-width: 0;
+  height: 52px;
+  flex: 1;
+  border: 0;
+  border-radius: 0 11px 11px 0;
+  padding: 0 15px 0 8px;
+  background: transparent;
+  color: #111827;
+  font: inherit;
+  font-size: 16px;
+  box-shadow: none;
+  outline: none;
+}
+
+.form-phone input::placeholder {
+  color: #858b96;
+  opacity: 1;
+}
+
+.form-phone input:focus,
+.form-phone input:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+.form-ua-flag {
+  position: relative;
+  width: 22px;
+  height: 15px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  border-radius: 2px;
+  background: #ffd700;
+}
+
+.form-ua-flag::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #0057b7;
+  clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%);
+}
+
+.form-phone-prefix {
+  flex-shrink: 0;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* Section heading — matches old label style (task: "Контактні дані" / "Адреса доставки") */
+.form-section-label {
+  display: block;
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Close button — matches .cm-quote-header button */
+.form-close-btn {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #111827;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+
+.form-close-btn:hover {
+  background: #e5e7eb;
+}
+
+.form-close-btn:active {
+  background: #d1d5db;
+}
+
+.form-close-btn:focus-visible {
+  outline: 2px solid #159e85;
+  outline-offset: 2px;
+}
+
+/* Primary CTA — matches .cm-quote-submit button */
+.form-cta {
+  display: flex;
+  width: 100%;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 11px;
+  background: #000;
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+.form-cta:hover {
+  background: #1f2937;
+}
+
+.form-cta:active {
+  background: #374151;
+}
+
+.form-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-cta:focus-visible {
+  outline: 2px solid #159e85;
+  outline-offset: 2px;
+}
+
+/* Delivery method toggle buttons — consistent geometry, no size change on state */
+.form-delivery-btn {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d1d5db;
+  border-radius: 11px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.form-delivery-btn--active {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+.form-delivery-btn--inactive {
+  border-color: #d1d5db;
+  background: #fff;
+  color: #374151;
+}
+
+.form-delivery-btn--inactive:hover {
+  border-color: #9ca3af;
+}
+
+.form-delivery-btn:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.form-delivery-btn:focus-visible {
+  outline: 2px solid #159e85;
+  outline-offset: 2px;
+}

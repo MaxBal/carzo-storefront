@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Check, CheckCircle2, ChevronDown, Info, Loader2, Minus, Plus, ShoppingBag, Trash2, X } from 'lucide-react';
+import { Check, CheckCircle2, ChevronDown, Info, Loader2, Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
 import { createOrder } from '@/app/actions/checkout';
 import { CONTACT_METHOD_OPTIONS, type ContactMethod } from '@/lib/cart/contact-method';
 import { checkLoyaltyDiscount, normalizePhone } from '@/lib/cart/loyalty';
@@ -184,12 +184,12 @@ export default function CartDrawer() {
             <div data-checkout-header>
               <div data-checkout-header-inner className="flex h-[52px] sm:h-16 shrink-0 items-center justify-between border-b border-gray-200 px-4 sm:px-6">
                 <div className="flex items-center gap-2.5">
-                  <ShoppingBag size={20} />
+                  <ShoppingCart size={20} strokeWidth={1.6} />
                   <h2 id="cart-title" className="text-lg font-bold">{checkout ? 'Оформлення замовлення' : 'Кошик'}</h2>
                   {!checkout && cart.itemsQuantity > 0 && <span className="rounded-full bg-black px-2 py-0.5 text-xs font-semibold text-white">{cart.itemsQuantity}</span>}
                 </div>
-                <button type="button" onClick={closeSurface} className="rounded-full p-2 hover:bg-gray-100" aria-label="Закрити">
-                  <X size={21} />
+                <button type="button" onClick={closeSurface} className="form-close-btn" aria-label="Закрити">
+                  <X size={22} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -197,29 +197,33 @@ export default function CartDrawer() {
             <div ref={scrollRef} className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-4 py-5 [scrollbar-gutter:stable] sm:px-6">
               {cart.items.length === 0 ? (
                 <div className="flex min-h-[55vh] flex-col items-center justify-center text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100"><ShoppingBag size={28} /></div>
+                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100"><ShoppingCart size={28} strokeWidth={1.6} /></div>
                   <h3 className="text-xl font-bold">Кошик порожній</h3>
                   <p className="mt-2 max-w-xs text-sm leading-6 text-gray-500">Оберіть автокейс, налаштуйте його та натисніть «Купити».</p>
-                  <button type="button" onClick={closeSurface} className="mt-6 rounded-full bg-black px-6 py-3 text-sm font-semibold text-white">Продовжити покупки</button>
+                  <button type="button" onClick={closeSurface} className="mt-6 form-cta" style={{ maxWidth: 280 }}>Продовжити покупки</button>
                 </div>
               ) : checkout ? (
                 <form id="checkout-form" onSubmit={submit} className="space-y-5">
                   <div>
-                    <h3 className="text-base font-bold">Контактні дані</h3>
-                    <div className="mt-3 grid gap-4 sm:grid-cols-2">
-                      <label className="sm:col-span-2">
-                        <span className="mb-1.5 block text-sm font-medium">Імʼя та прізвище *</span>
-                        <input required minLength={2} maxLength={120} value={customerName} onChange={event => setCustomerName(event.target.value)} autoComplete="name" className="h-12 w-full rounded-xl border border-gray-200 px-3 text-base outline-none focus:border-gray-500 sm:text-sm" />
+                    <h3 className="form-section-label">Контактні дані</h3>
+                    <div className="mt-3 grid gap-3.5">
+                      <label className="form-field">
+                        <span className="sr-only">Імʼя та прізвище</span>
+                        <input required minLength={2} maxLength={120} value={customerName} onChange={event => setCustomerName(event.target.value)} autoComplete="name" placeholder="Ім’я та прізвище" />
                       </label>
-                      <label className="sm:col-span-2">
-                        <span className="mb-1.5 block text-sm font-medium">Телефон *</span>
-                        <input required type="tel" inputMode="tel" autoComplete="tel" maxLength={19} pattern={UKRAINE_PHONE_PATTERN} value={customerPhone} onChange={event => setCustomerPhone(formatUkrainePhoneInput(event.target.value))} className="h-12 w-full rounded-xl border border-gray-200 px-3 text-base outline-none focus:border-gray-500 sm:text-sm" />
+                      <label className="form-field">
+                        <span className="sr-only">Телефон</span>
+                        <div className="form-phone">
+                          <span className="form-ua-flag" aria-hidden="true" />
+                          <span className="form-phone-prefix" aria-hidden="true">+380</span>
+                          <input required type="tel" inputMode="tel" autoComplete="tel" maxLength={19} pattern={UKRAINE_PHONE_PATTERN} value={customerPhone} onChange={event => setCustomerPhone(formatUkrainePhoneInput(event.target.value))} placeholder="(00) 000-00-00" />
+                        </div>
                       </label>
                     </div>
                   </div>
 
                   <div className="border-t border-gray-100 pt-5">
-                    <h3 className="mb-3 text-base font-bold">Вкажіть адресу доставки</h3>
+                    <h3 className="form-section-label mb-3">Адреса доставки</h3>
                     <NovaPoshtaSelector
                       allowPostomat={Boolean(cart.quote?.allowPostomat)}
                       value={delivery}
@@ -228,14 +232,14 @@ export default function CartDrawer() {
                     />
                   </div>
 
-                  <label className="block border-t border-gray-100 pt-5">
+                  <label className="form-field block border-t border-gray-100 pt-5">
                     <span className="mb-1.5 block text-sm font-medium">Коментар до замовлення</span>
-                    <textarea value={customerComment} onChange={event => setCustomerComment(event.target.value)} maxLength={1000} rows={3} className="w-full resize-none rounded-xl border border-gray-200 px-3 py-3 text-base outline-none focus:border-gray-500 sm:text-sm" />
+                    <textarea value={customerComment} onChange={event => setCustomerComment(event.target.value)} maxLength={1000} rows={3} placeholder="Коментар (не обов’язково)" />
                   </label>
 
-                  <label className="relative block border-t border-gray-100 pt-5">
+                  <label className="form-field relative block border-t border-gray-100 pt-5">
                     <span className="mb-1.5 block text-sm font-medium">Спосіб зв’язку *</span>
-                    <select required value={contactMethod} onChange={event => setContactMethod(event.target.value as ContactMethod)} className="h-12 w-full appearance-none rounded-xl border border-gray-200 bg-white px-3 pr-10 text-base outline-none focus:border-gray-500 sm:text-sm">
+                    <select required value={contactMethod} onChange={event => setContactMethod(event.target.value as ContactMethod)}>
                       {CONTACT_METHOD_OPTIONS.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -291,19 +295,20 @@ export default function CartDrawer() {
                   </button>
                   {loyaltyOpen && (
                     <div className="px-4 pb-3">
-                      <div className="flex gap-2">
+                      <div className="form-phone">
+                        <span className="form-ua-flag" aria-hidden="true" />
+                        <span className="form-phone-prefix" aria-hidden="true">+380</span>
                         <input
                           type="tel"
                           inputMode="tel"
                           autoComplete="tel"
                           maxLength={19}
-                          placeholder="+38 (0__) ___-__-__"
+                          placeholder="(00) 000-00-00"
                           value={loyaltyPhone}
                           onChange={event => handleLoyaltyPhoneChange(formatUkrainePhoneInput(event.target.value))}
                           onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyLoyalty(); } }}
-                          className="h-10 flex-1 min-w-0 rounded-xl border border-gray-200 px-3 text-base outline-none focus:border-gray-500"
                         />
-                        <button type="button" onClick={applyLoyalty} disabled={loyaltyChecking} aria-label="Застосувати знижку" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-black text-white disabled:opacity-50">
+                        <button type="button" onClick={applyLoyalty} disabled={loyaltyChecking} aria-label="Застосувати знижку" className="mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-black text-white disabled:opacity-50">
                           {loyaltyChecking ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} strokeWidth={2.5} />}
                         </button>
                       </div>
@@ -318,7 +323,7 @@ export default function CartDrawer() {
 
             {cart.items.length > 0 && cart.quote && checkout && (
               <div data-checkout-submit-footer className="shrink-0 border-t border-gray-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-4">
-                <button form="checkout-form" type="submit" disabled={submitting || !cart.quote.canCheckout} className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                <button form="checkout-form" type="submit" disabled={submitting || !cart.quote.canCheckout} className="form-cta">
                   {submitting && <Loader2 className="animate-spin" size={17} />}
                   <span>Підтвердити</span>
                 </button>
@@ -338,7 +343,7 @@ export default function CartDrawer() {
                   )}
                   <div className="flex justify-between border-t border-gray-100 pt-3 text-lg font-bold"><span>Разом</span><span>{money(cart.quote.total - (loyaltyDiscount?.amount ?? 0))} ₴</span></div>
                 </div>
-                <button type="button" onClick={() => setCheckout(true)} disabled={cart.quoteLoading || !cart.quote.canCheckout} className="mt-4 w-full rounded-xl bg-black px-4 py-3.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">Оформити замовлення</button>
+                <button type="button" onClick={() => setCheckout(true)} disabled={cart.quoteLoading || !cart.quote.canCheckout} className="form-cta mt-4">Оформити замовлення</button>
                 <NovaPoshtaTrustRow />
               </div>
             )}
@@ -355,7 +360,7 @@ export default function CartDrawer() {
             <p className="mt-3 text-gray-600">Ваше замовлення</p>
             <p className="mt-1 text-xl font-bold">№ {cart.confirmation.orderNumber}</p>
             <p className="mt-3 text-sm leading-6 text-gray-500">Менеджер звʼяжеться з вами для підтвердження. Сума замовлення: {money(cart.confirmation.total)} ₴.</p>
-            <button type="button" onClick={cart.closeConfirmation} className="mt-6 w-full rounded-xl bg-black px-5 py-3.5 text-sm font-semibold text-white">Готово</button>
+            <button type="button" onClick={cart.closeConfirmation} className="form-cta mt-6">Готово</button>
           </div>
         </div>
       )}
