@@ -220,7 +220,8 @@ export default function CartDrawer() {
                   </div>
 
                   <div className="border-t border-gray-100 pt-5">
-                    <h3 className="form-section-label mb-4">Адреса доставки</h3>
+                    <h3 className="form-section-label">Адреса доставки</h3>
+                    <div className="mt-3">
                     <NovaPoshtaSelector
                       allowPostomat={Boolean(cart.quote?.allowPostomat)}
                       value={delivery}
@@ -230,18 +231,22 @@ export default function CartDrawer() {
                   </div>
 
                   <label className="form-field block border-t border-gray-100 pt-5">
-                    <span className="mb-1.5 block text-sm font-medium">Коментар до замовлення</span>
-                    <textarea value={customerComment} onChange={event => setCustomerComment(event.target.value)} maxLength={1000} rows={3} placeholder="Коментар (не обов’язково)" />
+                    <span className="form-section-label">Коментар до замовлення</span>
+                    <div className="mt-3">
+                      <textarea value={customerComment} onChange={event => setCustomerComment(event.target.value)} maxLength={1000} rows={3} placeholder="Коментар (не обов’язково)" />
+                    </div>
                   </label>
 
                   <label className="form-field relative block border-t border-gray-100 pt-5">
-                    <span className="mb-1.5 block text-sm font-medium">Спосіб зв’язку *</span>
-                    <select required value={contactMethod} onChange={event => setContactMethod(event.target.value as ContactMethod)}>
-                      {CONTACT_METHOD_OPTIONS.map(option => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                    <ChevronDown aria-hidden="true" className="pointer-events-none absolute bottom-3.5 right-3 text-gray-400" size={18} />
+                    <span className="form-section-label">Спосіб зв’язку *</span>
+                    <div className="relative mt-3">
+                      <select required value={contactMethod} onChange={event => setContactMethod(event.target.value as ContactMethod)}>
+                        {CONTACT_METHOD_OPTIONS.map(option => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                    </div>
                   </label>
 
                   {cart.quote?.checkoutPaymentDetails && (
@@ -292,15 +297,15 @@ export default function CartDrawer() {
                   </button>
                   {loyaltyOpen && (
                     <div className="px-4 pb-3">
-                      <div className="flex items-center gap-2">
-                        <PhoneInput
-                          value={loyaltyPhone}
-                          onChange={value => { setLoyaltyPhone(value); setLoyaltyError(null); setLoyaltyDiscount(null); }}
-                          placeholder="(00) 000-00-00"
-                          inputClassName="flex-1"
-                          onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyLoyalty(); } }}
-                          className="form-phone flex-1"
-                        />
+                      <div className="flex items-center gap-2.5">
+                        <div className="min-w-0 flex-1">
+                          <PhoneInput
+                            value={loyaltyPhone}
+                            onChange={value => { setLoyaltyPhone(value); setLoyaltyError(null); setLoyaltyDiscount(null); }}
+                            placeholder="(00) 000-00-00"
+                            onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyLoyalty(); } }}
+                          />
+                        </div>
                         <button type="button" onClick={applyLoyalty} disabled={loyaltyChecking} aria-label="Застосувати знижку" className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[11px] bg-black text-white disabled:opacity-50">
                           {loyaltyChecking ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} strokeWidth={2.5} />}
                         </button>

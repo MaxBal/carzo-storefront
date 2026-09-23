@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { Check, ChevronDown, Loader2, MapPin, Search } from 'lucide-react';
+import { Check, ChevronDown, Loader2, Search } from 'lucide-react';
 import type {
   CheckoutDelivery,
   DeliveryMethod,
@@ -366,7 +366,6 @@ export default function NovaPoshtaSelector({
       <div data-keyboard-dropdown>
         <label htmlFor={`${id}-city`} className="sr-only">Місто</label>
         <div className="relative">
-          <MapPin aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-gray-400" size={17} />
           <input
             id={`${id}-city`}
             value={cityQuery}
@@ -402,7 +401,7 @@ export default function NovaPoshtaSelector({
             aria-activedescendant={cityActiveIndex >= 0 ? `${id}-city-option-${cityActiveIndex}` : undefined}
             aria-invalid={cityInvalid}
             aria-describedby={cityInvalid ? `${id}-city-error` : undefined}
-            className={`${INPUT_BASE} pl-11 pr-10 ${cityInvalid ? 'border-red-400 focus:border-red-500' : ''}`}
+            className={`${INPUT_BASE} pr-10 ${cityInvalid ? 'border-red-400 focus:border-red-500' : ''}`}
           />
           {cityLoading && <Loader2 aria-label="Завантаження міст" className="absolute right-3.5 top-1/2 -translate-y-1/2 animate-spin text-gray-400" size={17} />}
           {value.cityRef && <Check aria-hidden="true" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#159e85]" size={17} />}

@@ -113,6 +113,7 @@
   border: 1px solid rgba(17, 24, 39, 0.12);
   border-radius: 2px;
   background: #ffd700;
+  margin-right: 8px;
 }
 
 .form-ua-flag::before {
