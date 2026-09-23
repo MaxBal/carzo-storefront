@@ -300,7 +300,8 @@
   top: 0;
   right: 0;
   display: flex;
-  width: 100vw;
+  width: 100%;
+  max-width: 100vw;
   height: 100dvh;
   max-height: 100dvh;
   flex-direction: column;
@@ -445,8 +446,16 @@
   background: #fff;
   color: #111827;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+@media (min-width: 768px) {
+  .cm-quote-field input,
+  .cm-quote-field select,
+  .cm-quote-field textarea {
+    font-size: 15px;
+  }
 }
 
 .cm-quote-field input,
@@ -545,9 +554,15 @@
 .cm-quote-phone-prefix {
   margin-left: 9px;
   color: #111827;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 500;
   white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .cm-quote-phone-prefix {
+    font-size: 15px;
+  }
 }
 
 .cm-quote-accordions {
@@ -729,11 +744,17 @@
   background: #000;
   color: #fff;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+@media (min-width: 768px) {
+  .cm-quote-submit button {
+    font-size: 15px;
+  }
 }
 
 .cm-quote-submit button:hover {

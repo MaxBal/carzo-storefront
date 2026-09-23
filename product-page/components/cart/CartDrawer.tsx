@@ -239,7 +239,9 @@ export default function CartDrawer() {
                         <strong>Коментар до замовлення</strong>
                         <span>(не обов’язково)</span>
                       </span>
-                      <ChevronDown size={18} className="form-collapse-chevron" aria-hidden="true" />
+                      <span className="form-collapse-chevron" aria-hidden="true">
+                        <ChevronDown size={18} />
+                      </span>
                     </button>
                     <div className="form-collapse-content">
                       <div className="form-collapse-content-inner">

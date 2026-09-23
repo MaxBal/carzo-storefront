@@ -11,8 +11,17 @@
   background: #fff;
   color: #111827;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+@media (min-width: 768px) {
+  .form-field input,
+  .form-field select,
+  .form-field textarea,
+  .form-field-input {
+    font-size: 15px;
+  }
 }
 
 .form-field input,
@@ -87,9 +96,15 @@
   background: transparent;
   color: #111827;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   box-shadow: none;
   outline: none;
+}
+
+@media (min-width: 768px) {
+  .form-phone input {
+    font-size: 15px;
+  }
 }
 
 .form-phone input::placeholder {
@@ -127,8 +142,14 @@
 .form-phone-prefix {
   flex-shrink: 0;
   color: #111827;
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1;
+}
+
+@media (min-width: 768px) {
+  .form-phone-prefix {
+    font-size: 15px;
+  }
 }
 
 /* Section heading — matches loyalty accordion title (16px/600/leading-5) */
@@ -183,13 +204,31 @@
 }
 
 .form-collapse-chevron {
+  display: grid;
+  width: 40px;
+  height: 40px;
   flex-shrink: 0;
-  color: #6b7280;
+  place-items: center;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #1f2937;
+  transition: background-color 150ms ease;
+}
+
+.form-collapse-chevron svg {
   transition: transform 220ms ease-out;
 }
 
-.form-collapse--open .form-collapse-chevron {
+.form-collapse--open .form-collapse-chevron svg {
   transform: rotate(180deg);
+}
+
+.form-collapse-chevron:hover {
+  background: #e5e7eb;
+}
+
+.form-collapse-chevron:active {
+  background: #d1d5db;
 }
 
 .form-collapse-content {
@@ -262,11 +301,17 @@
   background: #000;
   color: #fff;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   touch-action: manipulation;
   transition: background-color 150ms ease, opacity 150ms ease;
+}
+
+@media (min-width: 768px) {
+  .form-cta {
+    font-size: 15px;
+  }
 }
 
 .form-cta:hover {
