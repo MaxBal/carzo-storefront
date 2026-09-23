@@ -365,8 +365,8 @@ export default function NovaPoshtaSelector({
 
       <div data-keyboard-dropdown>
         <label htmlFor={`${id}-city`} className="sr-only">Місто</label>
-        <div className="form-field relative">
-          <MapPin aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={17} />
+        <div className="relative">
+          <MapPin aria-hidden="true" className="pointer-events-none absolute left-3.5 top-1/2 z-10 -translate-y-1/2 text-gray-400" size={17} />
           <input
             id={`${id}-city`}
             value={cityQuery}
@@ -402,7 +402,7 @@ export default function NovaPoshtaSelector({
             aria-activedescendant={cityActiveIndex >= 0 ? `${id}-city-option-${cityActiveIndex}` : undefined}
             aria-invalid={cityInvalid}
             aria-describedby={cityInvalid ? `${id}-city-error` : undefined}
-            className={`${INPUT_BASE} pl-10 pr-10 ${cityInvalid ? 'border-red-400 focus:border-red-500' : ''}`}
+            className={`${INPUT_BASE} pl-11 pr-10 ${cityInvalid ? 'border-red-400 focus:border-red-500' : ''}`}
           />
           {cityLoading && <Loader2 aria-label="Завантаження міст" className="absolute right-3.5 top-1/2 -translate-y-1/2 animate-spin text-gray-400" size={17} />}
           {value.cityRef && <Check aria-hidden="true" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[#159e85]" size={17} />}
@@ -462,7 +462,7 @@ export default function NovaPoshtaSelector({
           {pointOpen && value.cityRef && (
             <div className="mt-1 rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
               <div className="relative m-1">
-                <Search aria-hidden="true" className="absolute left-3 top-3.5 text-gray-400" size={17} />
+                <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-gray-400" size={17} />
                 <input
                   value={pointQuery}
                   onChange={event => {
@@ -527,7 +527,7 @@ export default function NovaPoshtaSelector({
         <div className="space-y-4">
           <div data-keyboard-dropdown>
             <label htmlFor={`${id}-street`} className="sr-only">Вулиця</label>
-            <div className="form-field relative">
+            <div className="relative">
               <input
                 id={`${id}-street`}
                 value={streetQuery}

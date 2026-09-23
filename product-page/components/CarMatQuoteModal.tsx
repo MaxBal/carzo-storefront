@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
+import PhoneInput from '@/components/PhoneInput';
 import type { ContactMethod } from '@/lib/cart/contact-method';
 import {
   CARMAT_INTEREST_OPTIONS,
@@ -48,28 +49,6 @@ const INITIAL_FORM: CarMatQuoteInput = {
   contactMethod: 'telegram',
   comment: '',
 };
-
-function normalizeSubscriberDigits(value: string) {
-  let digits = value.replace(/\D/g, '');
-  if (digits.startsWith('380')) digits = digits.slice(3);
-  else if (digits.startsWith('0')) digits = digits.slice(1);
-  return digits.slice(0, 9);
-}
-
-function formatSubscriberPhone(value: string) {
-  const digits = normalizeSubscriberDigits(value);
-  const operator = digits.slice(0, 2);
-  const first = digits.slice(2, 5);
-  const second = digits.slice(5, 7);
-  const third = digits.slice(7, 9);
-
-  let formatted = operator ? `(${operator}` : '';
-  if (operator.length === 2) formatted += ')';
-  if (first) formatted += ` ${first}`;
-  if (second) formatted += `-${second}`;
-  if (third) formatted += `-${third}`;
-  return formatted;
-}
 
 export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalProps) {
   const [form, setForm] = useState<CarMatQuoteInput>(INITIAL_FORM);
@@ -240,23 +219,14 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
 
               <label className="cm-quote-field cm-quote-field--placeholder">
                 <span className="sr-only">Телефон</span>
-                <div className="cm-quote-phone">
-                  <span className="cm-quote-ua-flag" aria-hidden="true" />
-                  <span className="cm-quote-phone-prefix" aria-hidden="true">+380</span>
-                  <input
-                    required
-                    name="customerPhone"
-                    type="tel"
-                    inputMode="tel"
-                    maxLength={15}
-                    autoComplete="tel"
-                    aria-label="Телефон"
-                    pattern="\([0-9]{2}\) [0-9]{3}-[0-9]{2}-[0-9]{2}"
-                    placeholder="(00) 000-00-00"
-                    value={formatSubscriberPhone(form.customerPhone)}
-                    onChange={event => updateField('customerPhone', normalizeSubscriberDigits(event.target.value))}
-                  />
-                </div>
+                <PhoneInput
+                  required
+                  name="customerPhone"
+                  value={form.customerPhone}
+                  onChange={digits => updateField('customerPhone', digits)}
+                  placeholder="(00) 000-00-00"
+                  className="cm-quote-phone"
+                />
               </label>
 
               <label className="cm-quote-field cm-quote-field--placeholder">

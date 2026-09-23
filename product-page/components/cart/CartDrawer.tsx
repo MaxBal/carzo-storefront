@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Check, CheckCircle2, ChevronDown, Info, Loader2, Minus, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
+import PhoneInput from '@/components/PhoneInput';
 import { createOrder } from '@/app/actions/checkout';
 import { CONTACT_METHOD_OPTIONS, type ContactMethod } from '@/lib/cart/contact-method';
-import { checkLoyaltyDiscount, normalizePhone } from '@/lib/cart/loyalty';
-import { formatUkrainePhoneInput, UKRAINE_PHONE_MASK_PREFIX, UKRAINE_PHONE_PATTERN } from '@/lib/cart/phone';
+import { checkLoyaltyDiscount } from '@/lib/cart/loyalty';
+import { buildFullPhone } from '@/lib/cart/phone';
 import type { CheckoutDelivery, CheckoutResult } from '@/lib/cart/types';
 import NovaPoshtaSelector from './NovaPoshtaSelector';
 import NovaPoshtaTrustRow from './NovaPoshtaTrustRow';
@@ -35,14 +36,14 @@ export default function CartDrawer() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState(UKRAINE_PHONE_MASK_PREFIX);
+  const [customerPhone, setCustomerPhone] = useState('');
   const [customerComment, setCustomerComment] = useState('');
   const [contactMethod, setContactMethod] = useState<ContactMethod>('phone');
   const [delivery, setDelivery] = useState<CheckoutDelivery>({ method: 'BRANCH', cityRef: '', pointRef: '' });
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
-  const [loyaltyPhone, setLoyaltyPhone] = useState(UKRAINE_PHONE_MASK_PREFIX);
+  const [loyaltyPhone, setLoyaltyPhone] = useState('');
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
   const [loyaltyDiscount, setLoyaltyDiscount] = useState<{ percent: number; amount: number } | null>(null);
   const [loyaltyChecking, setLoyaltyChecking] = useState(false);
@@ -76,7 +77,7 @@ export default function CartDrawer() {
       setSubmitAttempted(false);
       setDelivery({ method: 'BRANCH', cityRef: '', pointRef: '' });
       setLoyaltyOpen(false);
-      setLoyaltyPhone(UKRAINE_PHONE_MASK_PREFIX);
+      setLoyaltyPhone('');
       setLoyaltyError(null);
       setLoyaltyDiscount(null);
       setLoyaltyChecking(false);
@@ -132,7 +133,7 @@ export default function CartDrawer() {
         items: cart.items,
         expectedTotal: cart.quote.total,
         customerName,
-        customerPhone,
+        customerPhone: buildFullPhone(customerPhone),
         customerComment,
         contactMethod,
         delivery,
@@ -154,7 +155,7 @@ export default function CartDrawer() {
     setLoyaltyChecking(true);
     setLoyaltyError(null);
     try {
-      const result = await checkLoyaltyDiscount(loyaltyPhone);
+      const result = await checkLoyaltyDiscount(buildFullPhone(loyaltyPhone));
       if (result.eligible) {
         const base = cart.quote.subtotal - cart.quote.quantityDiscount;
         const amount = Math.trunc(base * result.discountPercent / 100);
@@ -166,12 +167,6 @@ export default function CartDrawer() {
     } finally {
       setLoyaltyChecking(false);
     }
-  };
-
-  const handleLoyaltyPhoneChange = (value: string) => {
-    setLoyaltyPhone(value);
-    setLoyaltyError(null);
-    setLoyaltyDiscount(null);
   };
 
   return (
@@ -213,17 +208,19 @@ export default function CartDrawer() {
                       </label>
                       <label className="form-field">
                         <span className="sr-only">Телефон</span>
-                        <div className="form-phone">
-                          <span className="form-ua-flag" aria-hidden="true" />
-                          <span className="form-phone-prefix" aria-hidden="true">+380</span>
-                          <input required type="tel" inputMode="tel" autoComplete="tel" maxLength={19} pattern={UKRAINE_PHONE_PATTERN} value={customerPhone} onChange={event => setCustomerPhone(formatUkrainePhoneInput(event.target.value))} placeholder="(00) 000-00-00" />
-                        </div>
+                        <PhoneInput
+                          required
+                          name="customerPhone"
+                          value={customerPhone}
+                          onChange={setCustomerPhone}
+                          placeholder="(00) 000-00-00"
+                        />
                       </label>
                     </div>
                   </div>
 
                   <div className="border-t border-gray-100 pt-5">
-                    <h3 className="form-section-label mb-3">Адреса доставки</h3>
+                    <h3 className="form-section-label mb-4">Адреса доставки</h3>
                     <NovaPoshtaSelector
                       allowPostomat={Boolean(cart.quote?.allowPostomat)}
                       value={delivery}
@@ -295,20 +292,16 @@ export default function CartDrawer() {
                   </button>
                   {loyaltyOpen && (
                     <div className="px-4 pb-3">
-                      <div className="form-phone">
-                        <span className="form-ua-flag" aria-hidden="true" />
-                        <span className="form-phone-prefix" aria-hidden="true">+380</span>
-                        <input
-                          type="tel"
-                          inputMode="tel"
-                          autoComplete="tel"
-                          maxLength={19}
-                          placeholder="(00) 000-00-00"
+                      <div className="flex items-center gap-2">
+                        <PhoneInput
                           value={loyaltyPhone}
-                          onChange={event => handleLoyaltyPhoneChange(formatUkrainePhoneInput(event.target.value))}
+                          onChange={value => { setLoyaltyPhone(value); setLoyaltyError(null); setLoyaltyDiscount(null); }}
+                          placeholder="(00) 000-00-00"
+                          inputClassName="flex-1"
                           onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyLoyalty(); } }}
+                          className="form-phone flex-1"
                         />
-                        <button type="button" onClick={applyLoyalty} disabled={loyaltyChecking} aria-label="Застосувати знижку" className="mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-black text-white disabled:opacity-50">
+                        <button type="button" onClick={applyLoyalty} disabled={loyaltyChecking} aria-label="Застосувати знижку" className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-[11px] bg-black text-white disabled:opacity-50">
                           {loyaltyChecking ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} strokeWidth={2.5} />}
                         </button>
                       </div>
