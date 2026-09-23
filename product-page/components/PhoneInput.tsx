@@ -25,6 +25,7 @@ interface PhoneInputProps {
   pattern?: string;
   onKeyDown?: (event: React.KeyboardEvent<HTMLInputElement>) => void;
   onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
+  onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
 }
 
 /**
@@ -45,6 +46,7 @@ export default function PhoneInput({
   inputClassName = '',
   onKeyDown,
   onBlur,
+  onFocus,
   ...aria
 }: PhoneInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +141,7 @@ export default function PhoneInput({
         onChange={handleChange}
         onKeyDown={handleKeyDown}
         onBlur={onBlur}
+        onFocus={onFocus}
         placeholder={placeholder}
         className={inputClassName}
         {...aria}

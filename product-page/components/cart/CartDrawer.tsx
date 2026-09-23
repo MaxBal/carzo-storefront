@@ -43,6 +43,7 @@ export default function CartDrawer() {
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
+  const [loyaltyPhoneFocused, setLoyaltyPhoneFocused] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [loyaltyPhone, setLoyaltyPhone] = useState('');
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
@@ -318,6 +319,8 @@ export default function CartDrawer() {
                             value={loyaltyPhone}
                             onChange={value => { setLoyaltyPhone(value); setLoyaltyError(null); setLoyaltyDiscount(null); }}
                             placeholder="(00) 000-00-00"
+                            onFocus={() => setLoyaltyPhoneFocused(true)}
+                            onBlur={() => setLoyaltyPhoneFocused(false)}
                             onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyLoyalty(); } }}
                           />
                         </div>
@@ -344,7 +347,7 @@ export default function CartDrawer() {
             )}
 
             {cart.items.length > 0 && cart.quote && !checkout && (
-              <div className="shrink-0 border-t border-gray-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-4">
+              <div className={`shrink-0 border-t border-gray-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 transition-opacity sm:px-6 sm:pb-4 ${loyaltyPhoneFocused ? 'pointer-events-none h-0 overflow-hidden border-t-0 p-0 opacity-0' : ''}`}>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-gray-600"><span>Товари ({cart.quote.itemsQuantity})</span><span>{money(cart.quote.subtotal)} ₴</span></div>
                   {cart.quote.quantityDiscount > 0 && <div className="flex justify-between font-medium text-[#00a382]"><span>Разом дешевше</span><span>−{money(cart.quote.quantityDiscount)} ₴</span></div>}
