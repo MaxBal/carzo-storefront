@@ -109,18 +109,31 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
               </>
             )}
 
-            {/* Placement tab */}
+            {/* Placement tab — global video preferred, image as legacy fallback */}
             {activeTab === 'placement' && (
-              <div className="modal-image-container aspect-video">
-                <Image
-                  src={data.placementImage}
-                  alt={`Розміщення логотипа ${data.brandName}`}
-                  width={1200}
-                  height={675}
-                  className="h-full w-full object-contain"
-                  unoptimized
-                />
-              </div>
+              data.placementVideo ? (
+                <div className="modal-image-container aspect-video">
+                  <video
+                    src={data.placementVideo}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="h-full w-full object-contain"
+                    aria-label={`Розміщення логотипа ${data.brandName}`}
+                  />
+                </div>
+              ) : (
+                <div className="modal-image-container aspect-video">
+                  <Image
+                    src={data.placementImage}
+                    alt={`Розміщення логотипа ${data.brandName}`}
+                    width={1200}
+                    height={675}
+                    className="h-full w-full object-contain"
+                    unoptimized
+                  />
+                </div>
+              )
             )}
 
             {/* FAQ tab */}

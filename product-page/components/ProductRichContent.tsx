@@ -1,6 +1,7 @@
 import type { ResolvedProductContent } from '@/lib/content/types';
 import ManagedProductImage from '@/components/ManagedProductImage';
 import MagneticSystemVideo from '@/components/MagneticSystemVideo';
+import ProductSectionNav from '@/components/ProductSectionNav';
 
 interface ProductRichContentProps {
   data: ResolvedProductContent['richContent'];
@@ -9,11 +10,16 @@ interface ProductRichContentProps {
 export default function ProductRichContent({ data }: ProductRichContentProps) {
   return (
     <section
-      className="mt-16 bg-[#0a0a0a] px-4 py-[90px] text-white sm:px-[2.5vw] lg:px-[3vw] lg:py-[140px]"
+      id="product-description"
+      className="mt-16 bg-[#0a0a0a] text-white sm:px-[2.5vw] lg:px-[3vw]"
       aria-label="Особливості автокейсу"
     >
-      <div className="mx-auto max-w-[1450px]">
-        <div className="space-y-[90px] lg:space-y-[140px]">
+      {/* Top navigation of Rich Content — same black background */}
+      <ProductSectionNav />
+
+      <div className="px-4 py-[72px] sm:px-0 lg:py-[110px]">
+        <div className="mx-auto max-w-[1450px]">
+          <div className="space-y-[90px] lg:space-y-[140px]">
           {data.sections.map((feature, index) => (
             <article
               key={feature.key}
@@ -88,6 +94,7 @@ export default function ProductRichContent({ data }: ProductRichContentProps) {
               </div>
             </article>
           ))}
+          </div>
         </div>
       </div>
     </section>

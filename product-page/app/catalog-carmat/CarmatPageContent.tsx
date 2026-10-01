@@ -45,9 +45,16 @@ const InfoIcon = () => (
 interface CarmatPageContentProps {
   designs: CarMatDesign[];
   placeholderImage: string;
+  promoVideoUrl?: string;
+  promoCoverUrl?: string;
 }
 
-export default function CarmatPageContent({ designs, placeholderImage }: CarmatPageContentProps) {
+export default function CarmatPageContent({
+  designs,
+  placeholderImage,
+  promoVideoUrl = '/carmat-video.mov',
+  promoCoverUrl = '/carmat-desktop.jpeg',
+}: CarmatPageContentProps) {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [designModalOpen, setDesignModalOpen] = useState(false);
   const [quoteModalOpen, setQuoteModalOpen] = useState(false);
@@ -74,7 +81,7 @@ export default function CarmatPageContent({ designs, placeholderImage }: CarmatP
           />
           <img
             className="cm-cover-img cm-cover-img--desktop"
-            src="/carmat-desktop.jpeg"
+            src={promoCoverUrl}
             alt="Автокилимки Carzo — десктоп обкладинка"
             draggable={false}
           />
@@ -151,7 +158,7 @@ export default function CarmatPageContent({ designs, placeholderImage }: CarmatP
 
       {/* ── Video Modal ── */}
       <VideoModal
-        src="/carmat-video.mov"
+        src={promoVideoUrl}
         isOpen={videoModalOpen}
         onClose={() => setVideoModalOpen(false)}
       />

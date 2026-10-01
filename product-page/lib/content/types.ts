@@ -1,6 +1,6 @@
 export type SizeId = 'S' | 'M' | 'L' | 'XL';
 export type SizeContentGroup = 'S' | 'M' | 'LXL';
-export type BenefitModalType = 'payment' | 'delivery' | 'returns' | 'bundle' | 'loyalty';
+export type BenefitModalType = 'warranty' | 'payment' | 'delivery' | 'returns' | 'bundle' | 'loyalty';
 
 export interface DesignInfo {
   slug: string;
@@ -42,6 +42,8 @@ export interface FixationInfo {
   value: string;
   label: string;
   extra: number;
+  /** Size-specific surcharge, e.g. both-fixation: s=60, m=80, l=100, xl=120. */
+  extraBySize?: Partial<Record<SizeId, number>>;
   sort: number;
 }
 
@@ -118,6 +120,7 @@ export interface LogoSettings {
   title: string;
   infoText: string;
   fallbackImage: string;
+  placementVideo: string;
   specs: LogoSpec[];
 }
 
@@ -135,6 +138,7 @@ export interface LogoModalData {
   infoText: string;
   logoImage: string;
   placementImage: string;
+  placementVideo: string;
   specs: LogoSpec[];
   faqs: FaqItem[];
 }
@@ -225,6 +229,7 @@ export interface BenefitModalData {
   cardLabel: string;
   title: string;
   subtitle: string;
+  sort?: number;
   blocks: BenefitBlock[];
 }
 
@@ -268,6 +273,26 @@ export interface ReviewsData {
   screenshots: ReviewScreenshot[];
 }
 
+export interface VideoReviewItem {
+  id: string;
+  title: string;
+  videoUrl: string;
+  coverUrl: string;
+  sort: number;
+  isActive: boolean;
+}
+
+export interface VideoReviewsData {
+  enabled: boolean;
+  title: string;
+  socialBadgeUrl: string;
+  socialHandle: string;
+  socialVerified: boolean;
+  socialText: string;
+  stats: Array<{ value: string; text: string }>;
+  videos: VideoReviewItem[];
+}
+
 export interface SiteSettings {
   designInfoText: string;
   featureMagneticText: string;
@@ -302,6 +327,7 @@ export interface ContentSource extends ProductCatalog {
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
   reviews: ReviewsData;
+  videoReviews: VideoReviewsData;
   siteSettings: SiteSettings;
 }
 
@@ -319,6 +345,8 @@ export interface ResolvedPricing {
 export interface ResolvedProductContent {
   catalog: ProductCatalog;
   gallery: GalleryImage[];
+  /** design slug → thumbnail URL (gallery #1 for current size, else selector image) */
+  designThumbnails: Record<string, string>;
   insideModal: InfoModalData;
   fixationModal: InfoModalData;
   logoModal: LogoModalData;
@@ -331,6 +359,7 @@ export interface ResolvedProductContent {
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
   reviews: ReviewsData;
+  videoReviews: VideoReviewsData;
   pricing: ResolvedPricing;
   siteSettings: SiteSettings;
 }

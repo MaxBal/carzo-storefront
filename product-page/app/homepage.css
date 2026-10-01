@@ -141,6 +141,8 @@
 
 .hp-product-case img {
   object-position: 50% 63%;
+  /* Crop light edges of the source photo without distorting the case */
+  transform: scale(1.02);
 }
 
 .hp-product-mats img {
@@ -458,14 +460,55 @@
     border-radius: 12px;
   }
 
+  /* Mobile case card: horizontal ~16:9 (not near-square) */
+  .hp-product-case {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+    height: auto;
+  }
+
+  .hp-product-case img {
+    object-fit: cover;
+    object-position: 50% 55%;
+    transform: scale(1.02);
+  }
+
+  .hp-product-case small {
+    top: 18px;
+  }
+
+  .hp-product-case strong {
+    bottom: 22px;
+    font-size: 22px;
+  }
+
+  .hp-product-case b {
+    right: 16px;
+    bottom: 16px;
+    width: 42px;
+    height: 42px;
+  }
+
   .hp-product-mats {
     min-height: 0;
-    aspect-ratio: 2/3;
+    /* Keep vertical card but ~20% shorter than 2/3 */
+    aspect-ratio: 5 / 6;
   }
 
   .hp-product-mats img {
     object-fit: cover;
     object-position: center;
+    transform: scale(1.02);
+  }
+
+  .hp-product-mats i {
+    background: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.08) 0%,
+      rgba(0, 0, 0, 0.12) 50%,
+      rgba(0, 0, 0, 0.34) 100%
+    );
+    z-index: -1;
   }
 
   .hp-product strong {
@@ -476,6 +519,8 @@
   .hp-product-mats strong {
     max-width: 245px;
     line-height: 1.15;
+    bottom: 22px;
+    font-size: 24px;
   }
 
   .hp-product b {
@@ -483,6 +528,13 @@
     bottom: 20px;
     width: 46px;
     height: 46px;
+  }
+
+  .hp-product-mats b {
+    right: 16px;
+    bottom: 16px;
+    width: 42px;
+    height: 42px;
   }
 
   .hp-badges,

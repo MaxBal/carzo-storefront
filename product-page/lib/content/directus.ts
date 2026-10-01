@@ -118,6 +118,49 @@ function parseReviewScreenshots(raw: unknown): ContentSource['reviews']['screens
   })).filter(item => item.image);
 }
 
+function parseVideoReviews(site: RecordValue | undefined): ContentSource['videoReviews'] {
+  const fallback = DEFAULT_CONTENT_SOURCE.videoReviews;
+  if (!site) return fallback;
+  const raw = site.video_reviews;
+  const videos = Array.isArray(raw)
+    ? raw.map((item, index) => ({
+        id: string(item.id) || `vr-${index + 1}`,
+        title: string(item.title),
+        videoUrl: normalizeExternalUrl(item.video_url) || string(item.video_url),
+        coverUrl: normalizeExternalUrl(item.cover_url) || string(item.cover_url),
+        sort: number(item.sort, index + 1),
+        isActive: item.is_active === undefined ? true : boolean(item.is_active, true),
+      }))
+        .filter(item => item.videoUrl)
+        .sort((a, b) => a.sort - b.sort)
+        .filter(item => item.isActive)
+    : [];
+
+  return {
+    enabled: site.video_reviews_enabled === undefined ? fallback.enabled : boolean(site.video_reviews_enabled, true),
+    title: string(site.video_reviews_title, fallback.title),
+    socialBadgeUrl: normalizeExternalUrl(site.video_reviews_social_badge_url) || string(site.video_reviews_social_badge_url) || fallback.socialBadgeUrl,
+    socialHandle: string(site.video_reviews_social_handle, fallback.socialHandle),
+    socialVerified: site.video_reviews_social_verified === undefined ? fallback.socialVerified : boolean(site.video_reviews_social_verified, true),
+    socialText: string(site.video_reviews_social_text, fallback.socialText),
+    stats: [
+      {
+        value: string(site.video_reviews_stat_1_value, fallback.stats[0]?.value ?? ''),
+        text: string(site.video_reviews_stat_1_text, fallback.stats[0]?.text ?? ''),
+      },
+      {
+        value: string(site.video_reviews_stat_2_value, fallback.stats[1]?.value ?? ''),
+        text: string(site.video_reviews_stat_2_text, fallback.stats[1]?.text ?? ''),
+      },
+      {
+        value: string(site.video_reviews_stat_3_value, fallback.stats[2]?.value ?? ''),
+        text: string(site.video_reviews_stat_3_text, fallback.stats[2]?.text ?? ''),
+      },
+    ],
+    videos,
+  };
+}
+
 async function loadDirectusSource(): Promise<ContentSource> {
   const [
     designs, sizes, brands, brandPricing, sizeShipping, fixations, variants, galleryImages, contentSets,
@@ -135,7 +178,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     readCollection('carzo_content_sets', '*,design.slug,size.code'),
     readCollection('carzo_content_sections', '*,content_set.key,image.id'),
     readCollection('carzo_faq_items'),
-    readCollection('carzo_logo_settings', '*,fallback_image.id'),
+    readCollection('carzo_logo_settings', '*,fallback_image.id,logo_placement_video.id'),
     readCollection('carzo_logo_placements', '*,design.slug,size.code,image.id'),
     readCollection('carzo_rich_sections'),
     readCollection('carzo_rich_section_images', '*,design.slug,section.key,image.id'),
@@ -201,9 +244,23 @@ async function loadDirectusSource(): Promise<ContentSource> {
       price: number(brandPricingBySlug.get(string(item.slug))?.logo_extra),
       logoImage: resolveMediaUrl(item.logo_image_url, item.logo_image), sort: number(item.sort),
     })),
-    fixations: fixations.map(item => ({
-      value: string(item.key), label: string(item.label), extra: number(item.extra), sort: number(item.sort),
-    })),
+    fixations: fixations.map(item => {
+      const rawExtraBySize = item.extra_by_size;
+      const extraBySize = (rawExtraBySize && typeof rawExtraBySize === 'object' && !Array.isArray(rawExtraBySize))
+        ? Object.fromEntries(
+            Object.entries(rawExtraBySize as Record<string, unknown>)
+              .flatMap(([key, value]) => {
+                const lower = String(key).toLowerCase();
+                const n = number(value);
+                return [[lower, n], [lower.toUpperCase(), n]] as Array<[string, number]>;
+              })
+          ) as ContentSource['fixations'][number]['extraBySize']
+        : undefined;
+      return {
+        value: string(item.key), label: string(item.label), extra: number(item.extra), sort: number(item.sort),
+        extraBySize,
+      };
+    }),
     variants: variants.map(item => ({
       key: string(item.key), designSlug: relationValue(item.design, 'slug') || '',
       size: relationValue(item.size, 'code') as SizeId,
@@ -237,6 +294,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
       ? {
           title: string(logoSettings[0].title), infoText: string(logoSettings[0].info_text),
           fallbackImage: resolveMediaUrl(logoSettings[0].fallback_image_url, logoSettings[0].fallback_image, '/Без_имени-1.jpg'),
+          placementVideo: resolveMediaUrl(logoSettings[0].logo_placement_video_url, logoSettings[0].logo_placement_video),
           specs: Array.isArray(logoSettings[0].specs) ? logoSettings[0].specs as ContentSource['logoSettings']['specs'] : [],
         }
       : DEFAULT_CONTENT_SOURCE.logoSettings,
@@ -282,8 +340,9 @@ async function loadDirectusSource(): Promise<ContentSource> {
     benefitModals: benefitModals.map(item => ({
       type: string(item.key), cardLabel: string(item.card_label), title: string(item.title),
       subtitle: string(item.subtitle),
+      sort: number(item.sort),
       blocks: (item.content as { blocks?: BenefitModalData['blocks'] } | null)?.blocks ?? [],
-    })) as BenefitModalData[],
+    })).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)) as BenefitModalData[],
     discountTiers: discountTiers.map(item => ({
       key: string(item.key), minQuantity: number(item.min_quantity), amount: number(item.amount), sort: number(item.sort),
     })),
@@ -303,6 +362,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
       items: parseReviewItems(siteSettings[0]?.reviews_items),
       screenshots: parseReviewScreenshots(siteSettings[0]?.reviews_screenshots),
     },
+    videoReviews: parseVideoReviews(siteSettings[0]),
     siteSettings: siteSettings[0]
       ? {
           designInfoText: string(siteSettings[0].design_info_text),

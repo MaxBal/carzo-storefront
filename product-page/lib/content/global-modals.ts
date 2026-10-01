@@ -48,8 +48,9 @@ export const getBenefitModals = cache(async (): Promise<BenefitModalData[]> => {
       cardLabel: string(item.card_label),
       title: string(item.title),
       subtitle: string(item.subtitle),
+      sort: typeof item.sort === 'number' ? item.sort : Number(item.sort ?? 0),
       blocks: (item.content as { blocks?: BenefitModalData['blocks'] } | null)?.blocks ?? [],
-    })) as BenefitModalData[];
+    })).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)) as BenefitModalData[];
   } catch {
     return DEFAULT_CONTENT_SOURCE.benefitModals;
   }

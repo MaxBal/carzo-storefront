@@ -1,0 +1,272 @@
+.vr-root {
+  background: #ffffff;
+  padding: 72px 16px 80px;
+}
+
+.vr-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.vr-title {
+  margin: 0 0 28px;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  color: #0a0a0a;
+  text-align: center;
+}
+
+.vr-scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 16px 8px;
+  margin: 0;
+}
+
+.vr-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.vr-track {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  padding-right: 16px;
+}
+
+.vr-card {
+  position: relative;
+  flex: 0 0 auto;
+  /* ~2 full cards + peek of 3rd on 375–430px */
+  width: min(38vw, 152px);
+  aspect-ratio: 9 / 16;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111;
+  scroll-snap-align: start;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.vr-card-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vr-play {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.vr-play-icon {
+  width: 42px;
+  height: 42px;
+  padding: 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+  box-sizing: border-box;
+}
+
+.vr-social {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 28px auto 0;
+  max-width: 480px;
+}
+
+.vr-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.vr-social-copy {
+  min-width: 0;
+}
+
+.vr-social-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vr-handle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0a0a0a;
+  letter-spacing: -0.01em;
+}
+
+.vr-verified {
+  flex-shrink: 0;
+}
+
+.vr-social-text {
+  margin: 3px 0 0;
+  font-size: 16px;
+  line-height: 1.35;
+  color: #6b6b6b;
+}
+
+.vr-stats {
+  margin: 36px auto 0;
+  max-width: 720px;
+  background: #f4f4f4;
+  border-radius: 28px;
+  padding: 36px 28px;
+}
+
+.vr-stat {
+  text-align: center;
+  padding: 18px 12px;
+}
+
+.vr-stat-value {
+  font-size: clamp(36px, 8vw, 56px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: #0a0a0a;
+}
+
+.vr-stat-text {
+  margin: 10px auto 0;
+  max-width: 340px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: #777777;
+  font-weight: 400;
+}
+
+.vr-stat-divider {
+  height: 1px;
+  background: #e2e2e2;
+  margin: 18px 28px 0;
+}
+
+/* Vertical video overlay */
+.vr-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(0, 0, 0, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.vr-overlay-stage {
+  height: min(88vh, 920px);
+  aspect-ratio: 9 / 16;
+  max-width: 92vw;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+.vr-overlay-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+  display: block;
+}
+
+.vr-overlay-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.vr-overlay-close:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+@media (min-width: 768px) {
+  .vr-root {
+    padding: 96px 32px 112px;
+  }
+
+  .vr-title {
+    text-align: center;
+    margin-bottom: 34px;
+    font-size: 40px;
+  }
+
+  .vr-card {
+    width: 168px;
+  }
+
+  .vr-scroller {
+    padding: 0 0 8px;
+  }
+
+  .vr-track {
+    gap: 28px;
+    justify-content: center;
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .vr-social {
+    max-width: 520px;
+    gap: 16px;
+    margin-top: 32px;
+  }
+
+  .vr-badge {
+    width: 48px;
+    height: 48px;
+  }
+
+  .vr-handle {
+    font-size: 19px;
+  }
+
+  .vr-social-text {
+    font-size: 17px;
+  }
+
+  .vr-stats {
+    padding: 48px 40px;
+  }
+
+  .vr-stat {
+    padding: 22px 16px;
+  }
+
+  .vr-stat-text {
+    font-size: 16px;
+    max-width: 380px;
+  }
+
+  .vr-stat-divider {
+    margin: 22px 48px 0;
+  }
+}

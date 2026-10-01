@@ -2,8 +2,10 @@ import Header from '@/components/Header';
 import ProductGallery from '@/components/ProductGallery';
 import ProductOptions from '@/components/ProductOptions';
 import ProductRichContent from '@/components/ProductRichContent';
-import CaseReviewsSection from '@/components/CaseReviewsSection';
+import VideoReviewsSection from '@/components/VideoReviewsSection';
 import type { ProductParams, ResolvedProductContent } from '@/lib/content/types';
+import '@/app/video-reviews.css';
+import '@/app/product-nav.css';
 
 interface ProductPageClientProps {
   params: ProductParams;
@@ -18,7 +20,7 @@ export default function ProductPageClient({ params, content, siteFlag }: Product
     <div className="min-h-screen bg-white">
       <Header siteFlag={siteFlag} />
 
-      <main>
+      <main className="has-msb">
         {/* Desktop: padded container with two columns */}
         <div className="hidden md:block max-w-[1280px] mx-auto px-4 pb-12 pt-6">
           <div className="flex gap-8">
@@ -48,7 +50,7 @@ export default function ProductPageClient({ params, content, siteFlag }: Product
         </div>
 
         <ProductRichContent data={content.richContent} />
-        <CaseReviewsSection data={content.reviews} />
+        <VideoReviewsSection data={content.videoReviews} />
       </main>
     </div>
   );

@@ -52,7 +52,9 @@ function TextLine({ line }: { line: BenefitTextLine }) {
   const className = line.tone === 'small'
     ? 'modal-secondary-text mt-0.5'
     : `modal-body-text ${line.tone === 'accent' ? 'font-medium !text-[#5ce4ab]' : ''}`;
-  const firstPercent = line.text.startsWith('20%') ? '20%' : null;
+  const firstPercent = line.text.startsWith('20%') ? '20%'
+    : line.text.startsWith('200 UAH') ? '200 UAH'
+    : null;
 
   return (
     <>

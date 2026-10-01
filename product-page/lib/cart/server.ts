@@ -58,6 +58,17 @@ function number(value: unknown) {
   return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
 }
 
+function fixationExtraForSize(fixation: DirectusRecord, size: string) {
+  const bySize = fixation.extra_by_size;
+  if (bySize && typeof bySize === 'object' && !Array.isArray(bySize)) {
+    const map = bySize as Record<string, unknown>;
+    const key = String(size).toLowerCase();
+    const value = map[key] ?? map[String(size)];
+    if (value !== undefined && value !== null) return number(value);
+  }
+  return number(fixation.extra);
+}
+
 function bool(value: unknown) {
   return value === true;
 }
@@ -99,7 +110,7 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     readPublished('carzo_sizes', 'code,slug,label,width_cm,height_cm,depth_cm'),
     readPublished('carzo_brands', 'slug,name'),
     readPublished('carzo_brand_pricing', 'brand.slug,logo_extra'),
-    readPublished('carzo_fixations', 'key,label,extra'),
+    readPublished('carzo_fixations', 'key,label,extra,extra_by_size'),
     readPublished('carzo_variants', 'key,design.slug,size.code,price,in_stock,quantity_discount_eligible'),
     readPublished('carzo_discount_tiers', 'key,min_quantity,amount,sort'),
     readPublished('carzo_size_shipping', 'size.code,length_cm,width_cm,height_cm,weight_kg'),
@@ -131,7 +142,8 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     }
 
     const brandName = item.brandId === 'none' ? 'Без логотипа' : text(brand.name);
-    const unitPrice = number(variant.price) + (brandPriceBySlug.get(item.brandId) ?? 0) + number(fixation.extra);
+    const fixationExtra = fixationExtraForSize(fixation, item.size);
+    const unitPrice = number(variant.price) + (brandPriceBySlug.get(item.brandId) ?? 0) + fixationExtra;
     const version = text(design.version) || item.designSlug;
     const title = brandName === 'Без логотипа'
       ? `Автокейс ${item.size} Carzo ${version}`

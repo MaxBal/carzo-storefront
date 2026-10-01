@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { CreditCard, Truck, RotateCcw, Package, Users, ArrowUpRight } from 'lucide-react';
+import { CreditCard, Truck, RotateCcw, Package, Users, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import BenefitModal from './BenefitModal';
 import type { BenefitModalData, BenefitModalType } from '@/lib/content/types';
 
 const ICONS: Record<BenefitModalType, React.ElementType> = {
+  warranty: ShieldCheck,
   payment: CreditCard,
   delivery: Truck,
   returns: RotateCcw,

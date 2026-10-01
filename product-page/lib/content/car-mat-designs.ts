@@ -69,6 +69,44 @@ export const getCarMatDesigns = cache(async (): Promise<CarMatDesign[]> => {
   }
 });
 
+export interface CarMatPromoMedia {
+  videoUrl: string;
+  coverUrl: string;
+}
+
+const DEFAULT_PROMO_MEDIA: CarMatPromoMedia = {
+  videoUrl: '/carmat-video.mov',
+  coverUrl: '/carmat-desktop.jpeg',
+};
+
+export const getCarMatPromoMedia = cache(async (): Promise<CarMatPromoMedia> => {
+  const directusUrl = getDirectusUrl();
+  if (!directusUrl) return DEFAULT_PROMO_MEDIA;
+
+  try {
+    const query = new URLSearchParams({
+      fields: 'car_mat_promo_video_url,car_mat_promo_video.id,car_mat_promo_cover_url,car_mat_promo_cover.id',
+    });
+    const response = await fetch(`${directusUrl}/items/carzo_site_settings?${query}`, {
+      headers: directusHeaders(),
+      next: { revalidate: 60 },
+    });
+
+    if (!response.ok) return DEFAULT_PROMO_MEDIA;
+
+    const payload = await response.json() as { data?: RecordValue };
+    const data = payload.data;
+    if (!data) return DEFAULT_PROMO_MEDIA;
+
+    return {
+      videoUrl: resolveMediaUrl(data.car_mat_promo_video_url, data.car_mat_promo_video, DEFAULT_PROMO_MEDIA.videoUrl),
+      coverUrl: resolveMediaUrl(data.car_mat_promo_cover_url, data.car_mat_promo_cover, DEFAULT_PROMO_MEDIA.coverUrl),
+    };
+  } catch {
+    return DEFAULT_PROMO_MEDIA;
+  }
+});
+
 export const getCarMatMediaPlaceholder = cache(async (): Promise<string> => {
   const directusUrl = getDirectusUrl();
   if (!directusUrl) return DEFAULT_MEDIA_PLACEHOLDER;

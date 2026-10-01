@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import { resolveMediaUrl } from '@/lib/media';
+import { resolveMediaUrl, resolveJsonMediaUrl } from '@/lib/media';
 
 type RecordValue = Record<string, unknown>;
 
@@ -48,6 +48,7 @@ export interface HomepageData {
     lead: string;
     materialTag: string;
     products: HomepageProduct[];
+    logoVideoUrl: string;
   };
   badges: {
     eyebrow: string;
@@ -74,6 +75,7 @@ const DEFAULT_HOMEPAGE: HomepageData = {
       { image: '/case.jpg', alt: 'Чорний автокейс Carzo у багажнику', href: '/case/design/l/4-0', tag: 'Магнітна система', title: 'Premium автокейси' },
       { image: '/mats.png', alt: 'Комплект чорних автокилимків Carzo', href: '/catalog-carmat', tag: 'Точність лекал', title: 'Premium автокилимки' },
     ],
+    logoVideoUrl: '',
   },
   badges: {
     eyebrow: 'Власне виробництво',
@@ -91,8 +93,8 @@ const DEFAULT_HOMEPAGE: HomepageData = {
     eyebrow: 'Carzo у цифрах',
     title: 'Відмінна якість\nпродукту та обслуговування',
     stats: [
-      { value: '15K', suffix: '+', description: 'задоволених клієнтів\nзі всієї країни' },
-      { value: '24', suffix: '%', description: 'клієнтів здійснюють\nповторну покупку' },
+      { value: '22K', suffix: '+', description: 'задоволених клієнтів\nзі всієї країни' },
+      { value: '27', suffix: '%', description: 'клієнтів здійснюють\nповторну покупку' },
       { value: '<1', suffix: '%', description: 'звернень із проханням\nповернути або обміняти товар' },
     ],
   },
@@ -101,9 +103,12 @@ const DEFAULT_HOMEPAGE: HomepageData = {
 function parseProducts(raw: unknown): HomepageProduct[] {
   if (!Array.isArray(raw)) return DEFAULT_HOMEPAGE.hero.products;
   return raw.map((item, index) => {
-    const imageValue = string(item.image) || string(item.imageUrl);
+    const imageValue = resolveJsonMediaUrl(
+      item as { image?: unknown; imageUrl?: unknown },
+      DEFAULT_HOMEPAGE.hero.products[index]?.image || '/case.jpg',
+    );
     return {
-      image: imageValue || DEFAULT_HOMEPAGE.hero.products[index]?.image || '/case.jpg',
+      image: imageValue,
       alt: string(item.alt) || DEFAULT_HOMEPAGE.hero.products[index]?.alt || '',
       href: string(item.href) || DEFAULT_HOMEPAGE.hero.products[index]?.href || '#',
       tag: string(item.tag) || DEFAULT_HOMEPAGE.hero.products[index]?.tag || '',
@@ -148,6 +153,7 @@ export const getHomepageData = cache(async (): Promise<HomepageData> => {
     if (!data) return DEFAULT_HOMEPAGE;
 
     const videoUrl = resolveMediaUrl(data.homepage_badges_video_url, data.homepage_badges_video, DEFAULT_HOMEPAGE.badges.videoUrl);
+    const logoVideoUrl = resolveMediaUrl(data.homepage_logo_video_url, data.homepage_logo_video);
 
     return {
       hero: {
@@ -156,6 +162,7 @@ export const getHomepageData = cache(async (): Promise<HomepageData> => {
         lead: string(data.homepage_hero_lead, DEFAULT_HOMEPAGE.hero.lead),
         materialTag: string(data.homepage_hero_material_tag, DEFAULT_HOMEPAGE.hero.materialTag),
         products: parseProducts(data.homepage_hero_products),
+        logoVideoUrl,
       },
       badges: {
         eyebrow: string(data.homepage_badges_eyebrow, DEFAULT_HOMEPAGE.badges.eyebrow),

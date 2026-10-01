@@ -10,11 +10,13 @@ import LogoModal from './LogoModal';
 import {
   getBrandById,
   getFixationByValue,
+  getFixationExtra,
   buildProductUrl,
   buildProductTitle,
 } from '@/lib/product-data';
 import type { ProductParams, ResolvedProductContent, SizeId } from '@/lib/content/types';
 import { useCart } from '@/components/cart/cart-context';
+import MobileStickyBuy from '@/components/MobileStickyBuy';
 
 const selectClasses =
   'w-full appearance-none rounded-[12px] border border-gray-200 bg-white px-4 py-3 pr-10 text-sm text-[#111111] cursor-pointer focus:border-gray-400 focus:outline-none';
@@ -102,20 +104,16 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   const router = useRouter();
   const { addItem } = useCart();
   const { size, designSlug, brandId } = params;
-  const { catalog, pricing, siteSettings, gallery } = content;
+  const { catalog, pricing, siteSettings } = content;
 
   const [selectedFixation, setSelectedFixation] = useState(persistedFixation);
   const [openModal, setOpenModal] = useState<'design' | 'size' | 'logo' | 'fixation' | null>(null);
 
-  const designThumbnails = catalog.designs.map(design => {
-    const firstGalleryImage = gallery
-      .filter(img => img.designSlug === design.slug && !img.isPlaceholder)
-      .sort((a, b) => a.sort - b.sort)[0];
-    return {
-      ...design,
-      thumbnailSrc: firstGalleryImage?.src || design.selectorImage,
-    };
-  });
+  const designThumbnails = content.designThumbnails ?? {};
+  const designsWithThumbnails = catalog.designs.map(design => ({
+    ...design,
+    thumbnailSrc: designThumbnails[design.slug] || design.selectorImage,
+  }));
 
   // Keep local state in sync with the module-level persistence on param changes
   useEffect(() => {
@@ -158,6 +156,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   };
 
   const fixData = getFixationByValue(selectedFixation, catalog);
+  const fixExtra = getFixationExtra(fixData, size);
   const selectedBrand = getBrandById(brandId, catalog);
   const brandSelected = !!selectedBrand && selectedBrand.id !== 'none';
 
@@ -165,8 +164,8 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   const baseOldPrice = pricing.selectedVariant.oldPrice;
   const logoExtra = brandSelected && selectedBrand ? selectedBrand.price : 0;
 
-  const currentPrice = basePrice + logoExtra + fixData.extra;
-  const oldPrice = baseOldPrice + logoExtra + fixData.extra;
+  const currentPrice = basePrice + logoExtra + fixExtra;
+  const oldPrice = baseOldPrice + logoExtra + fixExtra;
 
   const productTitle = buildProductTitle(params, catalog);
   const selectedDesign = catalog.designs.find(design => design.slug === designSlug);
@@ -256,7 +255,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           </div>
 
           <div className="flex flex-wrap gap-2" role="group" aria-label="Оберіть дизайн">
-            {designThumbnails.map(design => {
+            {designsWithThumbnails.map(design => {
               const active = design.slug === designSlug;
               return (
                 <button
@@ -360,9 +359,13 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
               className={selectClasses}
               style={{ height: 48 }}
             >
-              {catalog.fixations.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
+              {catalog.fixations.map(opt => {
+                const extra = getFixationExtra(opt, size);
+                const label = extra > 0 ? `${opt.label} +${extra} ₴` : `${opt.label} 0 ₴`;
+                return (
+                  <option key={opt.value} value={opt.value}>{label}</option>
+                );
+              })}
             </select>
             <SelectChevron />
           </div>
@@ -429,11 +432,19 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
         {/* CTA Button */}
         <button
           onClick={handleBuy}
+          data-product-buy
           className="mt-6 flex h-[48px] w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#080808] text-[15px] font-semibold tracking-[-0.01em] text-white transition-colors hover:bg-gray-800 active:bg-gray-900"
         >
           <ShoppingCart size={19} strokeWidth={2} />
           Купити {currentPrice} ₴
         </button>
+
+        {/* Mobile sticky CTA — only after static CTA fully leaves viewport */}
+        <MobileStickyBuy
+          label={`Купити ${currentPrice} ₴`}
+          onBuy={handleBuy}
+          triggerSelector="[data-product-buy]"
+        />
 
         {/* Benefit cards */}
         <BenefitCards data={content.benefitModals} />

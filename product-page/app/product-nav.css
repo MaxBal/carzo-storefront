@@ -1,0 +1,124 @@
+/* Tabs live on the black Rich Content background */
+.psn-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  background: #0a0a0a;
+  padding: 18px 16px 12px;
+  max-width: 100%;
+}
+
+.psn-item {
+  position: relative;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 10px 4px 12px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #8a8a8a;
+  cursor: pointer;
+  text-align: center;
+}
+
+.psn-item.is-active {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.psn-item.is-active::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 28px;
+  height: 1.5px;
+  background: #5ce4ab;
+  border-radius: 2px;
+}
+
+.psn-item:focus-visible {
+  outline: 2px solid #5ce4ab;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (min-width: 768px) {
+  .psn-root {
+    gap: 36px;
+    padding: 22px 32px 14px;
+  }
+
+  .psn-item {
+    padding: 10px 8px 12px;
+  }
+}
+
+/* Mobile sticky buy */
+.msb-root {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .msb-root {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    background: #ffffff;
+    border-top: 1px solid #ececec;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+    opacity: 0;
+    transform: translateY(100%);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .msb-root.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .msb-btn {
+    display: flex;
+    width: 100%;
+    height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 0;
+    border-radius: 12px;
+    background: #080808;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+  }
+
+  .msb-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .msb-btn:not(:disabled):hover {
+    background: #1f1f1f;
+  }
+
+  .msb-btn:not(:disabled):active {
+    background: #000;
+  }
+}
+
+@media (max-width: 767px) {
+  .has-msb {
+    padding-bottom: 88px;
+  }
+}
