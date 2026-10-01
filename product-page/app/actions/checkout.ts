@@ -10,6 +10,7 @@ import {
 } from '@/lib/nova-poshta';
 import { notifyNewOrder } from '@/lib/order-notifications';
 import { contactMethodLabel } from '@/lib/cart/contact-method';
+import { normalizeCustomerPhone, upsertCustomerByPhone } from '@/lib/cart/customers';
 import type {
   CheckoutInput,
   CheckoutResult,
@@ -191,6 +192,18 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         lineTotal: line.lineTotal,
       })),
     });
+
+    // After successful order: register customer (phone unique; no create if exists).
+    try {
+      await upsertCustomerByPhone({
+        phone: normalizeCustomerPhone(phone) ?? phone,
+        fullName: parsed.data.customerName.trim(),
+        source: 'site',
+        imported: false,
+      });
+    } catch (error) {
+      console.error('Customer upsert failed', error);
+    }
 
     return { ok: true, orderNumber: number, total: quote.total };
   } catch (error) {

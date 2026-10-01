@@ -165,12 +165,22 @@ export default function CartDrawer() {
         setLoyaltyDiscount({ percent: result.discountPercent, amount });
       } else {
         setLoyaltyDiscount(null);
-        setLoyaltyError('На жаль, знижку не вдалося застосувати.');
+        setLoyaltyError('Не знайшли цей номер серед попередніх замовлень.');
       }
     } finally {
       setLoyaltyChecking(false);
     }
   };
+
+  // If checkout phone no longer matches the loyalty phone, drop the discount.
+  useEffect(() => {
+    if (!loyaltyDiscount) return;
+    const loyaltyDigits = loyaltyPhone.replace(/\D/g, '');
+    const customerDigits = customerPhone.replace(/\D/g, '');
+    if (loyaltyDigits && customerDigits && loyaltyDigits !== customerDigits) {
+      setLoyaltyDiscount(null);
+    }
+  }, [customerPhone, loyaltyPhone, loyaltyDiscount]);
 
   return (
     <>
