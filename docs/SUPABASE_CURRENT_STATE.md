@@ -49,6 +49,7 @@ Directus
 - Loyalty business logic **COMPLETE** (shared 5% calc, server re-check, authoritative total, PRICE_CHANGED / LOYALTY_CHANGED / LOYALTY_UNAVAILABLE).
 - Telegram `items_summary` теперь включает human-readable `Фіксація: …` из server quote.
 - Pure formatter: `lib/cart/order-items-summary.ts` (`formatOrderItemsSummary`).
+- Telegram **discount breakdown** (следующий fix): `{{discounts_summary}}` = `Разом дешевше −X ₴` + `Знижку 5% застосовано −Y ₴` (conditional, authoritative amounts only). Pure: `lib/cart/order-discounts-summary.ts`. Custom Directus template без token — injection перед `Сума:`.
 - Expected manual E2E total for the documented scenario: **3999 ₴** (4409 − 200 qty − 210 loyalty 5%).
 - Не делать customer-only Supabase cutover; customers уедут с общим migration.
 
@@ -265,7 +266,7 @@ Out of scope for now: Edge Functions, Auth, RPC customer helpers. Orders/catalog
 - Loyalty API: invalid / unknown phone → `{eligible:false, discount_percent:0}` (no PII).
 - Rate limit: in-memory 20/min → HTTP 429 `{error:"Too many requests"}`.
 - Local `next build` still hangs (pre-existing); Vercel is build source of truth.
-- **Staging deploy confirmed (this session):** `carzo-eight-staging` READY, branch `dev`, SHA `bbef4ebde6a8ffc95d9cbda5ee37824a7b7fda65` (replaces old `872e505`). Loyalty API smoke green on the new build.
+- **Staging deploy confirmed (this session):** `carzo-eight-staging` READY, branch `dev`, SHA `cbec2d4b86ced545fed10412572afb89d1b30ba4` (discount breakdown + prior fixation). Loyalty API smoke green on previous `bbef4eb` build.
 - Staging Directus appears shared with production → **no real test orders** (per policy). Live browser checkout E2E limited (IAB zero-width viewport). Manual eligible-customer E2E left for the user.
 
 ### Security (live)
@@ -362,6 +363,7 @@ Directus JSON registry remains the production backup until PHASE 7.
 | Checkout finalization | `542d42e` | fixation in order notifications + pure summary formatter |
 | Target architecture | `bbef4eb` | TARGET ARCHITECTURE CHANGED + remaining work rewrite |
 | Staging SHA stamp | `9287bde` | staging deploy confirmation (`bbef4eb` live on carzo-eight-staging) |
+| Discount breakdown | `cbec2d4` | Telegram quantity + loyalty discount rows (authoritative amounts) |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
