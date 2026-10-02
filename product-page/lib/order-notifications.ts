@@ -4,6 +4,7 @@ import {
   formatOrderItemsSummary,
   type NotificationOrderItem,
 } from '@/lib/cart/order-items-summary';
+import { formatOrderDiscountsSummary } from '@/lib/cart/order-discounts-summary';
 
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
@@ -27,6 +28,10 @@ export interface NewOrderNotification {
   customerPhone: string;
   contactMethod: string;
   itemsQuantity: number;
+  /** Authoritative quantity discount from server quote (0 when not applied). */
+  quantityDiscount: number;
+  /** Authoritative loyalty discount amount from server pricing (0 when not applied). */
+  loyaltyDiscountAmount: number;
   total: number;
   deliveryMethod: string;
   deliveryCity: string;
@@ -105,7 +110,7 @@ async function readSettings(): Promise<NotificationSettings> {
       : 'Нове замовлення {{order_number}}',
     messageTemplate: typeof data.message_template === 'string'
       ? data.message_template
-      : 'Покупець: {{customer_name}}\nТелефон: {{customer_phone}}\nСпосіб зв’язку: {{contact_method}}\nСума: {{total}} ₴\nДоставка: {{delivery_method}}\nАдреса: {{delivery_city}}, {{delivery_destination}}\n{{order_url}}',
+      : 'Покупець: {{customer_name}}\nТелефон: {{customer_phone}}\nСпосіб зв’язку: {{contact_method}}\nТовари:\n{{items_summary}}\nКількість: {{items_quantity}}\n{{discounts_summary}}\nСума: {{total}} ₴\nДоставка: {{delivery_method}}\nАдреса: {{delivery_city}}, {{delivery_destination}}\n{{order_url}}',
   };
 }
 
@@ -129,9 +134,36 @@ function renderTemplate(template: string, variables: Record<string, string>) {
   return template.replace(/{{\s*([a-z_]+)\s*}}/gi, (_, key: string) => variables[key] ?? '');
 }
 
+const DISCOUNTS_SUMMARY_TOKEN = /\{\{\s*discounts_summary\s*\}\}/i;
+
+/**
+ * Custom Directus templates may predate `{{discounts_summary}}`.
+ * When the token is absent and discounts apply, insert the summary
+ * immediately before the `Сума:` total line (single insertion point).
+ */
+function applyDiscountsSummaryFallback(
+  template: string,
+  rendered: string,
+  discountsSummary: string,
+): string {
+  if (!discountsSummary || DISCOUNTS_SUMMARY_TOKEN.test(template)) return rendered;
+  const lines = rendered.split('\n');
+  const totalIndex = lines.findIndex((line) => /^\s*Сума\s*:/i.test(line));
+  const insertLines = discountsSummary.split('\n');
+  if (totalIndex >= 0) {
+    lines.splice(totalIndex, 0, ...insertLines);
+    return lines.join('\n');
+  }
+  return `${rendered}\n${discountsSummary}`;
+}
+
 function renderedMessage(settings: NotificationSettings, order: NewOrderNotification) {
   const { url } = directusConfig();
   const orderUrl = `${url}/admin/content/carzo_orders/${encodeURIComponent(order.id)}`;
+  const discountsSummary = formatOrderDiscountsSummary({
+    quantityDiscount: order.quantityDiscount,
+    loyaltyDiscountAmount: order.loyaltyDiscountAmount,
+  });
   const variables = {
     order_number: order.orderNumber,
     customer_name: order.customerName,
@@ -139,6 +171,9 @@ function renderedMessage(settings: NotificationSettings, order: NewOrderNotifica
     contact_method: order.contactMethod,
     items_quantity: String(order.itemsQuantity),
     items_summary: formatOrderItemsSummary(order.items),
+    discounts_summary: discountsSummary,
+    quantity_discount: order.quantityDiscount > 0 ? String(Math.trunc(order.quantityDiscount)) : '',
+    loyalty_discount: order.loyaltyDiscountAmount > 0 ? String(Math.trunc(order.loyaltyDiscountAmount)) : '',
     total: String(order.total),
     delivery_method: order.deliveryMethod,
     delivery_city: order.deliveryCity,
@@ -147,9 +182,14 @@ function renderedMessage(settings: NotificationSettings, order: NewOrderNotifica
     delivery_point: order.deliveryDestination,
     order_url: orderUrl,
   };
+  const message = applyDiscountsSummaryFallback(
+    settings.messageTemplate,
+    renderTemplate(settings.messageTemplate, variables),
+    discountsSummary,
+  );
   return {
     subject: renderTemplate(settings.subjectTemplate, variables).trim().slice(0, 255),
-    message: renderTemplate(settings.messageTemplate, variables).trim().slice(0, 3_500),
+    message: message.trim().slice(0, 3_500),
     orderUrl,
   };
 }

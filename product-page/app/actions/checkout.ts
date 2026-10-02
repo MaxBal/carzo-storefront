@@ -232,6 +232,9 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
               customerPhone: phone,
               contactMethod: contactMethodLabel(parsed.data.contactMethod),
               itemsQuantity: quote.itemsQuantity,
+              // Authoritative server amounts — never recomputed in notification layer.
+              quantityDiscount: quote.quantityDiscount,
+              loyaltyDiscountAmount: pricing.discount.amount,
               // Authoritative discounted total, never the pre-loyalty quote.total.
               total: authoritativeTotal,
               deliveryMethod: DELIVERY_METHOD_LABELS[delivery.method],
