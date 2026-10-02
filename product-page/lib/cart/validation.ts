@@ -29,8 +29,10 @@ const courierDeliverySchema = z.object({
 export const checkoutSchema = z.object({
   items: cartItemsSchema,
   expectedTotal: z.number().int().nonnegative(),
+  expectedBaseTotal: z.number().int().nonnegative().optional(),
   customerName: z.string().trim().min(2).max(120),
   customerPhone: z.string().trim().min(10).max(24),
+  loyaltyPhone: z.string().trim().min(9).max(24).optional().or(z.literal('')),
   customerComment: z.string().trim().max(1000).optional().or(z.literal('')),
   contactMethod: z.enum(CONTACT_METHOD_VALUES),
   delivery: z.discriminatedUnion('method', [

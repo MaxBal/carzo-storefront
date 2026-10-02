@@ -1,7 +1,7 @@
 # Supabase — Current State Handoff
 
 **Дата:** 2026-10-02  
-**Статус:** PHASE 0–3 + **PHASE 4A / 4A.1 завершены** (adapter + hardening, no cutover). PHASE 5+ **не начаты**.  
+**Статус:** PHASE 0–4A.1 + **PHASE 5 завершены** (authoritative loyalty pricing). PHASE 4B / 6 / 7 **не начаты**.  
 **Проект:** Carzo Storefront (`product-page/`)  
 **Supabase:** `Carzo` · `kmhegysmtsjqtwwaacht` · eu-west-1 · PostgreSQL 17
 
@@ -21,6 +21,7 @@
 | 3 | Customer migration tooling + primary data import | `37217be` + live data |
 | 4A | Server-only Supabase client + customer-store abstraction + adapters (no cutover) | `9391c90` |
 | 4A.1 | Adapter hardening: Directus write HTTP checks, strict phones, adapter mock tests, pinned supabase-js | `67fdf2f` |
+| 5 | Authoritative server-side loyalty pricing + `PRICE_CHANGED`/`LOYALTY_CHANGED` | *(this commit)* |
 
 ---
 
@@ -147,12 +148,50 @@ Do not treat PHASE 3 as final sync.
 | PHASE | Scope |
 |---|---|
 | 4A | **Done** — server-only Supabase adapter, `CUSTOMER_STORE`, no silent write fallback. Production still Directus. |
+| 5 | **Done** — shared `calculateLoyaltyDiscount`, server eligibility re-check, authoritative totals, `PRICE_CHANGED`/`LOYALTY_CHANGED`, no silent price increase |
 | 4B | Final Directus snapshot + delta/reconciliation + aggregate validation, then `CUSTOMER_STORE=supabase` |
-| 5 | Authoritative server-side loyalty: shared `calculateLoyaltyDiscount`, server re-check eligibility, `PRICE_CHANGED`/`LOYALTY_CHANGED`, no silent price increase, order audit fields |
 | 6 | Staging / E2E / security QA checklist |
 | 7 | Cleanup Directus fallback after stability window |
 
 Out of scope for now: orders in Supabase, Edge Functions, Auth, RPC customer helpers.
+
+---
+
+## 6.1 PHASE 5 — Authoritative loyalty pricing
+
+**Status:** completed. Production customer backend remains **Directus** (`CUSTOMER_STORE` unchanged). No PHASE 4B, no cutover, no production deploy, no Supabase schema changes.
+
+### Shared calculation
+- `lib/cart/loyalty-math.ts` — `calculateLoyaltyDiscount({ subtotal, quantityDiscount, discountPercent })`
+- Semantics preserved: `amount = trunc((subtotal - quantityDiscount) * percent / 100)`, `discountedTotal = baseTotal - amount` (whole UAH, truncation)
+- Used by CartDrawer preview and server checkout (single formula; old duplicate removed)
+
+### Server checkout (`lib/cart/checkout-pricing.ts`)
+- Server rebuilds quote, re-checks eligibility via `findCustomerByPhone` (configured `CUSTOMER_STORE`)
+- `loyaltyPhone != customerPhone` (canonical) → discount not applied
+- Client `discount_percent` / amount are never authoritative
+- `expectedTotal` = UI final (discounted when loyalty applied); `expectedBaseTotal` = quote.total for change classification
+- Authoritative final total persisted as Directus `orders.total`
+- Codes: `PRICE_CHANGED` (underlying quote), `LOYALTY_CHANGED` (loyalty state), `LOYALTY_UNAVAILABLE` (store outage — never silently full-price)
+- Change / loyalty-failure paths return **before** order write / Telegram / post-order customer upsert
+
+### Loyalty audit storage
+- Current `carzo_orders` has **no** loyalty columns and **no** JSON metadata field
+- `customer_comment` intentionally untouched
+- Chosen fallback: structured JSON in internal `manager_note` (new orders only) via `lib/cart/order-audit.ts`
+- Proposal for later (optional, after staging): dedicated columns `loyalty_phone`, `loyalty_eligible`, `loyalty_discount_percent`, `loyalty_discount_amount` on `carzo_orders` — **not applied** (no live Directus schema mutation in PHASE 5)
+
+### Validation
+- `pnpm run test:loyalty` — 37 tests (math truncation, eligibility, phone mismatch, tamper, LOYALTY_CHANGED both directions, store outage, side-effect gates)
+- `pnpm run test:customer-store` — 32 tests (regression)
+- `pnpm exec tsc -p tsconfig.loyalty.json` — scoped typecheck
+- Full `tsc --noEmit` / `next lint` not used as gate in this environment (pre-existing unrelated errors in `scripts/migrate-customers.ts` / test env types; no PHASE 5 type errors)
+
+### Security notes (PHASE 5)
+- Server re-validates loyalty; browser cannot grant 5% by payload edit
+- Store outage → `LOYALTY_UNAVAILABLE`, not `eligible:false`
+- No PII/secrets in commit; no bulk customer data through context
+- Public `POST /api/customer-discount/check` contract unchanged
 
 ---
 
@@ -191,7 +230,7 @@ Private snapshots / SQL / reports live **outside git**:
 3. `rls_auto_enable` EXECUTE revoked from public roles (Advisor WARN closed).
 4. No customer PII in git, docs, or migration files.
 5. API `POST /api/customer-discount/check` contract stays: `{phone}` → `{eligible, discount_percent}`; no PII in response.
-6. Discount percent is server-authoritative after PHASE 5; do not trust client.
+6. Discount percent is server-authoritative (PHASE 5); do not trust client.
 
 ---
 
@@ -219,6 +258,7 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 3 tooling | `37217be` | migrate-customers.ts |
 | PHASE 4A | `9391c90` | customer-store abstraction + Supabase adapter, no cutover |
 | PHASE 4A.1 | `67fdf2f` | Directus write HTTP validation, strict phones, adapter tests, pinned dep |
+| PHASE 5 | *(this commit)* | authoritative server-side loyalty pricing |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)

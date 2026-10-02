@@ -6,8 +6,9 @@ import { Check, CheckCircle2, ChevronDown, Info, Loader2, Minus, Plus, ShoppingC
 import PhoneInput from '@/components/PhoneInput';
 import { createOrder } from '@/app/actions/checkout';
 import { CONTACT_METHOD_OPTIONS, type ContactMethod } from '@/lib/cart/contact-method';
-import { checkLoyaltyDiscount } from '@/lib/cart/loyalty';
+import { calculateLoyaltyDiscount, checkLoyaltyDiscount } from '@/lib/cart/loyalty';
 import { buildFullPhone } from '@/lib/cart/phone';
+import { normalizeCustomerPhone } from '@/lib/cart/customer-phone';
 import type { CheckoutDelivery, CheckoutResult } from '@/lib/cart/types';
 import NovaPoshtaSelector from './NovaPoshtaSelector';
 import NovaPoshtaTrustRow from './NovaPoshtaTrustRow';
@@ -47,7 +48,7 @@ export default function CartDrawer() {
   const [commentOpen, setCommentOpen] = useState(false);
   const [loyaltyPhone, setLoyaltyPhone] = useState('');
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
-  const [loyaltyDiscount, setLoyaltyDiscount] = useState<{ percent: number; amount: number } | null>(null);
+  const [loyaltyPercent, setLoyaltyPercent] = useState<number | null>(null);
   const [loyaltyChecking, setLoyaltyChecking] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
   const { viewportRef, scrollRef } = useCartViewport(isOpen, checkout || loyaltyOpen);
@@ -82,7 +83,7 @@ export default function CartDrawer() {
       setCommentOpen(false);
       setLoyaltyPhone('');
       setLoyaltyError(null);
-      setLoyaltyDiscount(null);
+      setLoyaltyPercent(null);
       setLoyaltyChecking(false);
       return;
     }
@@ -119,7 +120,45 @@ export default function CartDrawer() {
     };
   }, [isOpen, closeSurface]);
 
+  // If checkout phone no longer matches the loyalty phone, drop the discount.
+  useEffect(() => {
+    if (loyaltyPercent === null) return;
+    const loyaltyCanonical = normalizeCustomerPhone(loyaltyPhone);
+    const customerCanonical = normalizeCustomerPhone(customerPhone);
+    if (loyaltyCanonical && customerCanonical && loyaltyCanonical !== customerCanonical) {
+      setLoyaltyPercent(null);
+    }
+  }, [customerPhone, loyaltyPhone, loyaltyPercent]);
+
   if (!cart.isOpen && !cart.confirmation) return null;
+
+  const loyaltyPreview = cart.quote && loyaltyPercent !== null
+    ? calculateLoyaltyDiscount({
+      subtotal: cart.quote.subtotal,
+      quantityDiscount: cart.quote.quantityDiscount,
+      discountPercent: loyaltyPercent,
+    })
+    : null;
+  const displayedTotal = cart.quote
+    ? (loyaltyPreview ? loyaltyPreview.discountedTotal : cart.quote.total)
+    : 0;
+
+  const applyLoyalty = async () => {
+    if (!cart.quote) return;
+    setLoyaltyChecking(true);
+    setLoyaltyError(null);
+    try {
+      const result = await checkLoyaltyDiscount(buildFullPhone(loyaltyPhone));
+      if (result.eligible) {
+        setLoyaltyPercent(result.discountPercent);
+      } else {
+        setLoyaltyPercent(null);
+        setLoyaltyError('Не знайшли цей номер серед попередніх замовлень.');
+      }
+    } finally {
+      setLoyaltyChecking(false);
+    }
+  };
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -130,13 +169,16 @@ export default function CartDrawer() {
     }
     setSubmitting(true);
     setSubmitError(null);
+    const loyaltyPhoneDigits = loyaltyPhone.replace(/\D/g, '');
     let result: CheckoutResult;
     try {
       result = await createOrder({
         items: cart.items,
-        expectedTotal: cart.quote.total,
+        expectedTotal: displayedTotal,
+        expectedBaseTotal: cart.quote.total,
         customerName,
         customerPhone: buildFullPhone(customerPhone),
+        loyaltyPhone: loyaltyPhoneDigits ? buildFullPhone(loyaltyPhone) : undefined,
         customerComment,
         contactMethod,
         delivery,
@@ -149,38 +191,12 @@ export default function CartDrawer() {
       cart.completeOrder({ orderNumber: result.orderNumber, total: result.total });
       return;
     }
-    if (result.code === 'PRICE_CHANGED') cart.replaceQuote(result.quote);
+    if (result.code === 'PRICE_CHANGED' || result.code === 'LOYALTY_CHANGED') {
+      cart.replaceQuote(result.quote);
+      setLoyaltyPercent(result.loyalty.discountPercent > 0 ? result.loyalty.discountPercent : null);
+    }
     setSubmitError(result.message);
   };
-
-  const applyLoyalty = async () => {
-    if (!cart.quote) return;
-    setLoyaltyChecking(true);
-    setLoyaltyError(null);
-    try {
-      const result = await checkLoyaltyDiscount(buildFullPhone(loyaltyPhone));
-      if (result.eligible) {
-        const base = cart.quote.subtotal - cart.quote.quantityDiscount;
-        const amount = Math.trunc(base * result.discountPercent / 100);
-        setLoyaltyDiscount({ percent: result.discountPercent, amount });
-      } else {
-        setLoyaltyDiscount(null);
-        setLoyaltyError('Не знайшли цей номер серед попередніх замовлень.');
-      }
-    } finally {
-      setLoyaltyChecking(false);
-    }
-  };
-
-  // If checkout phone no longer matches the loyalty phone, drop the discount.
-  useEffect(() => {
-    if (!loyaltyDiscount) return;
-    const loyaltyDigits = loyaltyPhone.replace(/\D/g, '');
-    const customerDigits = customerPhone.replace(/\D/g, '');
-    if (loyaltyDigits && customerDigits && loyaltyDigits !== customerDigits) {
-      setLoyaltyDiscount(null);
-    }
-  }, [customerPhone, loyaltyPhone, loyaltyDiscount]);
 
   return (
     <>
@@ -327,7 +343,7 @@ export default function CartDrawer() {
                         <div className="min-w-0 flex-1">
                           <PhoneInput
                             value={loyaltyPhone}
-                            onChange={value => { setLoyaltyPhone(value); setLoyaltyError(null); setLoyaltyDiscount(null); }}
+                            onChange={value => { setLoyaltyPhone(value); setLoyaltyError(null); setLoyaltyPercent(null); }}
                             placeholder="(00) 000-00-00"
                             onFocus={() => setLoyaltyPhoneFocused(true)}
                             onBlur={() => setLoyaltyPhoneFocused(false)}
@@ -361,13 +377,13 @@ export default function CartDrawer() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-gray-600"><span>Товари ({cart.quote.itemsQuantity})</span><span>{money(cart.quote.subtotal)} ₴</span></div>
                   {cart.quote.quantityDiscount > 0 && <div className="flex justify-between font-medium text-[#00a382]"><span>Разом дешевше</span><span>−{money(cart.quote.quantityDiscount)} ₴</span></div>}
-                  {loyaltyDiscount && (
+                  {loyaltyPreview && (
                     <div className="flex justify-between font-medium text-[#ca423d]">
-                      <span className="flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="rounded-full" /> Знижку {loyaltyDiscount.percent}% застосовано</span>
-                      <span>−{money(loyaltyDiscount.amount)} ₴</span>
+                      <span className="flex items-center gap-1.5"><Check size={14} strokeWidth={2.5} className="rounded-full" /> Знижку {loyaltyPercent}% застосовано</span>
+                      <span>−{money(loyaltyPreview.amount)} ₴</span>
                     </div>
                   )}
-                  <div className="flex justify-between border-t border-gray-100 pt-3 text-lg font-bold"><span>Разом</span><span>{money(cart.quote.total - (loyaltyDiscount?.amount ?? 0))} ₴</span></div>
+                  <div className="flex justify-between border-t border-gray-100 pt-3 text-lg font-bold"><span>Разом</span><span>{money(displayedTotal)} ₴</span></div>
                 </div>
                 <button type="button" onClick={() => setCheckout(true)} disabled={cart.quoteLoading || !cart.quote.canCheckout} className="form-cta mt-4">Оформити замовлення</button>
                 <NovaPoshtaTrustRow />

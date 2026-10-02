@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "noEmit": true
+  },
+  "include": [
+    "lib/cart/loyalty-math.ts",
+    "lib/cart/loyalty.ts",
+    "lib/cart/checkout-pricing.ts",
+    "lib/cart/order-audit.ts",
+    "lib/cart/pricing.ts",
+    "lib/cart/types.ts",
+    "lib/cart/validation.ts",
+    "lib/cart/customer-phone.ts",
+    "lib/cart/contact-method.ts",
+    "tests/loyalty-math.test.ts",
+    "tests/checkout-pricing.test.ts",
+    "tests/checkout-side-effects.test.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

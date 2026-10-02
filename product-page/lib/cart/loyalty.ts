@@ -1,9 +1,12 @@
+import { LOYALTY_DISCOUNT_PERCENT } from './loyalty-math';
+
+export { calculateLoyaltyDiscount, LOYALTY_DISCOUNT_PERCENT } from './loyalty-math';
+export type { LoyaltyDiscountInput, LoyaltyDiscountResult } from './loyalty-math';
+
 export interface LoyaltyCheckResult {
   eligible: boolean;
   discountPercent: number;
 }
-
-export const LOYALTY_DISCOUNT_PERCENT = 5;
 
 /** Normalize to +380XXXXXXXXX for display/logging; server re-normalizes independently. */
 export function normalizePhone(raw: string): string {
@@ -14,8 +17,8 @@ export function normalizePhone(raw: string): string {
 }
 
 /**
- * Calls backend customer lookup (Directus).
- * Existing cart discount application logic stays unchanged after this returns.
+ * Calls backend customer lookup (Directus / configured customer store).
+ * Result is a UI preview only — checkout re-checks eligibility server-side.
  */
 export async function checkLoyaltyDiscount(phone: string): Promise<LoyaltyCheckResult> {
   try {
