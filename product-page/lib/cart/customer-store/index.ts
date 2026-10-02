@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { resolveCustomerStoreBackend } from './config';
 import { createDirectusCustomerStore } from './directus';
 import { createSupabaseCustomerStore } from './supabase';
@@ -24,7 +25,7 @@ export function createCustomerStore(backend: CustomerStoreBackend): CustomerStor
     case 'directus':
       return createDirectusCustomerStore();
     case 'supabase':
-      return createSupabaseCustomerStore();
+      return createSupabaseCustomerStore(() => getSupabaseAdminClient());
     default: {
       const exhaustive: never = backend;
       throw new Error(`Unsupported customer store backend: ${String(exhaustive)}`);

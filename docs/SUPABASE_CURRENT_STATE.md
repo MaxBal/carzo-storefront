@@ -1,7 +1,7 @@
 # Supabase — Current State Handoff
 
 **Дата:** 2026-10-02  
-**Статус:** PHASE 0–3 завершены. **PHASE 4A завершена** (adapter, no cutover). PHASE 5+ **не начаты**.  
+**Статус:** PHASE 0–3 + **PHASE 4A / 4A.1 завершены** (adapter + hardening, no cutover). PHASE 5+ **не начаты**.  
 **Проект:** Carzo Storefront (`product-page/`)  
 **Supabase:** `Carzo` · `kmhegysmtsjqtwwaacht` · eu-west-1 · PostgreSQL 17
 
@@ -19,7 +19,8 @@
 | 2 | `public.customers` schema + RLS + grants | `e41a203` |
 | 2 fix | Least-privilege: service_role = DML only | `34411eb` |
 | 3 | Customer migration tooling + primary data import | `37217be` + live data |
-| 4A | Server-only Supabase client + customer-store abstraction + adapters (no cutover) | *(this commit)* |
+| 4A | Server-only Supabase client + customer-store abstraction + adapters (no cutover) | `9391c90` |
+| 4A.1 | Adapter hardening: Directus write HTTP checks, strict phones, adapter mock tests, pinned supabase-js | *(this commit)* |
 
 ---
 
@@ -216,14 +217,22 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 2 | `e41a203` | create_customers |
 | PHASE 2 fix | `34411eb` | service_role DML-only |
 | PHASE 3 tooling | `37217be` | migrate-customers.ts |
-| PHASE 4A | *(this commit)* | customer-store abstraction + Supabase adapter, no cutover |
+| PHASE 4A | `9391c90` | customer-store abstraction + Supabase adapter, no cutover |
+| PHASE 4A.1 | *(this commit)* | Directus write HTTP validation, strict phones, adapter tests, pinned dep |
 
-Validation notes (4A):
-- `pnpm run test:customer-store` — 18 unit tests (phone, store selection, merge policy, lookup semantics)
+Validation notes (4A.1):
+- `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
 - `pnpm exec tsc -p tsconfig.customer-store.json` — scoped typecheck (full `tsc --noEmit` hangs on this project)
 - `next lint` / full `tsc --noEmit` hang in this environment — not used as a gate
 
-Do not mix PHASE 5 / cutover changes into the PHASE 4A commit.
+4A.1 corrections:
+- Directus registry PATCH / collection writes require real 2xx (`WRITE_FAILED` otherwise)
+- `normalizeCustomerPhone` accepts only 12 (`380…`), 10 (`0…`), or 9 digit UA forms — no `slice(-9)`
+- `createSupabaseCustomerStore(getClient)` DI for mock tests; production still `getSupabaseAdminClient`
+- `@supabase/supabase-js` pinned to exact `2.110.8`
+- no cutover, no live customer writes, production still Directus
+
+Do not mix PHASE 5 / cutover changes into these commits.
 
 ---
 

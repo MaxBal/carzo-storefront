@@ -1,5 +1,3 @@
-import 'server-only';
-
 import { normalizeCustomerPhone } from '../customer-phone';
 import {
   CustomerStoreError,
@@ -9,6 +7,7 @@ import {
 } from './types';
 
 type DirectusRecord = Record<string, unknown>;
+type FetchLike = typeof fetch;
 
 function directusConfig() {
   const url = process.env.DIRECTUS_URL?.replace(/\/$/, '');
@@ -19,9 +18,15 @@ function directusConfig() {
   return { url, token };
 }
 
-async function getJson(path: string) {
+function assertWriteOk(status: number, label: string): void {
+  if (status < 200 || status >= 300) {
+    throw new CustomerStoreError(`${label} failed (HTTP ${status})`, 'WRITE_FAILED');
+  }
+}
+
+async function getJson(path: string, doFetch: FetchLike) {
   const { url, token } = directusConfig();
-  const response = await fetch(`${url}${path}`, {
+  const response = await doFetch(`${url}${path}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
     cache: 'no-store',
   });
@@ -31,9 +36,9 @@ async function getJson(path: string) {
   };
 }
 
-async function patchJson(path: string, body: unknown) {
+async function patchJson(path: string, body: unknown, doFetch: FetchLike) {
   const { url, token } = directusConfig();
-  const response = await fetch(`${url}${path}`, {
+  const response = await doFetch(`${url}${path}`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -54,9 +59,9 @@ async function patchJson(path: string, body: unknown) {
  * 1) Prefer real Directus collection `customers`.
  * 2) Fallback: JSON registry `carzo_site_settings.customers`.
  */
-async function loadRegistry(): Promise<CustomerRecord[]> {
+async function loadRegistry(doFetch: FetchLike): Promise<CustomerRecord[]> {
   try {
-    const { status, body } = await getJson('/items/customers?limit=-1&fields=*');
+    const { status, body } = await getJson('/items/customers?limit=-1&fields=*', doFetch);
     if (status === 200 && Array.isArray(body.data)) {
       return body.data as CustomerRecord[];
     }
@@ -67,7 +72,7 @@ async function loadRegistry(): Promise<CustomerRecord[]> {
   let status: number;
   let body: { data?: unknown };
   try {
-    ({ status, body } = await getJson('/items/carzo_site_settings?fields=customers'));
+    ({ status, body } = await getJson('/items/carzo_site_settings?fields=customers', doFetch));
   } catch {
     throw new CustomerStoreError('Directus customer registry unavailable', 'UNAVAILABLE');
   }
@@ -78,18 +83,25 @@ async function loadRegistry(): Promise<CustomerRecord[]> {
   return Array.isArray(raw) ? (raw as CustomerRecord[]) : [];
 }
 
-async function saveRegistry(items: CustomerRecord[]): Promise<void> {
+/**
+ * Persist JSON registry. Success only on real 2xx — fetch() resolving is not enough.
+ * A 403/500 PATCH must surface as WRITE_FAILED, never as a stored customer.
+ */
+async function saveRegistry(items: CustomerRecord[], doFetch: FetchLike): Promise<void> {
+  let status: number;
   try {
-    await patchJson('/items/carzo_site_settings', { customers: items });
+    ({ status } = await patchJson('/items/carzo_site_settings', { customers: items }, doFetch));
   } catch {
     throw new CustomerStoreError('Directus customer registry write failed', 'WRITE_FAILED');
   }
+  assertWriteOk(status, 'Directus customer registry write');
 }
 
-async function findByPhone(phone: string): Promise<CustomerRecord | null> {
+async function findByPhone(phone: string, doFetch: FetchLike): Promise<CustomerRecord | null> {
   try {
     const { status, body } = await getJson(
       `/items/customers?limit=1&filter[phone][_eq]=${encodeURIComponent(phone)}`,
+      doFetch,
     );
     if (status === 200 && Array.isArray(body.data) && body.data[0]) {
       return body.data[0] as CustomerRecord;
@@ -99,12 +111,16 @@ async function findByPhone(phone: string): Promise<CustomerRecord | null> {
     // fallback below
   }
 
-  const items = await loadRegistry();
+  const items = await loadRegistry(doFetch);
   return items.find(item => normalizeCustomerPhone(item.phone) === phone) ?? null;
 }
 
-async function upsertByPhone(input: UpsertCustomerInput, phone: string): Promise<CustomerRecord> {
-  const existing = await findByPhone(phone);
+async function upsertByPhone(
+  input: UpsertCustomerInput,
+  phone: string,
+  doFetch: FetchLike,
+): Promise<CustomerRecord> {
+  const existing = await findByPhone(phone, doFetch);
   if (existing) return existing;
 
   const payload: CustomerRecord = {
@@ -114,9 +130,11 @@ async function upsertByPhone(input: UpsertCustomerInput, phone: string): Promise
     imported: input.imported ?? false,
   };
 
+  // Collection POST: only 2xx counts as persisted. Non-2xx (missing collection,
+  // unique conflict, 5xx) falls through to the JSON registry fallback.
   try {
     const { url, token } = directusConfig();
-    const response = await fetch(`${url}/items/customers`, {
+    const response = await doFetch(`${url}/items/customers`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -130,30 +148,38 @@ async function upsertByPhone(input: UpsertCustomerInput, phone: string): Promise
       const body = await response.json() as { data?: CustomerRecord };
       return body.data ?? payload;
     }
-    // Unique conflict or schema missing → fall through to JSON registry
   } catch {
-    // fall through
+    // fall through to JSON registry
   }
 
-  const items = await loadRegistry();
+  const items = await loadRegistry(doFetch);
   const again = items.find(item => normalizeCustomerPhone(item.phone) === phone);
   if (again) return again;
   items.push(payload);
-  await saveRegistry(items);
+  await saveRegistry(items, doFetch);
   return payload;
 }
 
-export function createDirectusCustomerStore(): CustomerStore {
+export interface DirectusCustomerStoreOptions {
+  /** Injectable for tests. Production uses global fetch. */
+  fetch?: FetchLike;
+}
+
+export function createDirectusCustomerStore(
+  options: DirectusCustomerStoreOptions = {},
+): CustomerStore {
+  const doFetch: FetchLike = options.fetch ?? fetch;
+
   return {
     async findCustomerByPhone(rawPhone) {
       const phone = normalizeCustomerPhone(rawPhone);
       if (!phone) return null;
-      return findByPhone(phone);
+      return findByPhone(phone, doFetch);
     },
     async upsertCustomerByPhone(input) {
       const phone = normalizeCustomerPhone(input.phone);
       if (!phone) return null;
-      return upsertByPhone(input, phone);
+      return upsertByPhone(input, phone, doFetch);
     },
   };
 }

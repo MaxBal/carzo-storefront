@@ -1,6 +1,5 @@
-import 'server-only';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { maskPhone, normalizeCustomerPhone } from '../customer-phone';
 import {
   buildExistingCustomerUpdate,
@@ -17,6 +16,8 @@ function isUniqueViolation(message: string | undefined): boolean {
   return Boolean(message && (message.includes('23505') || message.includes('duplicate key')));
 }
 
+export type SupabaseClientFactory = () => SupabaseClient;
+
 /**
  * Supabase adapter over public.customers.
  *
@@ -24,14 +25,19 @@ function isUniqueViolation(message: string | undefined): boolean {
  * Registration: race-safe insert-or-merge. UNIQUE(phone) is authoritative.
  * Merge policy (PHASE 3): never destroy source / imported / legacy_* / created_at.
  * No silent write fallback to Directus.
+ *
+ * Production passes `getSupabaseAdminClient` via `createCustomerStore`.
+ * Tests inject a mock client factory — never live writes.
  */
-export function createSupabaseCustomerStore(): CustomerStore {
+export function createSupabaseCustomerStore(
+  getClient: SupabaseClientFactory,
+): CustomerStore {
   return {
     async findCustomerByPhone(rawPhone) {
       const phone = normalizeCustomerPhone(rawPhone);
       if (!phone) return null;
 
-      const client = getSupabaseAdminClient();
+      const client = getClient();
       // Minimal projection: eligibility only needs existence.
       const { data, error } = await client
         .from('customers')
@@ -51,7 +57,7 @@ export function createSupabaseCustomerStore(): CustomerStore {
       const phone = normalizeCustomerPhone(input.phone);
       if (!phone) return null;
 
-      const client = getSupabaseAdminClient();
+      const client = getClient();
       const insertRow = buildNewCustomerRow(phone, input);
 
       // Race-safe: INSERT ON CONFLICT (phone) DO NOTHING.
