@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:customer-store": "tsx --test tests/customer-store.test.ts",
     "directus:setup": "node --env-file=.env.local scripts/setup-directus.mjs",
     "directus:import-carzo4": "node --env-file=.env.local scripts/import-carzo-4-media.mjs",
     "directus:validate": "node scripts/validate-directus-access.mjs",
@@ -78,6 +79,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/sanitize-html": "^2.16.1"
+    "@types/sanitize-html": "^2.16.1",
+    "tsx": "4.20.3"
   }
 }

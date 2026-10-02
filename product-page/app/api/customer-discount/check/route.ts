@@ -26,7 +26,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json() as { phone?: unknown };
   } catch {
-    return NextResponse.json({ eligible: false }, { status: 400 });
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
   const phone = normalizeCustomerPhone(body.phone);
@@ -40,7 +40,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ eligible: true, discount_percent: 5 });
     }
     return NextResponse.json({ eligible: false, discount_percent: 0 });
-  } catch {
-    return NextResponse.json({ eligible: false, discount_percent: 0 }, { status: 502 });
+  } catch (error) {
+    // Store outage must not look like "customer has no discount".
+    console.error(
+      'Customer loyalty lookup failed',
+      error instanceof Error ? error.message : 'unknown',
+    );
+    return NextResponse.json({ error: 'Service unavailable' }, { status: 502 });
   }
 }

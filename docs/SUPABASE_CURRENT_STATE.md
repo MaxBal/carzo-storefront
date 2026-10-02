@@ -1,7 +1,7 @@
 # Supabase — Current State Handoff
 
 **Дата:** 2026-10-02  
-**Статус:** PHASE 0–3 завершены. PHASE 4+ **не начаты**.  
+**Статус:** PHASE 0–3 завершены. **PHASE 4A завершена** (adapter, no cutover). PHASE 5+ **не начаты**.  
 **Проект:** Carzo Storefront (`product-page/`)  
 **Supabase:** `Carzo` · `kmhegysmtsjqtwwaacht` · eu-west-1 · PostgreSQL 17
 
@@ -19,6 +19,7 @@
 | 2 | `public.customers` schema + RLS + grants | `e41a203` |
 | 2 fix | Least-privilege: service_role = DML only | `34411eb` |
 | 3 | Customer migration tooling + primary data import | `37217be` + live data |
+| 4A | Server-only Supabase client + customer-store abstraction + adapters (no cutover) | *(this commit)* |
 
 ---
 
@@ -97,16 +98,29 @@ No `raw_phone`. No extra indexes (only PK + UNIQUE phone).
 Production storefront still runs on the existing Directus-backed path
 (`lib/cart/customers.ts` JSON/collection fallback). No application cutover yet.
 
-**Env (future PHASE 4, not configured):**
+**Env (PHASE 4A, production still `directus`):**
 
 ```
 SUPABASE_URL=...
 SUPABASE_SECRET_KEY=sb_secret_...   # never NEXT_PUBLIC_*
-CUSTOMER_STORE=directus|supabase
+CUSTOMER_STORE=directus|supabase    # missing → directus; invalid → fail fast
 ```
 
 Modern Supabase secret key (`sb_secret_...`) is preferred over legacy `service_role` JWT.
-Secret key is **not created yet** in the project (only publishable + legacy anon exist).
+Set `SUPABASE_URL` / `SUPABASE_SECRET_KEY` before flipping `CUSTOMER_STORE=supabase`.
+
+### PHASE 4A application modules
+
+| Module | Role |
+|---|---|
+| `lib/supabase/server.ts` | server-only admin client (`sb_secret_`, no browser exposure) |
+| `lib/cart/customer-phone.ts` | shared canonical `normalizeCustomerPhone` (+380XXXXXXXXX) |
+| `lib/cart/customer-store/` | abstraction + `directus` / `supabase` adapters + merge policy |
+| `lib/cart/customers.ts` | stable facade: `findCustomerByPhone` / `upsertCustomerByPhone` / `isCustomerEligible` |
+| `app/api/customer-discount/check/route.ts` | same success contract; store outage → HTTP 502 (not `eligible:false`) |
+
+`CUSTOMER_STORE` selects exactly one backend. **No silent write fallback** (split-brain forbidden).
+Production cutover still requires a fresh Directus delta sync (see §5).
 
 ---
 
@@ -115,7 +129,7 @@ Secret key is **not created yet** in the project (only publishable + legacy anon
 The current **5994 rows are a snapshot/import**.
 Production Directus may keep receiving customers after this snapshot.
 
-**Immediately before application cutover (PHASE 4):**
+**Immediately before application cutover (PHASE 4B):**
 
 1. take a **fresh** Directus customer snapshot;
 2. run delta / reconciliation against Supabase;
@@ -131,7 +145,8 @@ Do not treat PHASE 3 as final sync.
 
 | PHASE | Scope |
 |---|---|
-| 4 | Server-only Supabase adapter (`lib/supabase/server.ts`), explicit `CUSTOMER_STORE`, **no silent write fallback**, cutover after delta sync |
+| 4A | **Done** — server-only Supabase adapter, `CUSTOMER_STORE`, no silent write fallback. Production still Directus. |
+| 4B | Final Directus snapshot + delta/reconciliation + aggregate validation, then `CUSTOMER_STORE=supabase` |
 | 5 | Authoritative server-side loyalty: shared `calculateLoyaltyDiscount`, server re-check eligibility, `PRICE_CHANGED`/`LOYALTY_CHANGED`, no silent price increase, order audit fields |
 | 6 | Staging / E2E / security QA checklist |
 | 7 | Cleanup Directus fallback after stability window |
@@ -201,9 +216,14 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 2 | `e41a203` | create_customers |
 | PHASE 2 fix | `34411eb` | service_role DML-only |
 | PHASE 3 tooling | `37217be` | migrate-customers.ts |
-| current state doc | (this commit) | handoff |
+| PHASE 4A | *(this commit)* | customer-store abstraction + Supabase adapter, no cutover |
 
-Do not mix future PHASE 4+ application changes into these commits.
+Validation notes (4A):
+- `pnpm run test:customer-store` — 18 unit tests (phone, store selection, merge policy, lookup semantics)
+- `pnpm exec tsc -p tsconfig.customer-store.json` — scoped typecheck (full `tsc --noEmit` hangs on this project)
+- `next lint` / full `tsc --noEmit` hang in this environment — not used as a gate
+
+Do not mix PHASE 5 / cutover changes into the PHASE 4A commit.
 
 ---
 

@@ -22,6 +22,10 @@
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 
+import { normalizeCustomerPhone } from '../lib/cart/customer-phone';
+
+export { normalizeCustomerPhone };
+
 type RawRow = Record<string, unknown>;
 
 interface ResolvedCustomer {
@@ -33,21 +37,6 @@ interface ResolvedCustomer {
   legacy_products_count: number | null;
   legacy_city: string | null;
   legacy_delivery: string | null;
-}
-
-export function normalizeCustomerPhone(raw: unknown): string | null {
-  if (raw === null || raw === undefined) return null;
-  const digits = String(raw).replace(/\D/g, '');
-  if (!digits) return null;
-  let core: string | null = null;
-  if (digits.startsWith('380') && digits.length >= 12) core = digits.slice(3, 12);
-  else if (digits.startsWith('38') && digits.length >= 11) {
-    core = digits.slice(2, 11).replace(/^0/, '').slice(0, 9);
-  } else if (digits.startsWith('0') && digits.length >= 10) core = digits.slice(1, 10);
-  else if (digits.length === 9) core = digits;
-  else if (digits.length >= 9) core = digits.slice(-9);
-  if (!core || !/^\d{9}$/.test(core)) return null;
-  return `+380${core}`;
 }
 
 function toInt(v: unknown): number | null {
