@@ -20,7 +20,7 @@
 | 2 fix | Least-privilege: service_role = DML only | `34411eb` |
 | 3 | Customer migration tooling + primary data import | `37217be` + live data |
 | 4A | Server-only Supabase client + customer-store abstraction + adapters (no cutover) | `9391c90` |
-| 4A.1 | Adapter hardening: Directus write HTTP checks, strict phones, adapter mock tests, pinned supabase-js | *(this commit)* |
+| 4A.1 | Adapter hardening: Directus write HTTP checks, strict phones, adapter mock tests, pinned supabase-js | `67fdf2f` |
 
 ---
 
@@ -218,7 +218,7 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 2 fix | `34411eb` | service_role DML-only |
 | PHASE 3 tooling | `37217be` | migrate-customers.ts |
 | PHASE 4A | `9391c90` | customer-store abstraction + Supabase adapter, no cutover |
-| PHASE 4A.1 | *(this commit)* | Directus write HTTP validation, strict phones, adapter tests, pinned dep |
+| PHASE 4A.1 | `67fdf2f` | Directus write HTTP validation, strict phones, adapter tests, pinned dep |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
