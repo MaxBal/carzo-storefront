@@ -1,12 +1,56 @@
 # Supabase — Current State Handoff
 
 **Дата:** 2026-10-02  
-**Статус:** PHASE 0–5 + **PHASE 6 завершены** (staging/E2E/security/checkout reliability QA). PHASE 4B / 7 **не начаты**.  
+**Статус:** PHASE 0–5 + **PHASE 6 завершены** (staging/E2E/security/checkout reliability QA). PHASE 4B / 7 **не начаты**. Checkout/loyalty finalization + Telegram fixation завершены.  
 **Проект:** Carzo Storefront (`product-page/`)  
 **Supabase:** `Carzo` · `kmhegysmtsjqtwwaacht` · eu-west-1 · PostgreSQL 17
 
 Цель документа: передать новой agent-сессии фактическое состояние Supabase-работы
 без PII и без необходимости повторять bulk-импорт через контекст.
+
+---
+
+## TARGET ARCHITECTURE CHANGED
+
+**Старый план customer-only Supabase cutover (PHASE 4B в узком виде) ОТМЕНЁН.**
+
+Ранее предполагалось: Supabase только для customers, Directus остаётся основным backend.
+**Эта конечная цель больше не актуальна.**
+
+### Новая конечная архитектура
+
+```
+Next.js
+   │
+   ├── Supabase
+   │   └── все application data / database / backend
+   │
+   └── Cloudflare R2
+       └── media: фото / видео / файлы
+
+Directus
+   └── только временный migration source
+       → после общего cutover удаляется из production runtime
+```
+
+### Правила для следующей сессии
+
+1. **НЕ выполнять** PHASE 4B в customer-only виде (`CUSTOMER_STORE=supabase` flip отдельно).
+2. **НЕ переносить** catalog / orders / content / settings точечно — только после общего плана.
+3. Customers будут переключены на Supabase **вместе с общим backend cutover**.
+4. Directus **не** является долгосрочным backend. После full migration — удалить из runtime.
+5. Следующий этап (отдельная чистая сессия):
+   **`FULL DIRECTUS → SUPABASE MIGRATION — INVENTORY + TARGET SCHEMA + MASTER PLAN`**
+6. В рамках того audit/plan **никаких** migration/schema changes до review.
+7. Текущий Directus storefront продолжает работать до общего cutover — не ломать.
+
+### Checkout / loyalty finalization (эта сессия)
+
+- Loyalty business logic **COMPLETE** (shared 5% calc, server re-check, authoritative total, PRICE_CHANGED / LOYALTY_CHANGED / LOYALTY_UNAVAILABLE).
+- Telegram `items_summary` теперь включает human-readable `Фіксація: …` из server quote.
+- Pure formatter: `lib/cart/order-items-summary.ts` (`formatOrderItemsSummary`).
+- Expected manual E2E total for the documented scenario: **3999 ₴** (4409 − 200 qty − 210 loyalty 5%).
+- Не делать customer-only Supabase cutover; customers уедут с общим migration.
 
 ---
 
@@ -151,10 +195,12 @@ Do not treat PHASE 3 as final sync.
 | 4A | **Done** — server-only Supabase adapter, `CUSTOMER_STORE`, no silent write fallback. Production still Directus. |
 | 5 | **Done** — shared `calculateLoyaltyDiscount`, server eligibility re-check, authoritative totals, `PRICE_CHANGED`/`LOYALTY_CHANGED`, no silent price increase |
 | 6 | **Done** — staging / E2E / security / checkout reliability QA (see §6.2) |
-| 4B | Final Directus snapshot + delta/reconciliation + aggregate validation, then `CUSTOMER_STORE=supabase` |
-| 7 | Cleanup Directus fallback after stability window |
+| Checkout finalization | **Done** — fixation in Telegram notifications + tests (this session) |
+| ~~4B (customer-only)~~ | **CANCELLED** — see TARGET ARCHITECTURE CHANGED |
+| Next | **FULL Directus → Supabase inventory + target schema + master plan** (new session; no schema changes until review) |
+| 7 / full cutover | After master plan + implementation: switch application data to Supabase, R2 media, remove Directus from runtime |
 
-Out of scope for now: orders in Supabase, Edge Functions, Auth, RPC customer helpers.
+Out of scope for now: Edge Functions, Auth, RPC customer helpers. Orders/catalog/content migrate only via the full-Supabase plan.
 
 ---
 
@@ -313,6 +359,7 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 4A.1 | `67fdf2f` | Directus write HTTP validation, strict phones, adapter tests, pinned dep |
 | PHASE 5 | `3919a8b` | authoritative server-side loyalty pricing |
 | PHASE 6 | `c87f33c` | checkout reliability + staging/security QA |
+| Checkout finalization | `542d42e` | fixation in order notifications + pure summary formatter |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
