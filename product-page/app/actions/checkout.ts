@@ -16,6 +16,7 @@ import {
   upsertCustomerByPhone,
 } from '@/lib/cart/customers';
 import { withCheckoutPricing } from '@/lib/cart/checkout-pricing';
+import { runPostOrderSideEffects, safeErrorDetail } from '@/lib/cart/checkout-reliability';
 import { buildLoyaltyAuditNote } from '@/lib/cart/order-audit';
 import type {
   CheckoutInput,
@@ -64,8 +65,8 @@ async function writeOrder(body: Record<string, unknown>) {
     cache: 'no-store',
   });
   if (!response.ok) {
-    const payload = await response.text();
-    throw new Error(`Directus order create failed: ${response.status} ${payload.slice(0, 300)}`);
+    // Status only — response body may echo customer fields (PII).
+    throw new Error(`Directus order create failed: HTTP ${response.status}`);
   }
 }
 
@@ -220,41 +221,47 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
           })),
         });
 
-        await notifyNewOrder({
-          id: orderId,
-          orderNumber: number,
-          customerName: parsed.data.customerName.trim(),
-          customerPhone: phone,
-          contactMethod: contactMethodLabel(parsed.data.contactMethod),
-          itemsQuantity: quote.itemsQuantity,
-          total: authoritativeTotal,
-          deliveryMethod: DELIVERY_METHOD_LABELS[delivery.method],
-          deliveryCity: delivery.cityName,
-          deliveryDestination: destination,
-          items: quote.lines.map(line => ({
-            title: line.title,
-            quantity: line.quantity,
-            lineTotal: line.lineTotal,
-          })),
+        // Order write succeeded — that is the success boundary.
+        // Notify + customer upsert are best-effort and must not flip this to FAILED.
+        await runPostOrderSideEffects({
+          notify: async () => {
+            await notifyNewOrder({
+              id: orderId,
+              orderNumber: number,
+              customerName: parsed.data.customerName.trim(),
+              customerPhone: phone,
+              contactMethod: contactMethodLabel(parsed.data.contactMethod),
+              itemsQuantity: quote.itemsQuantity,
+              // Authoritative discounted total, never the pre-loyalty quote.total.
+              total: authoritativeTotal,
+              deliveryMethod: DELIVERY_METHOD_LABELS[delivery.method],
+              deliveryCity: delivery.cityName,
+              deliveryDestination: destination,
+              items: quote.lines.map(line => ({
+                title: line.title,
+                quantity: line.quantity,
+                lineTotal: line.lineTotal,
+              })),
+            });
+          },
+          upsertCustomer: async () => {
+            await upsertCustomerByPhone({
+              phone,
+              fullName: parsed.data.customerName.trim(),
+              source: 'site',
+              imported: false,
+            });
+          },
+          logError: (message, detail) => {
+            console.error(message, { orderNumber: number, detail });
+          },
         });
-
-        // After successful order: register customer (phone unique; no create if exists).
-        try {
-          await upsertCustomerByPhone({
-            phone,
-            fullName: parsed.data.customerName.trim(),
-            source: 'site',
-            imported: false,
-          });
-        } catch (error) {
-          console.error('Customer upsert failed', error);
-        }
 
         return { ok: true, orderNumber: number, total: authoritativeTotal };
       },
     });
   } catch (error) {
-    console.error('Order creation failed', error);
+    console.error('Order creation failed', safeErrorDetail(error));
     if (error instanceof CartQuoteError) {
       return { ok: false, code: error.code, message: error.message };
     }

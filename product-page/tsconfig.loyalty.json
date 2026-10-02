@@ -8,6 +8,7 @@
     "lib/cart/loyalty-math.ts",
     "lib/cart/loyalty.ts",
     "lib/cart/checkout-pricing.ts",
+    "lib/cart/checkout-reliability.ts",
     "lib/cart/order-audit.ts",
     "lib/cart/pricing.ts",
     "lib/cart/types.ts",
@@ -16,7 +17,8 @@
     "lib/cart/contact-method.ts",
     "tests/loyalty-math.test.ts",
     "tests/checkout-pricing.test.ts",
-    "tests/checkout-side-effects.test.ts"
+    "tests/checkout-side-effects.test.ts",
+    "tests/checkout-reliability.test.ts"
   ],
   "exclude": ["node_modules", ".next"]
 }

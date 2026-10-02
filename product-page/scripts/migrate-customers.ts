@@ -113,7 +113,7 @@ function loadLiveJson(path: string): RawRow[] {
 }
 
 function classify(rows: RawRow[], origin: string, testPhones: Set<string>) {
-  const byPhone = new Map<string, Array<RawRow & { origin: string }>>();
+  const byPhone = new Map<string, Array<RawRow & { origin: string; phone: string }>>();
   let invalid = 0;
   let testExcluded = 0;
   for (const r of rows) {
@@ -236,14 +236,14 @@ async function main() {
   const a = classify(legacy, 'legacy', testPhones);
   const b = classify(live, 'live', testPhones);
   const byPhone = new Map(a.byPhone);
-  for (const [phone, recs] of b.byPhone) {
+  for (const [phone, recs] of Array.from(b.byPhone)) {
     const merged = byPhone.get(phone) ?? [];
     byPhone.set(phone, [...merged, ...recs]);
   }
 
   let mergeGroups = 0;
   const resolved: ResolvedCustomer[] = [];
-  for (const [, recs] of byPhone) {
+  for (const [, recs] of Array.from(byPhone)) {
     if (recs.length > 1) mergeGroups += 1;
     resolved.push(mergeRecords(recs));
   }

@@ -63,25 +63,27 @@ describe('normalizeCustomerPhone', () => {
 });
 
 describe('resolveCustomerStoreBackend', () => {
+  const env = (values: Record<string, string>) => values as NodeJS.ProcessEnv;
+
   it('defaults to directus when unset', () => {
-    assert.equal(resolveCustomerStoreBackend({}), 'directus');
-    assert.equal(resolveCustomerStoreBackend({ CUSTOMER_STORE: '' }), 'directus');
-    assert.equal(resolveCustomerStoreBackend({ CUSTOMER_STORE: '   ' }), 'directus');
+    assert.equal(resolveCustomerStoreBackend(env({})), 'directus');
+    assert.equal(resolveCustomerStoreBackend(env({ CUSTOMER_STORE: '' })), 'directus');
+    assert.equal(resolveCustomerStoreBackend(env({ CUSTOMER_STORE: '   ' })), 'directus');
   });
 
   it('selects an explicit backend', () => {
-    assert.equal(resolveCustomerStoreBackend({ CUSTOMER_STORE: 'directus' }), 'directus');
-    assert.equal(resolveCustomerStoreBackend({ CUSTOMER_STORE: 'supabase' }), 'supabase');
-    assert.equal(resolveCustomerStoreBackend({ CUSTOMER_STORE: 'SUPABASE' }), 'supabase');
+    assert.equal(resolveCustomerStoreBackend(env({ CUSTOMER_STORE: 'directus' })), 'directus');
+    assert.equal(resolveCustomerStoreBackend(env({ CUSTOMER_STORE: 'supabase' })), 'supabase');
+    assert.equal(resolveCustomerStoreBackend(env({ CUSTOMER_STORE: 'SUPABASE' })), 'supabase');
   });
 
   it('fails fast on invalid values', () => {
     assert.throws(
-      () => resolveCustomerStoreBackend({ CUSTOMER_STORE: 'json' }),
+      () => resolveCustomerStoreBackend(env({ CUSTOMER_STORE: 'json' })),
       (err: unknown) => err instanceof CustomerStoreError && err.code === 'CONFIG',
     );
     assert.throws(
-      () => resolveCustomerStoreBackend({ CUSTOMER_STORE: 'both' }),
+      () => resolveCustomerStoreBackend(env({ CUSTOMER_STORE: 'both' })),
       (err: unknown) => err instanceof CustomerStoreError && err.code === 'CONFIG',
     );
   });
