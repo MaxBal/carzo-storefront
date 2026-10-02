@@ -1,5 +1,10 @@
 import 'server-only';
 
+import {
+  formatOrderItemsSummary,
+  type NotificationOrderItem,
+} from '@/lib/cart/order-items-summary';
+
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
 interface NotificationSettings {
@@ -26,7 +31,7 @@ export interface NewOrderNotification {
   deliveryMethod: string;
   deliveryCity: string;
   deliveryDestination: string;
-  items: Array<{ title: string; quantity: number; lineTotal: number }>;
+  items: NotificationOrderItem[];
 }
 
 export interface NewCarMatQuoteNotification {
@@ -133,9 +138,7 @@ function renderedMessage(settings: NotificationSettings, order: NewOrderNotifica
     customer_phone: order.customerPhone,
     contact_method: order.contactMethod,
     items_quantity: String(order.itemsQuantity),
-    items_summary: order.items
-      .map(item => `• ${item.title} × ${item.quantity} — ${item.lineTotal} ₴`)
-      .join('\n'),
+    items_summary: formatOrderItemsSummary(order.items),
     total: String(order.total),
     delivery_method: order.deliveryMethod,
     delivery_city: order.deliveryCity,

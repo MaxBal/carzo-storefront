@@ -241,6 +241,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
                 title: line.title,
                 quantity: line.quantity,
                 lineTotal: line.lineTotal,
+                fixationLabel: line.fixationLabel,
               })),
             });
           },

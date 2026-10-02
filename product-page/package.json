@@ -11,6 +11,7 @@
     "test:customer-store": "tsx --test tests/customer-store.test.ts",
     "test:loyalty": "tsx --test tests/loyalty-math.test.ts tests/checkout-pricing.test.ts tests/checkout-side-effects.test.ts",
     "test:checkout-reliability": "tsx --test tests/checkout-reliability.test.ts",
+    "test:order-notifications": "tsx --test tests/order-items-summary.test.ts",
     "directus:setup": "node --env-file=.env.local scripts/setup-directus.mjs",
     "directus:import-carzo4": "node --env-file=.env.local scripts/import-carzo-4-media.mjs",
     "directus:validate": "node scripts/validate-directus-access.mjs",
