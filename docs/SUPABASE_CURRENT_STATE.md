@@ -265,8 +265,8 @@ Out of scope for now: Edge Functions, Auth, RPC customer helpers. Orders/catalog
 - Loyalty API: invalid / unknown phone → `{eligible:false, discount_percent:0}` (no PII).
 - Rate limit: in-memory 20/min → HTTP 429 `{error:"Too many requests"}`.
 - Local `next build` still hangs (pre-existing); Vercel is build source of truth.
-- **Vercel CLI token invalid** in this environment — cannot confirm current `dev` SHA is the live staging deployment.
-- Staging Directus appears shared with production → **no real test orders** (per policy). Live browser checkout E2E limited (IAB zero-width viewport).
+- **Staging deploy confirmed (this session):** `carzo-eight-staging` READY, branch `dev`, SHA `bbef4ebde6a8ffc95d9cbda5ee37824a7b7fda65` (replaces old `872e505`). Loyalty API smoke green on the new build.
+- Staging Directus appears shared with production → **no real test orders** (per policy). Live browser checkout E2E limited (IAB zero-width viewport). Manual eligible-customer E2E left for the user.
 
 ### Security (live)
 - Supabase `public.customers`: 5994 rows / 5994 unique phones / 0 invalid.
@@ -360,6 +360,7 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 5 | `3919a8b` | authoritative server-side loyalty pricing |
 | PHASE 6 | `c87f33c` | checkout reliability + staging/security QA |
 | Checkout finalization | `542d42e` | fixation in order notifications + pure summary formatter |
+| Handoff / target arch | `bbef4eb` | architecture change + this stamp (staging SHA confirmed) |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
