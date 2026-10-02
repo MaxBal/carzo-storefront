@@ -1,7 +1,7 @@
 # Supabase — Current State Handoff
 
 **Дата:** 2026-10-02  
-**Статус:** PHASE 0–4A.1 + **PHASE 5 завершены** (authoritative loyalty pricing). PHASE 4B / 6 / 7 **не начаты**.  
+**Статус:** PHASE 0–5 + **PHASE 6 завершены** (staging/E2E/security/checkout reliability QA). PHASE 4B / 7 **не начаты**.  
 **Проект:** Carzo Storefront (`product-page/`)  
 **Supabase:** `Carzo` · `kmhegysmtsjqtwwaacht` · eu-west-1 · PostgreSQL 17
 
@@ -22,6 +22,7 @@
 | 4A | Server-only Supabase client + customer-store abstraction + adapters (no cutover) | `9391c90` |
 | 4A.1 | Adapter hardening: Directus write HTTP checks, strict phones, adapter mock tests, pinned supabase-js | `67fdf2f` |
 | 5 | Authoritative server-side loyalty pricing + `PRICE_CHANGED`/`LOYALTY_CHANGED` | `3919a8b` |
+| 6 | Staging / E2E / security / checkout reliability QA | (see §6.2) |
 
 ---
 
@@ -149,8 +150,8 @@ Do not treat PHASE 3 as final sync.
 |---|---|
 | 4A | **Done** — server-only Supabase adapter, `CUSTOMER_STORE`, no silent write fallback. Production still Directus. |
 | 5 | **Done** — shared `calculateLoyaltyDiscount`, server eligibility re-check, authoritative totals, `PRICE_CHANGED`/`LOYALTY_CHANGED`, no silent price increase |
+| 6 | **Done** — staging / E2E / security / checkout reliability QA (see §6.2) |
 | 4B | Final Directus snapshot + delta/reconciliation + aggregate validation, then `CUSTOMER_STORE=supabase` |
-| 6 | Staging / E2E / security QA checklist |
 | 7 | Cleanup Directus fallback after stability window |
 
 Out of scope for now: orders in Supabase, Edge Functions, Auth, RPC customer helpers.
@@ -192,6 +193,58 @@ Out of scope for now: orders in Supabase, Edge Functions, Auth, RPC customer hel
 - Store outage → `LOYALTY_UNAVAILABLE`, not `eligible:false`
 - No PII/secrets in commit; no bulk customer data through context
 - Public `POST /api/customer-discount/check` contract unchanged
+
+---
+
+## 6.2 PHASE 6 — Staging / E2E / security / checkout reliability QA
+
+**Status:** completed (code + live Supabase + staging HTTP/API smoke). Production customer backend remains **Directus**. No PHASE 4B, no cutover, no production deploy, no live customer writes, no test orders.
+
+### Checkout reliability (fixed)
+- **Bug closed:** notification / customer-upsert failure after a successful Directus `writeOrder` can no longer surface as client `FAILED` (false failure → duplicate submit risk).
+- New module: `lib/cart/checkout-reliability.ts` (`runPostOrderSideEffects`, `safeErrorDetail`).
+- Semantics: order write is the success boundary; notify + upsert are best-effort; errors logged without dumping response bodies / control chars.
+- `writeOrder` non-2xx throws HTTP status only (no response body / possible PII echo).
+- Tests: `pnpm run test:checkout-reliability` (9).
+
+### Regression / types
+- `pnpm run test:customer-store` — 32 green
+- `pnpm run test:loyalty` — 37 green
+- `pnpm run test:checkout-reliability` — 9 green
+- scoped `tsc` (`tsconfig.customer-store.json`, `tsconfig.loyalty.json`) — green
+- full `tsc --noEmit` — **green** (fixed legacy Map iteration + test ProcessEnv typing)
+
+### Staging
+- Live `https://carzo-eight-staging.vercel.app` HTTP 200, `x-robots-tag: noindex`.
+- Loyalty API: invalid / unknown phone → `{eligible:false, discount_percent:0}` (no PII).
+- Rate limit: in-memory 20/min → HTTP 429 `{error:"Too many requests"}`.
+- Local `next build` still hangs (pre-existing); Vercel is build source of truth.
+- **Vercel CLI token invalid** in this environment — cannot confirm current `dev` SHA is the live staging deployment.
+- Staging Directus appears shared with production → **no real test orders** (per policy). Live browser checkout E2E limited (IAB zero-width viewport).
+
+### Security (live)
+- Supabase `public.customers`: 5994 rows / 5994 unique phones / 0 invalid.
+- RLS enabled, **0 policies** (intentional deny-by-default).
+- Grants: `postgres` + `service_role` DML only (SELECT/INSERT/UPDATE/DELETE). No `anon` / `authenticated`.
+- Migrations: exactly 3 expected.
+- Security Advisor: only intentional INFO `rls_enabled_no_policy`.
+- Performance Advisor: 0 issues.
+- No `NEXT_PUBLIC_*` secrets; no committed `.env`; Supabase admin client is `server-only`.
+- Client cart items contain **no prices** — `quoteCartItems()` reads Directus variants.
+
+### manager_note loyalty audit
+- Verdict: **ACCEPT TEMPORARILY** for staging QA; **RECOMMEND dedicated fields before production cutover** (`loyalty_phone`, `loyalty_eligible`, `loyalty_discount_percent`, `loyalty_discount_amount`).
+- Not exposed on public frontend; `customer_comment` untouched. Staff overwrite of JSON remains residual risk.
+
+### Idempotency / duplicate orders
+- UI `submitting` reduces double-click; **no server idempotency key**.
+- Residual risk: network retry / browser retry after timeout can still create a second order.
+- **Do not mutate Directus schema in QA.** Future: unique checkout-attempt id / order key (separate controlled change).
+
+### PHASE 4B readiness
+**READY** (architecture + tests + security). Operational preconditions still required before flip: fresh Directus delta, valid Vercel auth for staging deploy confirmation, controlled `CUSTOMER_STORE=supabase` cutover with rollback plan.
+
+Rollback remains: `CUSTOMER_STORE=directus`. Directus customer JSON retained.
 
 ---
 
@@ -259,6 +312,7 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 4A | `9391c90` | customer-store abstraction + Supabase adapter, no cutover |
 | PHASE 4A.1 | `67fdf2f` | Directus write HTTP validation, strict phones, adapter tests, pinned dep |
 | PHASE 5 | `3919a8b` | authoritative server-side loyalty pricing |
+| PHASE 6 | `c87f33c` | checkout reliability + staging/security QA |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
