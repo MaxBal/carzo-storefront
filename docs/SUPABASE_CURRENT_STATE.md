@@ -21,7 +21,7 @@
 | 3 | Customer migration tooling + primary data import | `37217be` + live data |
 | 4A | Server-only Supabase client + customer-store abstraction + adapters (no cutover) | `9391c90` |
 | 4A.1 | Adapter hardening: Directus write HTTP checks, strict phones, adapter mock tests, pinned supabase-js | `67fdf2f` |
-| 5 | Authoritative server-side loyalty pricing + `PRICE_CHANGED`/`LOYALTY_CHANGED` | *(this commit)* |
+| 5 | Authoritative server-side loyalty pricing + `PRICE_CHANGED`/`LOYALTY_CHANGED` | `3919a8b` |
 
 ---
 
@@ -258,7 +258,7 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 3 tooling | `37217be` | migrate-customers.ts |
 | PHASE 4A | `9391c90` | customer-store abstraction + Supabase adapter, no cutover |
 | PHASE 4A.1 | `67fdf2f` | Directus write HTTP validation, strict phones, adapter tests, pinned dep |
-| PHASE 5 | *(this commit)* | authoritative server-side loyalty pricing |
+| PHASE 5 | `3919a8b` | authoritative server-side loyalty pricing |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
