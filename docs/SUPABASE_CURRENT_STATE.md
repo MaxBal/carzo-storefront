@@ -360,7 +360,8 @@ Directus JSON registry remains the production backup until PHASE 7.
 | PHASE 5 | `3919a8b` | authoritative server-side loyalty pricing |
 | PHASE 6 | `c87f33c` | checkout reliability + staging/security QA |
 | Checkout finalization | `542d42e` | fixation in order notifications + pure summary formatter |
-| Handoff / target arch | `bbef4eb` | architecture change + this stamp (staging SHA confirmed) |
+| Target architecture | `bbef4eb` | TARGET ARCHITECTURE CHANGED + remaining work rewrite |
+| Staging SHA stamp | `9287bde` | staging deploy confirmation (`bbef4eb` live on carzo-eight-staging) |
 
 Validation notes (4A.1):
 - `pnpm run test:customer-store` — 32 tests (phone strictness, store selection, merge policy, Supabase adapter mocks, Directus write failures)
