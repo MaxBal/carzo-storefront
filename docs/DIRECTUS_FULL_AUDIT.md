@@ -535,7 +535,7 @@ Priority used by `resolveMediaUrl` / `resolveJsonMediaUrl`:
 4. **Local fallback assets** — `public/flag-ua.svg`, default design placeholder `/Без_имени-1.jpg`, seed assets in `content/` / `public/`.
 5. **Obsolete after cutover** — every `directus_files` UUID field and `/api/directus-assets/[id]`.
 6. **Duplicated R2 + Directus** — most URL+file pairs.
-7. **Broken/inaccessible** — not systematically probed object-by-object (network HEAD of every object is a Stage 2 verification task). Host convention is consistent.
+7. **Broken/inaccessible** — not systematically probed object-by-object (network HEAD of every object is a **Stage 2A media completion / verification** task). Host convention is consistent.
 8. **Unreferenced Directus files** — possible among 37 files; full ref-count check belongs to media completion stage.
 
 ### 7.5 Final media requirement (acceptance)
@@ -660,8 +660,8 @@ Known debt: no checkout attempt id / unique constraint for retry safety. Orders 
 | carzo_brands | brands + legacy logo_extra | 26 | catalog, PDP | MIGRATE_TO_SUPABASE | `brands` |
 | carzo_brand_pricing | logo extra by brand | 26 | pricing | MIGRATE_TO_SUPABASE | **`brands.logo_extra`** (column merge; no separate table) |
 | carzo_variants | SKU price matrix | 12 | cart quote | MIGRATE_TO_SUPABASE | `variants` |
-| carzo_fixations | fixation types + extras | 4 | cart pricing | MIGRATE_TO_SUPABASE | `fixations` + jsonb extras or `fixation_size_extras` |
-| carzo_size_shipping | shipping dims | 0 | catalog (empty) | MIGRATE_TO_SUPABASE (empty) or fold into `sizes` | `sizes.shipping_*` / `size_shipping` |
+| carzo_fixations | fixation types + extras | 4 | cart pricing | MIGRATE_TO_SUPABASE | `fixations` + `fixation_size_extras` (`size_id` → `sizes.id`) |
+| carzo_size_shipping | shipping dims | 0 | catalog (empty) | MIGRATE_TO_SUPABASE | fold into `sizes.shipping_*` (no `size_shipping` table) |
 | carzo_discount_tiers | qty discounts | 2 | cart pricing | MIGRATE_TO_SUPABASE | `discount_tiers` |
 | carzo_gallery_images | PDP gallery | 57 | product page | MIGRATE_TO_SUPABASE (R2 refs) | `gallery_images` |
 | carzo_content_sets | content targeting | 16 | product content | MIGRATE_TO_SUPABASE | `content_sets` |
@@ -672,7 +672,7 @@ Known debt: no checkout attempt id / unique constraint for retry safety. Orders 
 | carzo_benefit_modals | modals | 6 | global modals | MIGRATE_TO_SUPABASE | `benefit_modals` |
 | carzo_logo_settings | logo block settings | 1 | product page | MIGRATE_TO_SUPABASE | `logo_settings` |
 | carzo_logo_placements | per design/size logo imgs | 0 | product page | **DROP_AS_LEGACY_UNUSED / ARCHIVE_ONLY** | no target table (empty) |
-| carzo_media_settings | global media/videos | 1 | product page | MIGRATE_TO_SUPABASE (R2 only) | `media_settings` / `product_media_settings` |
+| carzo_media_settings | global media/videos | 1 | product page | MIGRATE_TO_SUPABASE | **`product_media`** (final; R2 URLs only) |
 | carzo_site_settings | god-singleton | 1 | homepage/about/reviews/car mats/flags | **split** MIGRATE_TO_SUPABASE | `site_settings`, `homepage_settings`, `about_settings`, `review_settings`, `video_review_settings`, `car_mat_settings` |
 | carzo_pages | CMS pages | 4 | CMS | MIGRATE_TO_SUPABASE | `pages` |
 | carzo_page_blocks | CMS blocks | 5 | CMS | MIGRATE_TO_SUPABASE | `page_blocks` |
@@ -699,7 +699,7 @@ Counts:
 | Candidate | Why | Safe to drop after cutover? |
 |---|---|---|
 | `carzo_group_*` | UI only | yes |
-| `carzo_size_shipping` | empty; shipping unused | yes if folded into sizes |
+| `carzo_size_shipping` | empty; fold into `sizes.shipping_*` | yes — **no separate target table** |
 | `carzo_logo_placements` | empty | **do not create target table** (ARCHIVE_ONLY / DROP_AS_LEGACY_UNUSED) |
 | `carzo_brands.logo_extra` | superseded by `carzo_brand_pricing.logo_extra` → merge into `brands.logo_extra` | yes (legacy field not authoritative) |
 | `carzo_sizes.shipping_*` | empty legacy | yes |

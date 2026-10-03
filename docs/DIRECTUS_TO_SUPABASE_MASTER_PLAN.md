@@ -100,7 +100,12 @@ Supabase migrations only (new tables). **No Directus changes. No app cutover.**
 - `supabase migrations list` matches expected versions.
 - Tables exist; PK/UNIQUE/FK/CHECK as specified.
 - `customers` unchanged (row count 5994).
-- Advisors: no critical RLS issues for new tables (policies exist where RLS on).
+- RLS is enabled on every target application table
+- there are **no** unintended `anon` or `authenticated` grants/policies
+- service-role/server access works
+- `rls_enabled_no_policy` INFO is **expected and acceptable** for intentionally server-only tables
+- this advisor message must **not** be treated as Stage 1 failure by itself
+- do **not** create dummy policies merely because RLS is enabled
 - No application deploy.
 
 ### Failure conditions
@@ -145,7 +150,7 @@ Migration scripts + data load. **No production traffic switch. No Directus mutat
    9. notification_settings (non-secret) + telegram chat_ids (**drop `directus_user_ids`**)
    10. orders → order_items (parse loyalty JSON from manager_note into columns; **preserve `customer_email`**)
 2. Normalize media references to R2 URLs during load where already present; remaining Directus-file-only media is **Stage 2A**.
-3. Preserve historical order timestamps and snapshots exactly (including `customer_email` when present).
+3. Preserve historical order timestamps and snapshots exactly (including `customer_email` when present). Directus `created_at` → `orders.created_at` directly.
 4. Do not import `site_settings.customers` as new customers (already in `public.customers`); only link if needed.
 5. Store Telegram bot token only in env — never copy into Supabase.
 6. Do **not** create `logo_placements` (archive/legacy only).
@@ -156,6 +161,8 @@ Migration scripts + data load. **No production traffic switch. No Directus mutat
 - Orphan checks = 0.
 - Sample parity hash on N rows per table (field-level, no PII dump).
 - Order totals/line totals equal source.
+- Historical `created_at` preserved directly in `orders.created_at` (no `created_at_source`).
+- Source collection set accounted for: **24** migratable collections (`logo_placements` excluded; brand_pricing merged; site_settings split).
 - No secrets written to Supabase tables.
 
 ### Failure conditions

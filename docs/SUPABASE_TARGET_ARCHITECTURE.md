@@ -303,20 +303,20 @@ id, key UNIQUE, title, card_label, subtitle, content jsonb (typed blocks), sort,
 #### `logo_settings` (singleton)
 id (single row), title, info_text, specs jsonb, fallback_image_url, placement_video_url, status.
 
-#### `media_settings` / `product_media_settings` (singleton)
-Collapse 15 media slots into structured rows or keep singleton columns. **Recommend table `product_media` rows:**
+#### `product_media` (final decision)
+
+Structured rows for global product media slots. **No singleton `media_settings` / JSONB alternative.**
 
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
-| slot | text UNIQUE | e.g. `materials_video`, `edging_video`, `fixation_video`, `magnetic_system_video`, `magnetic_system_default_cover`, `magnetic_cover_2_0_s`, ... |
-| media_url | text NOT NULL | R2 |
+| slot | text UNIQUE NOT NULL | e.g. `materials_video`, `edging_video`, `fixation_video`, `magnetic_system_video`, `magnetic_system_default_cover`, `magnetic_cover_2_0_s`, … (15 slots from `carzo_media_settings`) |
+| media_url | text NOT NULL | R2 URL |
 | alt | text null | |
-| updated_at | | |
+| created_at | timestamptz NOT NULL default now() | |
+| updated_at | timestamptz NOT NULL default now() | |
 
-> Rationale: avoids 18-column singleton and makes R2 inventory queryable. App keeps a slot map.
-
-If product prefers fewer tables, a singleton `media_settings` with `jsonb slots` is acceptable — document each slot key.
+Source: Directus singleton `carzo_media_settings` (38 fields → 15 URL slots). App keeps a slot map.
 
 ---
 
@@ -438,7 +438,8 @@ Index: `(page_id, sort)`.
 | total | int | NO | server-authoritative |
 | discount_tier_key | text | YES | |
 | manager_note | text | YES | freeform manager text only (not loyalty JSON) |
-| created_at_source | timestamptz | YES | if migrating historical created_at |
+
+**Timestamp migration rule:** historical Directus `carzo_orders.created_at` maps **directly** to `orders.created_at`. New Supabase orders use normal DB `created_at`. No `created_at_source` column.
 
 Indexes: `order_number`, `checkout_attempt_id`, `created_at`, `status`, `customer_phone`, `customer_id`.
 
@@ -518,7 +519,6 @@ gallery_images >── 0..1 designs / sizes
 erDiagram
     designs ||--o{ variants : has
     sizes ||--o{ variants : has
-    brands ||--o{ brands : logo_extra
     fixations ||--o{ fixation_size_extras : extras
     sizes ||--o{ fixation_size_extras : sized
     content_sets ||--o{ content_sections : owns
@@ -529,6 +529,8 @@ erDiagram
     designs ||--o{ gallery_images : gallery
     sizes ||--o{ gallery_images : gallery
 ```
+
+> `brands.logo_extra` is a scalar column sourced from `carzo_brand_pricing.logo_extra` — no ER edge.
 
 ---
 
@@ -744,7 +746,7 @@ Must be implemented and tested **before** production Directus shutdown.
 | carzo_brand_pricing | **brands.logo_extra** (column, no table) | 1:1 merge; do not use legacy brands.logo_extra |
 | carzo_variants | variants | design/size UUID → FKs |
 | carzo_fixations | fixations + fixation_size_extras | expand extra_by_size JSON into rows with size_id |
-| carzo_size_shipping | (merged into sizes) | empty |
+| carzo_size_shipping | (merged into `sizes`) | fold into `sizes.shipping_*` columns; **no `size_shipping` table** |
 | carzo_discount_tiers | discount_tiers | as-is |
 | carzo_gallery_images | gallery_images | external_url → media_url; drop image UUID |
 | carzo_content_sets | content_sets | design/size → FKs |
@@ -755,7 +757,7 @@ Must be implemented and tested **before** production Directus shutdown.
 | carzo_benefit_modals | benefit_modals | content jsonb |
 | carzo_logo_settings | logo_settings | only URL fields |
 | carzo_logo_placements | **no target table** | ARCHIVE_ONLY / DROP_AS_LEGACY_UNUSED |
-| carzo_media_settings | product_media rows | 15 slots |
+| carzo_media_settings | **`product_media`** rows | 15 slots; final target |
 | carzo_site_settings | split 6 tables | see §5.5; drop customers JSON |
 | carzo_pages / page_blocks | pages / page_blocks | seo/image URLs only |
 | carzo_orders / items | orders / order_items | loyalty JSON → columns; keep snapshots; **keep customer_email** |
@@ -860,7 +862,7 @@ Final architecture: **no Directus flags at all**.
 | Existing Supabase application tables | **1** (`customers`) |
 | Exact new Stage 1 tables | **27** |
 | Exact final application-table total (incl. `customers`) | **28** |
-| Directus collections migrated | 25 (incl. splits of `carzo_site_settings`) |
+| Directus collections migrated | **24** (`carzo_brand_pricing` counts as source even though merged into `brands.logo_extra`; `carzo_site_settings` counts as one source despite split; `carzo_logo_placements` is **not** migrated) |
 | Dropped as UI metadata | 6 groups |
 | Dropped as legacy empty | `carzo_logo_placements` |
 | Merged into column | `carzo_brand_pricing` → `brands.logo_extra` |
