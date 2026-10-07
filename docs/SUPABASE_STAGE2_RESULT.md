@@ -115,10 +115,21 @@
 
 ## Media gaps for Stage 2A
 
+Live Supabase verification: **8** unresolved production media references.
+
+| target | keys / slot | count |
+|---|---|---:|
+| `designs.selector_image_url` | `2-0`, `3-0`, `4-0` | 3 |
+| `rich_section_images.media_url` | `2-0:rich-magnets`, `3-0:rich-magnets`, `4-0:rich-magnets` | 3 |
+| `logo_settings.fallback_image_url` | 1 unresolved fallback | 1 |
+| `product_media` | missing canonical slot `magnetic_system_default_cover` | 1 |
+| **total** | | **8** |
+
 - product_media rows loaded / 17: **16/17**
-- unresolved file-only media: **1** product_media slot + 3 design `selector_image_url` NULLs
 - Directus file UUIDs stored as target media refs: **0**
 - R2 mutations: **0**
+
+Note: 2 `content_sections.media_url = NULL` rows are **not** counted as file-only gaps — source audit shows no mandatory Directus-file dependency. Stage 2A may classify them during inventory only.
 
 Stage 2A not started.
 
