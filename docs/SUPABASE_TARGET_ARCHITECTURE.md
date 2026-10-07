@@ -69,7 +69,7 @@ Shared trigger: `set_updated_at()` on mutable tables.
 | `review_settings.items` | presentational review cards |
 | `video_review_settings.items` | presentational video cards |
 | `car_mat_settings.designs` | presentational array |
-| `fixations.extra_by_size` | small fixed map `{s,m,l,xl}` OR normalize to 4 columns / child table — **recommend child table `fixation_size_extras`** because it is pricing-affecting |
+| `fixations.extra_by_size` | **source-only JSON** (`carzo_fixations`). Target is **only** relational `fixation_size_extras(fixation_id, size_id, extra)` — no JSONB target alternative |
 | `logo_settings.specs` | presentational `[{label,value}]` |
 | `notification_settings.telegram_chat_ids` | recipient ID array (non-secret) |
 | `orders.delivery_snapshot` alternative | prefer explicit columns (already modeled) |
@@ -307,16 +307,40 @@ id (single row), title, info_text, specs jsonb, fallback_image_url, placement_vi
 
 Structured rows for global product media slots. **No singleton `media_settings` / JSONB alternative.**
 
+**Canonical slot count: 17** (exact runtime contract from `lib/content/directus.ts`).
+
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
-| slot | text UNIQUE NOT NULL | e.g. `materials_video`, `edging_video`, `fixation_video`, `magnetic_system_video`, `magnetic_system_default_cover`, `magnetic_cover_2_0_s`, … (15 slots from `carzo_media_settings`) |
+| slot | text UNIQUE NOT NULL | canonical keys below; **do not rename** (e.g. keep `magnetic_system_cover_2_0_s`, not `magnetic_cover_2_0_s`) |
 | media_url | text NOT NULL | R2 URL |
 | alt | text null | |
 | created_at | timestamptz NOT NULL default now() | |
 | updated_at | timestamptz NOT NULL default now() | |
 
-Source: Directus singleton `carzo_media_settings` (38 fields → 15 URL slots). App keeps a slot map.
+Canonical slot keys (17):
+
+```
+materials_video
+edging_video
+fixation_video
+magnetic_system_video
+magnetic_system_default_cover
+magnetic_system_cover_2_0_s
+magnetic_system_cover_2_0_m
+magnetic_system_cover_2_0_l
+magnetic_system_cover_2_0_xl
+magnetic_system_cover_3_0_s
+magnetic_system_cover_3_0_m
+magnetic_system_cover_3_0_l
+magnetic_system_cover_3_0_xl
+magnetic_system_cover_4_0_s
+magnetic_system_cover_4_0_m
+magnetic_system_cover_4_0_l
+magnetic_system_cover_4_0_xl
+```
+
+Source: Directus singleton `carzo_media_settings` (file/url field pairs). App keeps the same slot keys to reduce migration/adapter risk.
 
 ---
 
@@ -437,9 +461,17 @@ Index: `(page_id, sort)`.
 | loyalty_phone_mismatch | bool | NO default false | |
 | total | int | NO | server-authoritative |
 | discount_tier_key | text | YES | |
-| manager_note | text | YES | freeform manager text only (not loyalty JSON) |
+| manager_note | text | YES | **only genuine human/freeform manager text** (never loyalty JSON) |
+| created_at | timestamptz | NO | preserved: historical Directus `created_at` maps directly here; new orders use DB default |
+| updated_at | timestamptz | NO | |
 
 **Timestamp migration rule:** historical Directus `carzo_orders.created_at` maps **directly** to `orders.created_at`. New Supabase orders use normal DB `created_at`. No `created_at_source` column.
+
+**Manager note / loyalty migration rule:**
+- If Directus `manager_note` contains known loyalty audit JSON → parse into structured `orders.loyalty_*` columns; **do not copy that JSON into production `manager_note`**.
+- If an order has genuine human/freeform manager text → preserve that text in `orders.manager_note`.
+- If historical rows contain only loyalty JSON → `orders.manager_note` may remain NULL.
+- **Do not create `legacy_manager_note`.** Original Directus data remains in migration export / final Directus archive.
 
 Indexes: `order_number`, `checkout_attempt_id`, `created_at`, `status`, `customer_phone`, `customer_id`.
 
@@ -757,7 +789,7 @@ Must be implemented and tested **before** production Directus shutdown.
 | carzo_benefit_modals | benefit_modals | content jsonb |
 | carzo_logo_settings | logo_settings | only URL fields |
 | carzo_logo_placements | **no target table** | ARCHIVE_ONLY / DROP_AS_LEGACY_UNUSED |
-| carzo_media_settings | **`product_media`** rows | 15 slots; final target |
+| carzo_media_settings | **`product_media`** rows | **17 canonical slots**; final target |
 | carzo_site_settings | split 6 tables | see §5.5; drop customers JSON |
 | carzo_pages / page_blocks | pages / page_blocks | seo/image URLs only |
 | carzo_orders / items | orders / order_items | loyalty JSON → columns; keep snapshots; **keep customer_email** |

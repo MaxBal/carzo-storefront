@@ -512,7 +512,7 @@ Priority used by `resolveMediaUrl` / `resolveJsonMediaUrl`:
 | carzo_content_sections | external_url / image | 46 | 1 | 1 | 0 |
 | carzo_rich_section_images | external_url / image | 9 | 12 | 9 | **3** |
 | carzo_logo_settings | fallback + placement video | URL video filled | files present | mixed | fallback file-only |
-| carzo_media_settings | 15 media slots | all video/cover URLs filled | files also present | mostly both | image legacy |
+| carzo_media_settings | **17 canonical runtime slots** (5 general + 12 magnetic covers) | all video/cover URLs filled | files also present | mostly both | image legacy |
 | carzo_site_settings | about/home/car_mat URLs | filled where used | some files empty | mixed | site_flag empty |
 | carzo_pages | seo_image_url | empty | empty | 0 | 0 |
 | carzo_page_blocks | image_url | mixed | mixed | mixed | some |

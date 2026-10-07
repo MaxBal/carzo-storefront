@@ -143,12 +143,12 @@ Migration scripts + data load. **No production traffic switch. No Directus mutat
    2. variants
    3. content_sets → content_sections, faq_items
    4. rich_sections → rich_section_images
-   5. gallery_images, logo_settings, product media slots
+   5. gallery_images, logo_settings, **product_media (17 canonical slots)**
    6. split site_settings fields into settings tables
    7. benefit_modals
    8. pages → page_blocks
    9. notification_settings (non-secret) + telegram chat_ids (**drop `directus_user_ids`**)
-   10. orders → order_items (parse loyalty JSON from manager_note into columns; **preserve `customer_email`**)
+   10. orders → order_items (parse loyalty JSON from manager_note into `loyalty_*` columns only; preserve genuine manager text; **preserve `customer_email`**; **no `legacy_manager_note`**)
 2. Normalize media references to R2 URLs during load where already present; remaining Directus-file-only media is **Stage 2A**.
 3. Preserve historical order timestamps and snapshots exactly (including `customer_email` when present). Directus `created_at` → `orders.created_at` directly.
 4. Do not import `site_settings.customers` as new customers (already in `public.customers`); only link if needed.
@@ -691,8 +691,11 @@ Archival + infrastructure shutdown.
 
 ### Requirements
 - Preserve historical orders exactly (no recompute).
-- Map manager_note loyalty JSON → structured columns; keep original JSON optional in `manager_note` or `legacy_manager_note` if needed for forensic parity.
+- Map manager_note loyalty JSON → structured `orders.loyalty_*` columns only.
+- Do **not** create `legacy_manager_note`. Do **not** keep loyalty JSON in production `manager_note`.
+- Preserve genuine human/freeform manager text (if any) in `orders.manager_note`; otherwise leave NULL.
 - Preserve `customer_email` exactly when present (historical snapshot; not required for new orders).
+- Parity tooling must verify loyalty parse completeness without printing note payloads / PII.
 - Verification (no PII prints; use aggregates/equality/hashes):
   - order count / item count
   - order_number set equality
