@@ -438,8 +438,8 @@ Index: `(page_id, sort)`.
 | order_number | text | NO | UNIQUE human number |
 | checkout_attempt_id | uuid | YES | **idempotency key** UNIQUE. NULL only for legacy imported orders; **mandatory for every new Supabase-created order** |
 | status | order_status | NO | default `new` |
-| created_at | timestamptz | NO | |
-| updated_at | timestamptz | NO | |
+| created_at | timestamptz | NO | default now(); historical Directus `created_at` maps directly here |
+| updated_at | timestamptz | NO | default now(); `set_updated_at()` trigger |
 | customer_id | uuid | YES | FK customers ON DELETE SET NULL |
 | customer_name | text | YES | snapshot |
 | customer_phone | text | NO | snapshot + lookup |
@@ -462,10 +462,8 @@ Index: `(page_id, sort)`.
 | total | int | NO | server-authoritative |
 | discount_tier_key | text | YES | |
 | manager_note | text | YES | **only genuine human/freeform manager text** (never loyalty JSON) |
-| created_at | timestamptz | NO | preserved: historical Directus `created_at` maps directly here; new orders use DB default |
-| updated_at | timestamptz | NO | |
 
-**Timestamp migration rule:** historical Directus `carzo_orders.created_at` maps **directly** to `orders.created_at`. New Supabase orders use normal DB `created_at`. No `created_at_source` column.
+**Timestamp migration rule:** historical Directus `carzo_orders.created_at` maps **directly** to `orders.created_at`. New Supabase orders use normal DB `created_at`. `updated_at` follows shared `set_updated_at()`. **No `created_at_source` column.**
 
 **Manager note / loyalty migration rule:**
 - If Directus `manager_note` contains known loyalty audit JSON → parse into structured `orders.loyalty_*` columns; **do not copy that JSON into production `manager_note`**.

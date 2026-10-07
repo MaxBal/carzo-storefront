@@ -727,7 +727,7 @@ Counts:
 
 ## 14. Audit limitations / follow-ups (not blocking planning)
 
-1. Per-object HEAD validation of every R2 URL was not performed (Stage verification item).
+1. Per-object HEAD/object validation of every R2 URL was not performed during this audit. That validation belongs to **Stage 2A media completion / verification**.
 2. Directus `/items/customers` is 403/absent; customer-store fallback path to `site_settings.customers` has only 5 rows vs 5994 in Supabase — bulk customers already live in Supabase via completed import.
 3. Webhooks API not available/enabled; flow is inactive so no active platform automation detected.
 4. Full permissions matrix (role×collection) summarized by counts only; enough to know admin UI roles exist.
