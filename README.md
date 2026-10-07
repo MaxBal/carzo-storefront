@@ -34,10 +34,41 @@ snapshots, build output, and dependencies are intentionally excluded from Git.
 
 ```bash
 cd product-page
-pnpm exec tsc --noEmit
+pnpm install --frozen-lockfile
+pnpm run typecheck
 pnpm run lint
-pnpm run build
+pnpm run test:customer-store
+pnpm run test:loyalty
+pnpm run test:checkout-reliability
+pnpm run test:order-notifications
 ```
+
+The `PR validation` workflow runs on every pull request targeting `dev` or
+`main`, using Node.js 22, pnpm 9.15.9, and `product-page/pnpm-lock.yaml` with
+`--frozen-lockfile`. Its `Storefront validation` job must pass typecheck, lint,
+all four test suites, and `pnpm run build` before merge. The tests use
+`node:test`, mock clients, and local spies; they do not require live writes to
+Directus, Supabase, or Telegram.
+
+CI explicitly clears integration URLs, tokens, and keys and uses
+`https://staging.carzo.invalid` as the site origin. The build uses the existing
+local content fallbacks without production endpoints or secrets. Do not copy
+`.env.example` into CI: it includes production URLs. Next.js may download the
+Inter font from Google during the build. This fallback build validates compilation
+and prerendering; it does not validate live CMS data or staging integrations.
+
+Release gate:
+
+1. Open a `feature/*` → `dev` PR and require a passing `Storefront validation` job.
+2. Verify the integrated version on staging, including the changed storefront
+   behavior and relevant checkout/integration flows.
+3. Open a `dev` → `main` PR with the staging verification results recorded in its
+   description and require the same passing CI job before merge.
+
+Branch protection/rulesets must separately mark `Storefront validation` as a
+required status check to enforce this gate in GitHub; the workflow alone does
+not prevent merging. CI performs validation only. Production/staging deployment
+remains manual and is not configured by this workflow.
 
 Project decisions and the domain model are documented in `docs/adr` and
 `CONTEXT.md`.
