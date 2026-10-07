@@ -1,0 +1,69 @@
+name: PR validation
+
+on:
+  pull_request:
+    branches: [dev, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-validation-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Storefront validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: product-page
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      # Empty integration settings activate local content fallbacks. Never load
+      # .env.example (it contains production URLs) or repository secrets here.
+      DIRECTUS_URL: ''
+      DIRECTUS_READ_TOKEN: ''
+      DIRECTUS_ADMIN_TOKEN: ''
+      DIRECTUS_PREVIEW_SECRET: ''
+      CUSTOMER_STORE: directus
+      SUPABASE_URL: ''
+      SUPABASE_SECRET_KEY: ''
+      NOVA_POSHTA_API_KEY: ''
+      TELEGRAM_BOT_TOKEN: ''
+      SITE_URL: https://staging.carzo.invalid
+      NEXT_PUBLIC_SITE_URL: https://staging.carzo.invalid
+      VERCEL_URL: staging.carzo.invalid
+    steps:
+      - name: Checkout PR merge commit
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: product-page/pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm run typecheck
+      - name: Lint
+        run: pnpm run lint
+      - name: Customer store tests
+        run: pnpm run test:customer-store
+      - name: Loyalty tests
+        run: pnpm run test:loyalty
+      - name: Checkout reliability tests
+        run: pnpm run test:checkout-reliability
+      - name: Order notification tests
+        run: pnpm run test:order-notifications
+      - name: Build with local content fallbacks
+        run: pnpm run build
