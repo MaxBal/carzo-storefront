@@ -44,7 +44,7 @@ pnpm run test:order-notifications
 ```
 
 The `PR validation` workflow runs on every pull request targeting `dev` or
-`main`, using Node.js 22, pnpm 9.15.9, and `product-page/pnpm-lock.yaml` with
+`main`, using Node.js 22, pnpm 11.25.0, and `product-page/pnpm-lock.yaml` with
 `--frozen-lockfile`. Its `Storefront validation` job must pass typecheck, lint,
 all four test suites, and `pnpm run build` before merge. The tests use
 `node:test`, mock clients, and local spies; they do not require live writes to
