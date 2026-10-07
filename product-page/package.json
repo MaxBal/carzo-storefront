@@ -16,9 +16,12 @@
     "directus:import-carzo4": "node --env-file=.env.local scripts/import-carzo-4-media.mjs",
     "directus:validate": "node scripts/validate-directus-access.mjs",
     "directus:verify": "node --env-file=.env.local scripts/verify-directus-access.mjs",
-    "directus:verify-media": "node --env-file=.env.local scripts/verify-product-media.mjs"
+    "directus:verify-media": "node --env-file=.env.local scripts/verify-product-media.mjs",
+    "media:stage2a": "tsx scripts/complete-directus-media-to-r2.ts",
+    "test:stage2a": "tsx --test tests/complete-directus-media-to-r2.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.758.0",
     "@hookform/resolvers": "^3.9.0",
     "@netlify/plugin-nextjs": "^5.15.1",
     "@radix-ui/react-accordion": "^1.2.0",
