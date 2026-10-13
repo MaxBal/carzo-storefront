@@ -18,7 +18,8 @@
     "directus:verify": "node --env-file=.env.local scripts/verify-directus-access.mjs",
     "directus:verify-media": "node --env-file=.env.local scripts/verify-product-media.mjs",
     "media:stage2a": "tsx scripts/complete-directus-media-to-r2.ts",
-    "test:stage2a": "tsx --test tests/complete-directus-media-to-r2.test.ts"
+    "test:stage2a": "tsx --test tests/complete-directus-media-to-r2.test.ts",
+    "test:stage4": "tsx --test tests/stage4-config.test.ts tests/stage4-orders.test.ts tests/stage4-quote.test.ts tests/stage4-content.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.758.0",

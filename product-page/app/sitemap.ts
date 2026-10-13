@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { getContentSource } from '@/lib/content/directus';
-import { getPublishedPageSummaries } from '@/lib/pages/directus';
+import { getContentSource } from '@/lib/data/content';
+import { getPublishedPageSummaries } from '@/lib/data/pages';
 import { pagePath } from '@/lib/pages/metadata';
 import { absoluteSiteUrl, getPrimaryProductLinks } from '@/lib/seo';
 

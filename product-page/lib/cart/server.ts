@@ -2,9 +2,8 @@ import 'server-only';
 
 import { calculateCartTotals } from './pricing';
 import type { CartInputItem, CartQuote, CartQuoteLine } from './types';
-import type { DiscountTier } from '@/lib/content/types';
-
-type DirectusRecord = Record<string, unknown>;
+import type { DiscountTier, FixationInfo, SizeId } from '@/lib/content/types';
+import { loadCatalogData, CatalogUnavailableError } from '@/lib/data/catalog';
 
 const POSTOMAT_MAX_WEIGHT_KG = 20;
 const POSTOMAT_MAX_DIMENSIONS_CM = [30, 40, 60] as const;
@@ -13,40 +12,6 @@ export class CartQuoteError extends Error {
   constructor(message: string, public readonly code: 'INVALID' | 'UNAVAILABLE' = 'INVALID') {
     super(message);
   }
-}
-
-function directusConfig() {
-  const url = process.env.DIRECTUS_URL?.replace(/\/$/, '');
-  const token = process.env.DIRECTUS_READ_TOKEN?.trim();
-  if (!url || !token) throw new CartQuoteError('Не вдалося перевірити актуальні ціни. Спробуйте ще раз.', 'UNAVAILABLE');
-  return { url, token };
-}
-
-async function readPublished(collection: string, fields: string) {
-  const { url, token } = directusConfig();
-  const query = new URLSearchParams({
-    limit: '-1',
-    fields,
-    'filter[status][_eq]': 'published',
-  });
-  const response = await fetch(`${url}/items/${collection}?${query}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    throw new CartQuoteError('Не вдалося перевірити актуальні ціни. Спробуйте ще раз.', 'UNAVAILABLE');
-  }
-  const payload = await response.json() as { data?: DirectusRecord | DirectusRecord[] };
-  if (Array.isArray(payload.data)) return payload.data;
-  return payload.data ? [payload.data] : [];
-}
-
-function relation(value: unknown, field: string) {
-  if (value && typeof value === 'object') {
-    const nested = (value as DirectusRecord)[field];
-    return typeof nested === 'string' ? nested : '';
-  }
-  return typeof value === 'string' ? value : '';
 }
 
 function text(value: unknown) {
@@ -58,19 +23,15 @@ function number(value: unknown) {
   return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : 0;
 }
 
-function fixationExtraForSize(fixation: DirectusRecord, size: string) {
-  const bySize = fixation.extra_by_size;
-  if (bySize && typeof bySize === 'object' && !Array.isArray(bySize)) {
+function fixationExtraForSize(fixation: FixationInfo, size: string) {
+  const bySize = fixation.extraBySize;
+  if (bySize && typeof bySize === 'object') {
     const map = bySize as Record<string, unknown>;
     const key = String(size).toLowerCase();
     const value = map[key] ?? map[String(size)];
     if (value !== undefined && value !== null) return number(value);
   }
   return number(fixation.extra);
-}
-
-function bool(value: unknown) {
-  return value === true;
 }
 
 function fitsPostomatDimensions(values: unknown[]) {
@@ -98,6 +59,10 @@ function consolidateItems(items: CartInputItem[]) {
   return Array.from(consolidated.values());
 }
 
+/**
+ * Backend-neutral cart quote. Catalog dataset comes from CATALOG_STORE;
+ * shared pricing math is calculateCartTotals. Fail-closed on catalog errors.
+ */
 export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuote> {
   const items = consolidateItems(rawItems);
   const totalRequestedQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -105,35 +70,29 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     throw new CartQuoteError('Кошик порожній або містить забагато товарів.');
   }
 
-  const [designs, sizes, brands, brandPricing, fixations, variants, discountTiers, shipping, siteSettings] = await Promise.all([
-    readPublished('carzo_designs', 'slug,version,label'),
-    readPublished('carzo_sizes', 'code,slug,label,width_cm,height_cm,depth_cm'),
-    readPublished('carzo_brands', 'slug,name'),
-    readPublished('carzo_brand_pricing', 'brand.slug,logo_extra'),
-    readPublished('carzo_fixations', 'key,label,extra,extra_by_size'),
-    readPublished('carzo_variants', 'key,design.slug,size.code,price,in_stock,quantity_discount_eligible'),
-    readPublished('carzo_discount_tiers', 'key,min_quantity,amount,sort'),
-    readPublished('carzo_size_shipping', 'size.code,length_cm,width_cm,height_cm,weight_kg'),
-    readPublished('carzo_site_settings', 'checkout_payment_details'),
-  ]);
+  let catalog;
+  try {
+    catalog = await loadCatalogData();
+  } catch (error) {
+    // Commerce fail-closed — never fall back to Directus/default prices.
+    if (error instanceof CatalogUnavailableError || error instanceof Error) {
+      throw new CartQuoteError('Не вдалося перевірити актуальні ціни. Спробуйте ще раз.', 'UNAVAILABLE');
+    }
+    throw new CartQuoteError('Не вдалося перевірити актуальні ціни. Спробуйте ще раз.', 'UNAVAILABLE');
+  }
 
-  const designBySlug = new Map(designs.map(item => [text(item.slug), item]));
-  const sizeByCode = new Map(sizes.map(item => [text(item.code), item]));
-  const brandBySlug = new Map(brands.map(item => [text(item.slug), item]));
-  const brandPriceBySlug = new Map(brandPricing.map(item => [relation(item.brand, 'slug'), number(item.logo_extra)]));
-  const fixationByKey = new Map(fixations.map(item => [text(item.key), item]));
-  const variantByKey = new Map(variants.map(item => [`${relation(item.design, 'slug')}:${relation(item.size, 'code')}`, item]));
-  const shippingBySize = new Map(shipping.map(item => [relation(item.size, 'code'), item]));
-  const tiers: DiscountTier[] = discountTiers.map(item => ({
-    key: text(item.key),
-    minQuantity: number(item.min_quantity),
-    amount: number(item.amount),
-    sort: number(item.sort),
-  }));
+  const designBySlug = new Map(catalog.designs.map(item => [item.slug, item]));
+  const sizeByCode = new Map(catalog.sizes.map(item => [item.id, item]));
+  const brandBySlug = new Map(catalog.brands.map(item => [item.id, item]));
+  const fixationByKey = new Map(catalog.fixations.map(item => [item.value, item]));
+  const variantByKey = new Map(
+    catalog.variants.map(item => [`${item.designSlug}:${item.size}`, item]),
+  );
+  const tiers: DiscountTier[] = catalog.discountTiers;
 
   const lines: CartQuoteLine[] = items.map(item => {
     const design = designBySlug.get(item.designSlug);
-    const size = sizeByCode.get(item.size);
+    const size = sizeByCode.get(item.size as SizeId);
     const brand = brandBySlug.get(item.brandId);
     const fixation = fixationByKey.get(item.fixation);
     const variant = variantByKey.get(`${item.designSlug}:${item.size}`);
@@ -143,7 +102,7 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
 
     const brandName = item.brandId === 'none' ? 'Без логотипа' : text(brand.name);
     const fixationExtra = fixationExtraForSize(fixation, item.size);
-    const unitPrice = number(variant.price) + (brandPriceBySlug.get(item.brandId) ?? 0) + fixationExtra;
+    const unitPrice = number(variant.price) + number(brand.price) + fixationExtra;
     const version = text(design.version) || item.designSlug;
     const title = brandName === 'Без логотипа'
       ? `Автокейс ${item.size} Carzo ${version}`
@@ -163,8 +122,8 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
       unitPrice,
       quantity: item.quantity,
       lineTotal: unitPrice * item.quantity,
-      inStock: bool(variant.in_stock),
-      quantityDiscountEligible: bool(variant.quantity_discount_eligible),
+      inStock: variant.inStock === true,
+      quantityDiscountEligible: variant.quantityDiscountEligible === true,
     };
   });
 
@@ -174,13 +133,13 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     quantityDiscountEligible: line.quantityDiscountEligible,
   })), tiers);
   const onlyLine = lines.length === 1 ? lines[0] : null;
-  const profile = onlyLine ? shippingBySize.get(onlyLine.item.size) : null;
-  const size = onlyLine ? sizeByCode.get(onlyLine.item.size) : null;
-  const postomatDimensions = profile
-    ? [profile.length_cm, profile.width_cm, profile.height_cm]
-    : [size?.width_cm, size?.height_cm, size?.depth_cm];
-  const postomatWeightAllowed = !profile
-    || (Number(profile.weight_kg) > 0 && Number(profile.weight_kg) <= POSTOMAT_MAX_WEIGHT_KG);
+  const size = onlyLine ? sizeByCode.get(onlyLine.item.size as SizeId) : null;
+  const postomatDimensions = size
+    ? [size.shippingProfile?.lengthCm ?? size.widthCm, size.shippingProfile?.widthCm ?? size.heightCm, size.shippingProfile?.heightCm ?? size.depthCm]
+    : [];
+  const shippingWeight = size?.shippingProfile?.weightKg;
+  const postomatWeightAllowed = !size?.shippingProfile
+    || (Number(shippingWeight) > 0 && Number(shippingWeight) <= POSTOMAT_MAX_WEIGHT_KG);
   const postomatParcelAllowed = fitsPostomatDimensions(postomatDimensions) && postomatWeightAllowed;
 
   return {
@@ -198,7 +157,7 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
       && postomatParcelAllowed,
     ),
     canCheckout: lines.every(line => line.inStock),
-    checkoutPaymentDetails: text(siteSettings[0]?.checkout_payment_details).trim(),
+    checkoutPaymentDetails: text(catalog.checkoutPaymentDetails).trim(),
     verifiedAt: new Date().toISOString(),
   };
 }

@@ -18,6 +18,7 @@ import {
 import { withCheckoutPricing } from '@/lib/cart/checkout-pricing';
 import { runPostOrderSideEffects, safeErrorDetail } from '@/lib/cart/checkout-reliability';
 import { buildLoyaltyAuditNote } from '@/lib/cart/order-audit';
+import { createOrderRecord } from '@/lib/data/orders';
 import type {
   CheckoutInput,
   CheckoutLoyaltyState,
@@ -52,22 +53,6 @@ const DELIVERY_METHOD_LABELS: Record<DeliveryMethod, string> = {
 function orderNumber() {
   const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
   return `CZ-${date}-${randomUUID().replaceAll('-', '').slice(0, 6).toUpperCase()}`;
-}
-
-async function writeOrder(body: Record<string, unknown>) {
-  const url = process.env.DIRECTUS_URL?.replace(/\/$/, '');
-  const token = process.env.DIRECTUS_READ_TOKEN?.trim();
-  if (!url || !token) throw new Error('Directus order writer is not configured');
-  const response = await fetch(`${url}/items/carzo_orders`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    cache: 'no-store',
-  });
-  if (!response.ok) {
-    // Status only — response body may echo customer fields (PII).
-    throw new Error(`Directus order create failed: HTTP ${response.status}`);
-  }
 }
 
 async function resolveDelivery(delivery: CheckoutInput['delivery']): Promise<ResolvedDelivery> {
@@ -166,7 +151,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
 
         const number = orderNumber();
         const orderId = randomUUID();
-        await writeOrder({
+        await createOrderRecord({
           id: orderId,
           status: 'new',
           order_number: number,

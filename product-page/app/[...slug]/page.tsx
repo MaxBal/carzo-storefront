@@ -2,7 +2,7 @@ import { draftMode } from 'next/headers';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import PageRenderer from '@/components/cms/PageRenderer';
-import { getPreviewPage, getPublishedPage } from '@/lib/pages/directus';
+import { getPreviewPage, getPublishedPage } from '@/lib/data/pages';
 import { buildCmsMetadata } from '@/lib/pages/metadata';
 
 interface CmsPageProps {

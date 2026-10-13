@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { parseRouteSegments, buildProductTitle, buildMetaDescription, buildProductUrl, getDesignBySlug } from '@/lib/product-data';
-import { getContentSource } from '@/lib/content/directus';
+import { getContentSource } from '@/lib/data/content';
 import { getProductCatalog, resolveProductContent } from '@/lib/content/resolver';
 import { absoluteSiteUrl } from '@/lib/seo';
 import ProductPageClient from './ProductPageClient';
