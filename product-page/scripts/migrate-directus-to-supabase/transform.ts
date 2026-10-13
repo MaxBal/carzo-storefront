@@ -79,7 +79,8 @@ export function mediaUrl(v: unknown): { url: string | null; fileOnly: boolean } 
 
 export function stripDirectusFileIds<T>(value: T): T {
   if (typeof value === 'string') {
-    if (isUuid(value) || value.includes('/assets/')) return null as unknown as T;
+    const s0 = value as string;
+    if (isUuid(s0) || s0.includes('/assets/')) return null as unknown as T;
     return value;
   }
   if (Array.isArray(value)) {

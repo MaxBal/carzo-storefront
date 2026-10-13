@@ -218,7 +218,7 @@ export function planObjects(
   const out: PlannedObject[] = [];
   const claimedKeys = new Set<string>();
 
-  for (const [uuid, list] of byUuid) {
+  for (const [uuid, list] of Array.from(byUuid.entries())) {
     const meta = list[0].sourceMeta;
     const ext = extensionForMime(meta.type) ?? 'bin';
     if (!isSupportedImageMime(meta.type) && !String(meta.type || '').startsWith('video/')) {
