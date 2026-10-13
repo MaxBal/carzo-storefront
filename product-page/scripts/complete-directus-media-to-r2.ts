@@ -376,7 +376,7 @@ async function main() {
   }
 
   // MIME check
-  for (const [uuid, list] of unique) {
+  for (const [uuid, list] of Array.from(unique)) {
     const mime = list[0].sourceMeta.type;
     if (!isSupportedImageMime(mime)) {
       throw new Error(`BLOCKED: unsupported MIME for ${uuid}: ${mime}`);

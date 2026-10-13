@@ -732,7 +732,7 @@ async function runOrders(client: SupabaseClient, failures: Failures) {
           // normalize numbers
           if (Number(a) === Number(b) && a !== null && b !== null) continue;
           itemMismatches += 1;
-          fail(failures, `order_items ${String(dx.item_key)}.${field} mismatch`);
+          fail(failures, `order_items ${String((dx as Raw).item_key)}.${field} mismatch`);
         }
       }
     }

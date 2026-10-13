@@ -102,9 +102,10 @@ async function readPage(
     .limit(1);
   if (!preview) pageQuery = pageQuery.eq('status', 'published');
 
-  const { data: pageRows, error: pageError } = await preview
+  const pageResult = await (preview
     ? pageQuery.abortSignal(AbortSignal.timeout(8_000))
-    : pageQuery;
+    : pageQuery);
+  const { data: pageRows, error: pageError } = pageResult;
   if (pageError) {
     throw new Error(`pages read failed: ${pageError.message}`);
   }

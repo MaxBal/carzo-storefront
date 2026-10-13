@@ -57,7 +57,7 @@ async function selectAll(
   if (error) {
     throw new CatalogUnavailableError(`Supabase ${table} read failed: ${error.message}`);
   }
-  return (data ?? []) as SupabaseRow[];
+  return (data ?? []) as unknown as SupabaseRow[];
 }
 
 /**
@@ -169,8 +169,8 @@ export function createSupabaseCatalogRepository(): CatalogRepository {
           key: text(row.key),
           designSlug: text((row.designs as SupabaseRow | undefined)?.slug)
             || text((row.design as SupabaseRow | undefined)?.slug),
-          size: text((row.sizes as SupabaseRow | undefined)?.code)
-            || text((row.size as SupabaseRow | undefined)?.code) as SizeId,
+          size: (text((row.sizes as SupabaseRow | undefined)?.code)
+            || text((row.size as SupabaseRow | undefined)?.code)) as SizeId,
           price: int(row.price),
           oldPrice: number(row.old_price),
           inStock: bool(row.in_stock),

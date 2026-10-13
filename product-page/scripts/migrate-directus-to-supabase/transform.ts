@@ -69,10 +69,10 @@ export function relationId(v: unknown): string | null {
 
 /** Stable external URL only. Never Directus file UUID / /assets/ path. */
 export function mediaUrl(v: unknown): { url: string | null; fileOnly: boolean } {
-  const s = asString(v);
+  const s = asString(v) as string | null;
   if (!s) return { url: null, fileOnly: false };
   if (isUuid(s)) return { url: null, fileOnly: true };
-  if (s.includes('/assets/') || s.startsWith('/files/')) return { url: null, fileOnly: true };
+  if (String(s).includes('/assets/') || String(s).startsWith('/files/')) return { url: null, fileOnly: true };
   if (/^https?:\/\//i.test(s)) return { url: s, fileOnly: false };
   return { url: null, fileOnly: true };
 }
@@ -80,7 +80,7 @@ export function mediaUrl(v: unknown): { url: string | null; fileOnly: boolean } 
 export function stripDirectusFileIds<T>(value: T): T {
   if (typeof value === 'string') {
     const s0 = value as string;
-    if (isUuid(s0) || s0.includes('/assets/')) return null as unknown as T;
+    if (isUuid(s0) || String(s0).includes('/assets/')) return null as unknown as T;
     return value;
   }
   if (Array.isArray(value)) {

@@ -340,10 +340,10 @@ export function stripDirectusFileIds<T>(value: T): T {
 }
 
 function relationId(v: unknown): string | null {
-  if (isUuid(v)) return v;
+  if (isUuid(v)) return String(v);
   if (v && typeof v === 'object') {
     const id = (v as Raw).id;
-    return isUuid(id) ? id : null;
+    return isUuid(id) ? String(id) : null;
   }
   return null;
 }

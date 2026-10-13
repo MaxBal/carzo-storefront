@@ -120,10 +120,10 @@ export function classifyMediaRef(input: {
 
 /** Directus file UUID must never become a target media URL. */
 export function isForbiddenTargetMediaUrl(value: string | null | undefined): boolean {
-  const s = asString(value);
+  const s = asString(value) as string | null;
   if (!s) return false;
   if (isDirectusFileUuid(s)) return true;
-  if (s.includes('/assets/') || s.includes('/api/directus-assets/') || s.includes('/files/')) {
+  if (String(s).includes('/assets/') || String(s).includes('/api/directus-assets/') || String(s).includes('/files/')) {
     return true;
   }
   return false;

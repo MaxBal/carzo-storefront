@@ -62,7 +62,7 @@ async function selectRows(table: string, columns: string): Promise<SupabaseRow[]
   if (error) {
     throw new EditorialUnavailableError(`Supabase ${table} read failed: ${error.message}`);
   }
-  return (data ?? []) as SupabaseRow[];
+  return (data ?? []) as unknown as SupabaseRow[];
 }
 
 function parseReviewItems(raw: unknown): ReviewsData['items'] {
