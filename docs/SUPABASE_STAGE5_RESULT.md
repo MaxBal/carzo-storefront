@@ -231,3 +231,100 @@ Repair task items 1–2 completed on `dev`. Item 3 (re-run Stage 5) deliberately
 | Production/main, Vercel env, Supabase schema/data, R2, Stage 6 | untouched |
 
 Status: **ready for Stage 5 re-run** (flip `CATALOG_STORE` / `CONTENT_STORE` / `PAGE_STORE` to `supabase` on Preview and repeat the QA matrix above).
+
+---
+
+# Stage 5 retry — `PASS` (2026-10-31)
+
+Supersedes the "Final status" of the first attempt above (that record is kept verbatim as history).
+
+## Baseline
+
+| Item | Value |
+|---|---|
+| Repo / branch | `MaxBal/carzo-storefront` / `dev` |
+| HEAD | `2d3859f34edfa89a42df10e4c2de0da6d4d9b471` (`fix: repair supabase catalog fixation mapping`) |
+| Stage 4.2 | PASS — adapter fix + 8/8 integration tests + 17/17 Stage 4 regression |
+
+## Cutover actions
+
+1. Preview/dev env inspected (names/targets only; secret values never displayed). Present: `PREVIEW_SECRET`, `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `DIRECTUS_URL`, `DIRECTUS_READ_TOKEN`, `NOVA_POSHTA_API_KEY` (sensitive) + the six store flags (branch-scoped `dev`) + automation-bypass (protection, `isEnvVar`).
+2. Store flags set on Preview (branch `dev`):
+
+| Flag | Value |
+|---|---|
+| `CATALOG_STORE` | `supabase` |
+| `CONTENT_STORE` | `supabase` |
+| `PAGE_STORE` | `supabase` |
+| `ORDER_STORE` | `directus` |
+| `CUSTOMER_STORE` | `directus` |
+| `NOTIFICATION_SETTINGS_STORE` | `directus` |
+
+Effective values verified with `vercel env run -e preview --git-branch dev` (6/6 match).
+
+3. Fresh Preview deployment from git `dev` @ `2d3859f` (redeploy of the git source):
+
+| Item | Value |
+|---|---|
+| Deployment | `dpl_HKhu4Bpce3Kg2iXDppdDJGHwoKZn` |
+| URL | `https://carzo-storefront-qevcd4wph-yevgens-projects.vercel.app` (git alias `carzo-storefront-git-dev-yevgens-projects.vercel.app`) |
+| Commit | `2d3859f34edfa89a42df10e4c2de0da6d4d9b471` |
+| Build | **READY in 58s** — first successful cutover build (the first attempt failed exactly here) |
+
+## QA matrix
+
+All checks ran against the cutover Preview with the automation-bypass header (Deployment Protection stays ON). Price expectations were taken from live Supabase SQL and compared to runtime output.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Homepage `/` | **PASS** | 200, 39 557 B |
+| About `/about` | **PASS** | 200, 43 593 B |
+| 12/12 PDP (`/case/design/{s,m,l,xl}/{2-0,3-0,4-0}`) | **PASS** | 12/12 × 200, each payload contains its base price + old price (S 1790/2100, M 2249/2600, L 2590/2900, XL 2990/3400) |
+| Prices (PDP + cart quote) | **PASS** | quote API unit prices match `variants` rows 12/12 |
+| Logo surcharges | **PASS** | `brandId=audi` + S → unit 2080 = 1790 + 290 (`brands.logo_extra`) |
+| Fixation surcharges | **PASS** | `both` + S/M/L/XL → +60/+80/+100/+120 (1850/2329/2690/3110); `none`/`bottom`/`wall` → +0 |
+| Quantity discounts | **PASS** | qty2 → −200 (`quantity-2`), qty3 → −500 (`quantity-3`); totals = subtotal − discount |
+| Cart (mixed quote) | **PASS** | both+S×1 + none+M×2 → subtotal 6348, discount 500, total 5848, itemsQuantity 3. Checkout submission intentionally not exercised (creates real orders — out of scope) |
+| Nova Poshta (read-only) | **PASS** | `/api/nova-poshta/cities?q=…` 200 (2 rows), `/api/nova-poshta/points?city=…&method=BRANCH` 200 (20 rows) — also proves `NOVA_POSHTA_API_KEY` is injected at runtime |
+| Car mats `/catalog-carmat` | **PASS** | 200, 31 605 B |
+| Modals (benefit content store) | **PASS** | benefit modal content embedded in page payload (content store read) |
+| CMS published pages | **PASS** | `/delivery-and-payment` 200 (35 028 B) |
+| Draft pages not public | **PASS** | `/privacy-policy` → 404 |
+| Draft preview | **PASS** (limited) | `/api/draft` rejects missing/wrong secret → 401/401; `getPreviewPage('3d2d625f-…')` verified against the Supabase pages store (returns draft `privacy-policy`). Positive secret comparison not exercised: `PREVIEW_SECRET` is `sensitive` and unreadable by design (no rotation performed) |
+| `/sitemap.xml` | **PASS** | 200, contains all 12 PDP URLs |
+| `/llms.txt` | **PASS** | 200, 3 021 B |
+| Cloudflare R2 media | **PASS** | media served via `https://media.carzo.com.ua/…` (R2 custom domain); 6/6 sampled files 200 (selector + brand logos) |
+| Runtime logs | **PASS** (limited) | deployment events: zero catalog/runtime errors, build completed clean; `vercel logs` 30-min window: no error entries. Per-request log history not retained on Hobby plan (infrastructure limitation, same class as the first attempt) |
+
+## Directus reads in switched domains
+
+**No unexpected Directus reads.** Evidence chain:
+
+1. Flags effective at runtime (`vercel env run`): `CATALOG_STORE`/`CONTENT_STORE`/`PAGE_STORE` = `supabase`.
+2. The first attempt proved these exact build paths execute the Supabase catalog adapter (prerender of `/sitemap.xml`, `/llms.txt`, PDPs failed on the adapter defect). This build with the same paths **passed** → Supabase reads served the build; no fallback was needed.
+3. The adapter has no silent cross-backend fallback (fail-closed, enforced by the Stage 4.2 integration test).
+4. Quote endpoints returned values matching live Supabase SQL reference (prices, surcharges, tiers).
+5. No `CatalogUnavailableError`/`UNAVAILABLE`/fetch errors in logs.
+
+Retained Directus by design (unchanged): order writer (`ORDER_STORE`), customer store (`CUSTOMER_STORE`), notification settings (`NOTIFICATION_SETTINGS_STORE`), legacy `lib/content/directus.ts`, `lib/pages/directus.ts`, `/api/directus-assets/[id]` as rollback paths.
+
+## Production / safety
+
+| Check | Result |
+|---|---|
+| Production deployment | unchanged — `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9` READY @ `df8f3531ff9de2408525ac5caf6844d8c6e4d340` (identical before & after) |
+| Production env / domain | untouched |
+| Supabase data/schema writes | none |
+| R2 mutations | none |
+| Orders / customers created | none |
+| Adapter rewrites in Stage 5 | none |
+| Secret values printed | none (metadata only) |
+| Stage 6 started | no |
+
+Observation (pre-existing, out of scope): PDP payload references `https://carzo-eight.vercel.app/...` in canonical/OG-style URLs — staging project URL in site content; not introduced by this cutover.
+
+## Final status
+
+**Stage 5 retry: `PASS`** — Preview/dev left on Supabase reads (`CATALOG_STORE`/`CONTENT_STORE`/`PAGE_STORE` = `supabase`). Rollback remains one flag flip + redeploy away.
+
+Next step: Stage 6 (atomic Supabase order writes, checkout idempotency, notification reliability) when authorized.
