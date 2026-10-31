@@ -49,9 +49,41 @@ export async function POST(request: Request) {
   const provided = request.headers.get('x-stage6-nonce')?.trim() ?? '';
   if (expected.length < 16 || !nonceMatches(expected, provided)) return hidden();
 
+  let diagnoseOnly = false;
+  try {
+    const body = await request.json() as { diagnose?: unknown };
+    diagnoseOnly = body?.diagnose === true;
+  } catch {
+    diagnoseOnly = false;
+  }
+
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim() ?? '';
+  const tokenDiagnostics = {
+    token_present: token.length > 0,
+    token_length: token.length,
+    token_shape_ok: /^\d+:[A-Za-z0-9_-]{20,}$/.test(token),
+    token_has_stray_quotes_or_space: /["'\s]/.test(token),
+    telegram_getMe_ok: false as boolean,
+    telegram_getMe_status: null as number | null,
+  };
+  if (token) {
+    try {
+      const me = await fetch(`https://api.telegram.org/bot${token}/getMe`, { cache: 'no-store' });
+      tokenDiagnostics.telegram_getMe_status = me.status;
+      const mePayload = await me.json() as { ok?: boolean };
+      tokenDiagnostics.telegram_getMe_ok = mePayload.ok === true;
+    } catch {
+      tokenDiagnostics.telegram_getMe_status = null;
+    }
+  }
+  if (diagnoseOnly) {
+    return Response.json(
+      { mode: 'diagnose', environment: process.env.VERCEL_ENV, ...tokenDiagnostics },
+      { headers: { 'Cache-Control': 'no-store' } },
+    );
+  }
   if (!token) {
-    return Response.json({ error: 'token unavailable in runtime' }, { status: 503 });
+    return Response.json({ error: 'token unavailable in runtime', ...tokenDiagnostics }, { status: 503 });
   }
 
   // Recipients come from TELEGRAM_TEST_CHAT_IDS alone. The shared
@@ -101,6 +133,7 @@ export async function POST(request: Request) {
       recipientCount: decision.chatIds.length,
       delivered: results.filter(r => r.ok).length,
       results,
+      ...tokenDiagnostics,
     },
     { headers: { 'Cache-Control': 'no-store' } },
   );
