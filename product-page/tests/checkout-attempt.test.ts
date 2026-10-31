@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   computeRequestFingerprint,
   isCheckoutAttemptId,
+  isFingerprintBound,
   newCheckoutAttemptId,
 } from '../lib/cart/checkout-attempt';
 
@@ -101,5 +102,30 @@ describe('request fingerprint', () => {
         ],
       }),
     );
+  });
+});
+
+describe('fingerprint replay binding', () => {
+  it('binds only an exact match', () => {
+    assert.equal(isFingerprintBound('abc', 'abc'), true);
+    assert.equal(isFingerprintBound('abc', 'abd'), false);
+    assert.equal(isFingerprintBound('abc', 'ABC'), false);
+  });
+
+  it('never binds when the stored fingerprint is missing', () => {
+    // A NULL stored fingerprint cannot verify intent; treating it as a match
+    // let a retry answer for a different cart than the one that created the
+    // order. The RPC rejects the same case (ATTEMPT_FINGERPRINT_MISMATCH).
+    assert.equal(isFingerprintBound(null, 'abc'), false);
+    assert.equal(isFingerprintBound(undefined, 'abc'), false);
+    assert.equal(isFingerprintBound('', 'abc'), false);
+    assert.equal(isFingerprintBound(null, null), false);
+    assert.equal(isFingerprintBound('', ''), false);
+  });
+
+  it('never binds when the replayed fingerprint is missing', () => {
+    assert.equal(isFingerprintBound('abc', null), false);
+    assert.equal(isFingerprintBound('abc', undefined), false);
+    assert.equal(isFingerprintBound('abc', ''), false);
   });
 });

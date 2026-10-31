@@ -52,3 +52,17 @@ export function computeRequestFingerprint(input: FingerprintInput): string {
   ].join('\n');
   return createHash('sha256').update(canonical, 'utf8').digest('hex');
 }
+
+/**
+ * Whether a replayed attempt is bound to the original material intent.
+ *
+ * A missing fingerprint on either side cannot verify anything, so it must
+ * never count as a match — otherwise a retry could silently answer for a
+ * different cart than the one that created the order.
+ */
+export function isFingerprintBound(
+  stored: string | null | undefined,
+  request: string | null | undefined,
+): boolean {
+  return Boolean(stored) && stored === request;
+}

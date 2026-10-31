@@ -17,7 +17,7 @@ import {
 } from '@/lib/cart/customers';
 import { withCheckoutPricing } from '@/lib/cart/checkout-pricing';
 import { runPostOrderSideEffects, safeErrorDetail } from '@/lib/cart/checkout-reliability';
-import { computeRequestFingerprint, isCheckoutAttemptId } from '@/lib/cart/checkout-attempt';
+import { computeRequestFingerprint, isCheckoutAttemptId, isFingerprintBound } from '@/lib/cart/checkout-attempt';
 import { resolveOrderStoreBackend } from '@/lib/data/config';
 import {
   OrderStoreError,
@@ -242,9 +242,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
     try {
       const existing = await findOrderByAttemptId(attemptId);
       if (existing) {
-        const bound = !existing.requestFingerprint
-          || existing.requestFingerprint === requestFingerprint;
-        if (!bound) {
+        if (!isFingerprintBound(existing.requestFingerprint, requestFingerprint)) {
           return { ok: false, code: 'ATTEMPT_REUSED', message: ATTEMPT_REUSED_MESSAGE };
         }
         return {
