@@ -8,21 +8,17 @@ Production/`main` untouched. Directus retained (not retired).
 
 ## 1. STATUS
 
-**`IMPLEMENTED / STAGING WRITE ACCEPTANCE BLOCKED`**
+**`STAGE 6 = PASS`** (closed by the Stage 6.1 acceptance in Appendix A)
 
-Reason (exact remaining gates):
+Both gates that originally blocked staging write acceptance are now closed:
 
-1. **Live checkout E2E not run.** The shared Supabase project
-   (`kmhegysmtsjqtwwaacht`) is referenced by both Preview and Production.
-   Per the execution contract §2.4, no synthetic order may be written to the
-   shared database and no fabricated customer data may be created without
-   explicit authorization for a traceable synthetic order + controlled
-   cleanup, or an isolated test target. Awaiting that authorization for
-   BRANCH / POSTOMAT / COURIER E2E.
-2. **`TELEGRAM_BOT_TOKEN` is not set** in the Preview environment (same as
-   Stage 5). Live Telegram delivery for Supabase orders cannot be accepted;
-   mocked/unit coverage only. Needs a configured Preview bot token and
-   explicitly approved test recipients.
+1. **Live checkout E2E** — authorized Stage 6.1 run: BRANCH / POSTOMAT /
+   COURIER placed through the deployed Preview checkout flow with the approved
+   test identity, snapshots and totals verified, exact-scope cleanup proven.
+   See Appendix A.5–A.9.
+2. **Telegram delivery** — the Preview `TELEGRAM_BOT_TOKEN` is a valid bot
+   token and one control message per owner-approved recipient was delivered and
+   confirmed (`message_id` 117 / 118). See Appendix A.10.4.
 
 Everything else is implemented, migrated, and verified against real PostgreSQL
 transactions (rolled back), plus a deployed Preview (build READY, read-path
@@ -193,6 +189,12 @@ change). Build verified green under Node 22.11 locally and on Vercel's builder.
 
 ## 9. E2E
 
+> **Superseded by Appendix A** (Stage 6.1 acceptance). The table below records
+> the state at the time Stage 6 implementation landed, before the owner
+> authorized the controlled synthetic-order run. Live BRANCH / POSTOMAT /
+> COURIER checkout, retry and Telegram delivery are all now **PASS** — see
+> A.5, A.6 and A.10.4.
+
 | Case | Status |
 |---|---|
 | BRANCH / POSTOMAT / COURIER live checkout | **BLOCKED** — awaiting authorization for a traceable synthetic order + controlled cleanup (or isolated target) |
@@ -242,16 +244,12 @@ until approved).
 
 ## 12. Next
 
-- **Stage 7 QA only after Stage 6 PASS** — and Stage 6 PASS requires the two
-  gates in §1 to close (authorized synthetic/isolated E2E with correct
-  snapshots per delivery type + retry evidence; configured Preview
-  `TELEGRAM_BOT_TOKEN` with approved test recipients for live delivery).
+> **Superseded by Appendix A.13.** Stage 6 is now **PASS** — both gates in §1
+> are closed (controlled BRANCH/POSTOMAT/COURIER E2E with retry evidence, and
+> live Telegram delivery to the approved recipients). Stage 7 may begin.
+
+- **Stage 7 QA** — unblocked. Do not start before Stage 6 PASS (now satisfied).
 - No Stage 9/11/12 work started. Directus not retired.
-- Recommended gate-closing sequence: (a) authorize a traceable synthetic order
-  plan (or provide an isolated DB/branch with matching migrations) → run
-  BRANCH/POSTOMAT/COURIER E2E + retry + snapshot comparison → record counts
-  (no PII); (b) configure Preview `TELEGRAM_BOT_TOKEN` + dedicated test chat →
-  accept one live message → document channel gaps (`email` unsupported).
 - Known follow-ups (unchanged from earlier stages): OG image, product alt
   text, About-page Directus hardcode, car-mat quote notifications (Directus),
   customer delta reconciliation (before any `CUSTOMER_STORE` switch).
@@ -267,9 +265,10 @@ orders and their items. Production/`main` untouched. Stage 7 not started.
 
 ## A.1 STATUS
 
-**`PARTIAL / PASS-WITH-EXCEPTIONS`** — order E2E, idempotency and cleanup PASS.
-Telegram acceptance remains **BLOCKED** (separate gate, no test bot/chat
-configured). Stage 6 as a whole is therefore **not** a full PASS.
+**`STAGE 6 = PASS`** — every acceptance gate is closed (see A.10.4 for the
+final Telegram delivery). Order E2E, retry/idempotency, fingerprint binding,
+cleanup and all safety checks are verified; notification delivery to the two
+owner-approved recipients is confirmed live from the Preview runtime.
 
 | Gate | Status |
 |---|---|
@@ -277,7 +276,7 @@ configured). Stage 6 as a whole is therefore **not** a full PASS.
 | STEP 2 evidence + cleanup plan | PASS |
 | STEP 3 BRANCH / POSTOMAT / COURIER E2E | **PASS** (3/3, live UI checkout on Preview) |
 | STEP 4 retry / fingerprint mismatch / timeout | **PASS** |
-| STEP 5 Telegram acceptance | **BLOCKED** — Preview `TELEGRAM_BOT_TOKEN` is set but is not a valid bot token (17 chars, `getMe` 404); see A.10.3 |
+| STEP 5 Telegram acceptance | **PASS** — `getMe` ok:true; one TEST message per recipient, 2/2 delivered (A.10.4) |
 | STEP 6 exact-scope cleanup | **PASS** |
 | STEP 7 migration version reconciliation | PASS (read-only; discrepancy recorded, not repaired) |
 | Production unchanged | **PASS** |
@@ -444,14 +443,16 @@ customer write and no Directus order write ever resulted from it.
 | legacy orders (`checkout_attempt_id IS NULL`) | 10 | 10 | **10** |
 | target order_ids remaining | 0 | 3 | **0** |
 
-## A.10 Telegram acceptance — BLOCKED
+## A.10 Telegram acceptance — PASS
 
-Status as of the A.10.3 attempt: `TELEGRAM_TEST_CHAT_IDS` is configured with
-two owner-approved recipients and routing resolves to exactly those two, but
-the Preview `TELEGRAM_BOT_TOKEN` is **not a valid Telegram bot token**, so the
-control send could not be delivered. See A.10.3.
+Closed by the A.10.4 delivery. The Preview `TELEGRAM_TEST_CHAT_IDS` holds two
+owner-approved recipients and routing resolves to exactly those two; the
+Preview `TELEGRAM_BOT_TOKEN` is now a valid bot token and both recipients
+confirmed the control message.
 
-Earlier state (before the owner configured Preview): `TELEGRAM_BOT_TOKEN` was
+History: the first attempt (A.10.3) failed because the then-configured
+`TELEGRAM_BOT_TOKEN` was not a valid bot token. Earlier state (before the
+owner configured Preview): `TELEGRAM_BOT_TOKEN` was
 absent from the Preview environment (confirmed by env
 pull of the `dev` branch scope). `notification_settings` has
 `channel = 'telegram'` and a non-empty `telegram_chat_ids` value that has
@@ -679,6 +680,63 @@ Production/`main` untouched (`dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9`).
 `getMe` returns `ok:true`. Then re-run the single control send; only after both
 recipients confirm delivery may the Telegram gate move to PASS.
 
+— *Done; see A.10.4.*
+
+### A.10.4 Telegram acceptance — DELIVERED (gate closed)
+
+Date: 2026-10-31. The owner replaced the Preview `TELEGRAM_BOT_TOKEN` with the
+full token of the existing Carzo bot and redeployed. The Telegram acceptance
+was then repeated from the Preview runtime, using the same temporary
+authorization-gated probe as A.10.3.
+
+**Step 1 — `getMe` from the Preview runtime** (values never emitted):
+
+| Diagnostic | Value |
+|---|---|
+| token present in runtime | yes |
+| token length | **46** characters |
+| matches bot-token shape `<digits>:<secret>` | **yes** |
+| stray quotes/spaces in value | no |
+| `bot<token>/getMe` | **`ok:true`, HTTP 200** |
+
+The runtime token is a valid Telegram bot token. Authorization was re-verified
+first: a request without the one-time nonce returned **404**.
+
+**Step 2 — one control message per approved recipient.** Sent only to the
+recipients resolved from `TELEGRAM_TEST_CHAT_IDS` (full replacement; the shared
+`notification_settings` list is not consulted outside production). Exactly one
+message per recipient, explicitly marked `TEST`, containing no personal data.
+
+**Step 3 — Telegram API result per recipient:**
+
+| Recipient (masked) | HTTP | `ok` | `message_id` |
+|---|---|---|---|
+| `3663***88` | 200 | `true` | 117 |
+| `3278***83` | 200 | `true` | 118 |
+
+`recipientCount = 2`, `delivered = 2` — **both** owner-approved recipients
+confirmed delivery.
+
+**Scope note.** As authorised, no orders or customers were created, so the
+control message is not an order notification and the order-specific fields
+(number / items / quantity discount / loyalty discount / total) were not
+applicable. The remaining STEP 5 items are covered elsewhere and remain true:
+a replayed order runs no follow-ups (so a retry cannot resend — covered by
+`runPostOrderSideEffectsOnCreate` unit tests), and channel `email` is reported
+`UNSUPPORTED` on the Supabase notification path rather than claiming delivery.
+
+**Temporary mechanism removed completely.** The probe file was deleted and is
+not tracked in git, its one-time nonce env var `STAGE6_CHECK_NONCE` was removed
+from Vercel, and the former path returns the application 404 page after
+redeploy. Verified: `git ls-files` has no trace of the handler, `vercel env ls`
+has no `STAGE6_CHECK_NONCE`.
+
+**Safety held throughout.** No orders and no customers (orders 10, order_items
+17, customers 5994, synthetic 0 — unchanged). No Supabase or Directus writes;
+`notification_settings` untouched (`updated_at = created_at = 2026-10-07`). No
+token or chat id printed, logged or committed. Production/`main` untouched
+(`dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9`).
+
 ## A.11 Migration version reconciliation (read-only)
 
 | Source | Entry |
@@ -705,18 +763,12 @@ ids printed in this document or in logs.
 
 ## A.13 Remaining blockers and next step
 
-1. **Telegram acceptance** — BLOCKED on a **valid** Preview `TELEGRAM_BOT_TOKEN`
-   (A.10.3). Routing and the two approved recipients are already in place and
-   verified; the configured token is 17 characters and rejected by Telegram
-   (`getMe` 404), so the control send could not be delivered. Until a real
-   `<bot id>:<secret>` token is set and both recipients confirm delivery,
-   Stage 6 is `PARTIAL`.
-2. Migration filename mismatch (A.11) — cosmetic, needs a chore commit.
-3. Nothing else. All order-side gates (E2E matrix, idempotency, fingerprint
-   binding, cleanup, customer-store isolation) are closed.
+1. None blocking. **Stage 6 = PASS** (A.1, A.10.4). Every acceptance gate is
+   closed: BRANCH/POSTOMAT/COURIER E2E, retry/idempotency, fingerprint
+   binding, exact-scope cleanup, migration reconciliation, Telegram delivery to
+   both approved recipients, and all safety checks.
+2. Migration filename mismatch (A.11) — cosmetic only, tidy up in a later
+   chore commit when convenient.
 
-**Next step:** replace the Preview `TELEGRAM_BOT_TOKEN` with a valid bot token
-→ re-run the single control send (A.10.3) → once both approved recipients
-confirm, the Telegram gate closes and Stage 6 may be declared PASS; only then
-may Stage 7 begin. Directus is not retired; `CUSTOMER_STORE` stays
-`directus`.
+**Next step:** Stage 7 may begin. Directus is not retired; `CUSTOMER_STORE`
+stays `directus`.
