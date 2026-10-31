@@ -679,6 +679,20 @@ Do not execute Stage 8 or Stage 9.
 
 ---
 
+## 13. Post-QA git / deployment state
+
+| Item | Value |
+|---|---|
+| QA doc commit | `944c085` — `docs: record stage 7 full staging QA` (documentation only, 1 file, +700 lines) |
+| Pushed | `3d5ef76..944c085` → `origin/dev` only; `main` untouched |
+| Preview rebuilt from the docs push | `dpl_6ZjUJjzgoRwV3SebjBrGw1f931nC` → `carzo-storefront-7xf6jwih4-yevgens-projects.vercel.app`, **READY** (build log `Branch: dev, Commit: 944c085`) |
+| Preview git alias | `carzo-storefront-git-dev-yevgens-projects.vercel.app` now resolves to `dpl_6ZjUJjz…` |
+| Deployment actually QA'd in this run | `dpl_E4B5diSxEnfpofb166gYi7zncthu` @ `3d5ef76` (docs-only diff since; app runtime identical) |
+| Production after | `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9`, **Ready**, unchanged (same id / creation timestamp as §1) |
+| Untracked left alone | `.DS_Store` ×3, `.playwright-cli/` (local tooling logs) — not committed |
+
+---
+
 ## Appendix A — HTTP matrix machine-readable output
 
 Full per-route JSON (status, title, h1, canonical, og:url, og:image, prices,
