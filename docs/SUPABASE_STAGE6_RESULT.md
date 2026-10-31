@@ -277,7 +277,7 @@ configured). Stage 6 as a whole is therefore **not** a full PASS.
 | STEP 2 evidence + cleanup plan | PASS |
 | STEP 3 BRANCH / POSTOMAT / COURIER E2E | **PASS** (3/3, live UI checkout on Preview) |
 | STEP 4 retry / fingerprint mismatch / timeout | **PASS** |
-| STEP 5 Telegram acceptance | **BLOCKED** — no `TELEGRAM_BOT_TOKEN`, no approved test chat |
+| STEP 5 Telegram acceptance | **BLOCKED** — Preview `TELEGRAM_BOT_TOKEN` is set but is not a valid bot token (17 chars, `getMe` 404); see A.10.3 |
 | STEP 6 exact-scope cleanup | **PASS** |
 | STEP 7 migration version reconciliation | PASS (read-only; discrepancy recorded, not repaired) |
 | Production unchanged | **PASS** |
@@ -446,7 +446,13 @@ customer write and no Directus order write ever resulted from it.
 
 ## A.10 Telegram acceptance — BLOCKED
 
-`TELEGRAM_BOT_TOKEN` is absent from the Preview environment (confirmed by env
+Status as of the A.10.3 attempt: `TELEGRAM_TEST_CHAT_IDS` is configured with
+two owner-approved recipients and routing resolves to exactly those two, but
+the Preview `TELEGRAM_BOT_TOKEN` is **not a valid Telegram bot token**, so the
+control send could not be delivered. See A.10.3.
+
+Earlier state (before the owner configured Preview): `TELEGRAM_BOT_TOKEN` was
+absent from the Preview environment (confirmed by env
 pull of the `dev` branch scope). `notification_settings` has
 `channel = 'telegram'` and a non-empty `telegram_chat_ids` value that has
 **not** been owner-approved as a test recipient (it is the production team's
@@ -590,13 +596,88 @@ the running build. Confirm the deployment is `READY` before testing.
 - A replayed order (`created:false`) runs no follow-ups, so a retry cannot send
   a second message.
 
-**7. Acceptance send (still not executed)**
+**7. Acceptance send**
 
-Only after the owner explicitly approves the routing: trigger **exactly one**
-controlled notification, verify order number / items / quantity discount /
-loyalty discount / total and the absence of Directus admin links, confirm a
-repeat attempt does not resend, and confirm channel `email` is reported
-`UNSUPPORTED`. Then the Telegram gate may move from BLOCKED to PASS.
+See A.10.3 — executed against the Preview runtime and **not delivered**; the
+configured `TELEGRAM_BOT_TOKEN` is not a valid bot token. The Telegram gate
+remains **BLOCKED**.
+
+### A.10.3 Telegram acceptance attempt — BLOCKED (invalid bot token)
+
+Date: 2026-10-31. Owner authorised one controlled TEST message to the two
+approved recipients, sent from the Preview runtime using the runtime
+`TELEGRAM_BOT_TOKEN`, without creating orders and without changing Supabase or
+Directus.
+
+**Configuration verified (no secret values disclosed):**
+
+| Check | Result |
+|---|---|
+| `VERCEL_ENV` on Preview (`dev`) | `preview` |
+| `ORDER_STORE` / `NOTIFICATION_SETTINGS_STORE` | `supabase` / `supabase` |
+| `TELEGRAM_BOT_TOKEN` present in Preview runtime | yes (Secret — not retrievable via `vercel env pull`/`env run`, used only in-runtime) |
+| `TELEGRAM_TEST_CHAT_IDS` | 2 entries, both valid numeric chat ids |
+
+**Routing verified with production code and live values.**
+`resolveTelegramRecipients` (the function the Supabase notification path uses)
+was evaluated with the real Preview env and the real `notification_settings`
+row: it resolves to **exactly** the two `TELEGRAM_TEST_CHAT_IDS` entries
+(`ROUTING_EQUALS_DECLARED = true`), full replacement — the shared
+`notification_settings` list is never merged in. So notifications are directed
+only to the two approved recipients.
+
+Observed and recorded: the two approved recipients are **identical** to the
+existing `notification_settings.telegram_chat_ids` entries (same SHA of the
+sorted id set, overlap 2/2). `notification_settings` itself was never modified
+(`updated_at = created_at = 2026-10-07 13:32:21`). Consequence: a Preview send
+and a Production send would reach the same two destinations — the isolation
+property holds in code but is not exercised by distinct destinations in this
+configuration.
+
+**Controlled send attempted from the Preview runtime.** A temporary
+authorization-gated handler was deployed to Preview so the send would use the
+runtime secret exactly as production does. It was triple-gated — Vercel
+Deployment Protection, `VERCEL_ENV === 'preview'` only, and a one-time nonce
+held in a temporary Preview env var — never wrote to Supabase or Directus,
+never created orders, and emitted only masked chat references. Authorization
+was verified: a request with no nonce and a request with a wrong nonce both
+returned **404**.
+
+**Delivery result — NOT DELIVERED.** Exactly one control message per recipient
+was attempted (2 attempts, 2 recipients). Telegram rejected both with
+**HTTP 404**. Runtime diagnostics (values never emitted):
+
+| Diagnostic | Value |
+|---|---|
+| token present in runtime | yes |
+| token length | **17** characters |
+| matches bot-token shape `<digits>:<35 chars>` | **no** |
+| stray quotes/spaces in value | no |
+| `bot<token>/getMe` | **404**, `ok:false` |
+
+A real Telegram bot token is ~46 characters (`<bot id>:<35-char secret>`). The
+configured value is 17 characters and Telegram's `getMe` rejects it, so the
+Preview `TELEGRAM_BOT_TOKEN` is **not a valid bot token**. Zero messages were
+delivered to either recipient.
+
+**Temporary mechanism removed completely.** The handler file was deleted and
+untracked from git, its one-time nonce env var `STAGE6_CHECK_NONCE` was removed
+from Vercel, and the redeployed Preview returns the application 404 page for
+the former path. Verified: `git ls-files` has no trace of the handler,
+`vercel env ls` has no `STAGE6_CHECK_NONCE`, and a POST to the former path
+returns `404 NEXT_NOT_FOUND`.
+
+**Safety held throughout.** No orders and no customers were created (orders
+10, order_items 17, customers 5994, synthetic 0 — unchanged). No Supabase or
+Directus writes. No real personal data was sent — the control text carries only
+an explicit TEST marking. No token or chat id was printed, logged or committed.
+Production/`main` untouched (`dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9`).
+
+**Remaining action to close the gate.** Replace the Preview
+`TELEGRAM_BOT_TOKEN` with a **valid** bot token (the full
+`<bot id>:<secret>` string from BotFather, ~46 characters) and confirm
+`getMe` returns `ok:true`. Then re-run the single control send; only after both
+recipients confirm delivery may the Telegram gate move to PASS.
 
 ## A.11 Migration version reconciliation (read-only)
 
@@ -624,13 +705,18 @@ ids printed in this document or in logs.
 
 ## A.13 Remaining blockers and next step
 
-1. **Telegram acceptance** — BLOCKED on a dedicated Preview test bot token and
-   an approved test chat id (A.10). Until then Stage 6 is `PARTIAL`.
+1. **Telegram acceptance** — BLOCKED on a **valid** Preview `TELEGRAM_BOT_TOKEN`
+   (A.10.3). Routing and the two approved recipients are already in place and
+   verified; the configured token is 17 characters and rejected by Telegram
+   (`getMe` 404), so the control send could not be delivered. Until a real
+   `<bot id>:<secret>` token is set and both recipients confirm delivery,
+   Stage 6 is `PARTIAL`.
 2. Migration filename mismatch (A.11) — cosmetic, needs a chore commit.
 3. Nothing else. All order-side gates (E2E matrix, idempotency, fingerprint
    binding, cleanup, customer-store isolation) are closed.
 
-**Next step:** configure the Preview test bot + chat → run the single
-controlled Telegram acceptance → then Stage 6 may be declared PASS and only
-then may Stage 7 begin. Directus is not retired; `CUSTOMER_STORE` stays
+**Next step:** replace the Preview `TELEGRAM_BOT_TOKEN` with a valid bot token
+→ re-run the single control send (A.10.3) → once both approved recipients
+confirm, the Telegram gate closes and Stage 6 may be declared PASS; only then
+may Stage 7 begin. Directus is not retired; `CUSTOMER_STORE` stays
 `directus`.
