@@ -25,6 +25,10 @@ export interface CartContextValue {
   replaceQuote: (quote: CartQuote) => void;
   completeOrder: (confirmation: OrderConfirmation) => void;
   closeConfirmation: () => void;
+  /** Stable checkout attempt id for the current purchase intent (client-generated UUID). */
+  getCheckoutAttemptId: () => string;
+  /** Invalidate the current attempt id (new purchase intent / replay mismatch). */
+  resetCheckoutAttemptId: () => void;
 }
 
 export const CartContext = createContext<CartContextValue | null>(null);

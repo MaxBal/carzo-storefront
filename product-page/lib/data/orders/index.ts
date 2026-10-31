@@ -1,9 +1,22 @@
 import { resolveOrderStoreBackend } from '../config';
 import { createDirectusOrderRepository } from './directus';
 import { createSupabaseOrderRepository } from './supabase';
-import type { OrderRepository, OrderWritePayload } from './types';
+import type {
+  CreateOrderResult,
+  ExistingOrderRef,
+  OrderRepository,
+  OrderSnapshot,
+} from './types';
 
-export type { OrderRepository, OrderWritePayload } from './types';
+export type {
+  CreateOrderResult,
+  ExistingOrderRef,
+  OrderItemSnapshot,
+  OrderLoyaltySnapshot,
+  OrderRepository,
+  OrderSnapshot,
+  OrderStoreBackend,
+} from './types';
 export { OrderStoreError } from './types';
 
 export function createOrderRepository(
@@ -22,6 +35,18 @@ export function createOrderRepository(
 }
 
 /** Stable order persistence facade for checkout. */
-export async function createOrderRecord(body: OrderWritePayload): Promise<void> {
+export async function createOrderRecord(
+  body: OrderSnapshot,
+): Promise<CreateOrderResult> {
   return createOrderRepository(resolveOrderStoreBackend()).createOrder(body);
+}
+
+/**
+ * Pre-pricing replay probe. Returns null when the backend has no order for
+ * this attempt id (or the backend has no attempt-id support).
+ */
+export async function findOrderByAttemptId(
+  attemptId: string,
+): Promise<ExistingOrderRef | null> {
+  return createOrderRepository(resolveOrderStoreBackend()).findOrderByAttemptId(attemptId);
 }

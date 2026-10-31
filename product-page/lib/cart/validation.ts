@@ -40,4 +40,5 @@ export const checkoutSchema = z.object({
     deliveryPointSchema('POSTOMAT'),
     courierDeliverySchema,
   ]),
+  checkoutAttemptId: z.string().uuid().optional(),
 });

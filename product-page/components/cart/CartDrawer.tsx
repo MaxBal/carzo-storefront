@@ -170,6 +170,7 @@ export default function CartDrawer() {
     setSubmitting(true);
     setSubmitError(null);
     const loyaltyPhoneDigits = loyaltyPhone.replace(/\D/g, '');
+    const checkoutAttemptId = cart.getCheckoutAttemptId();
     let result: CheckoutResult;
     try {
       result = await createOrder({
@@ -182,6 +183,7 @@ export default function CartDrawer() {
         customerComment,
         contactMethod,
         delivery,
+        checkoutAttemptId,
       });
     } catch {
       result = { ok: false, code: 'FAILED', message: 'Не вдалося оформити замовлення. Кошик збережено.' };
@@ -190,6 +192,11 @@ export default function CartDrawer() {
     if (result.ok) {
       cart.completeOrder({ orderNumber: result.orderNumber, total: result.total });
       return;
+    }
+    if (result.code === 'ATTEMPT_REUSED') {
+      // The attempt id is bound to a different already-placed order.
+      // Start a fresh attempt so the next submit can succeed.
+      cart.resetCheckoutAttemptId();
     }
     if (result.code === 'PRICE_CHANGED' || result.code === 'LOYALTY_CHANGED') {
       cart.replaceQuote(result.quote);

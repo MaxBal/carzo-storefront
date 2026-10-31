@@ -5,6 +5,8 @@ import {
   type NotificationOrderItem,
 } from '@/lib/cart/order-items-summary';
 import { formatOrderDiscountsSummary } from '@/lib/cart/order-discounts-summary';
+import { resolveOrderStoreBackend } from '@/lib/data/config';
+import { getNotificationSettingsRepository } from '@/lib/data/notifications';
 
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
@@ -157,9 +159,7 @@ function applyDiscountsSummaryFallback(
   return `${rendered}\n${discountsSummary}`;
 }
 
-function renderedMessage(settings: NotificationSettings, order: NewOrderNotification) {
-  const { url } = directusConfig();
-  const orderUrl = `${url}/admin/content/carzo_orders/${encodeURIComponent(order.id)}`;
+function renderedMessage(settings: NotificationSettings, order: NewOrderNotification, orderUrl: string) {
   const discountsSummary = formatOrderDiscountsSummary({
     quantityDiscount: order.quantityDiscount,
     loyaltyDiscountAmount: order.loyaltyDiscountAmount,
@@ -218,21 +218,7 @@ async function sendDirectusMessage(
   if (!response.ok) throw new Error(`Directus email notification failed: ${response.status}`);
 }
 
-async function sendTelegram(
-  settings: NotificationSettings,
-  subject: string,
-  message: string,
-  orderUrl?: string,
-) {
-  const botSettings = await readTelegramBotSettings();
-  const token = botSettings.token || process.env.TELEGRAM_BOT_TOKEN?.trim();
-  const chatIds = botSettings.chatIds.length > 0
-    ? botSettings.chatIds
-    : settings.telegramChatIds;
-  if (!token) throw new Error('Telegram bot token is not configured');
-  if (chatIds.length === 0) throw new Error('Telegram chat recipients are not configured');
-  const suffix = orderUrl && !message.includes(orderUrl) ? `\n\n${orderUrl}` : '';
-  const text = `${subject}\n\n${message}${suffix}`.slice(0, 4_000);
+async function sendTelegramToChatIds(token: string, chatIds: string[], text: string) {
   try {
     await Promise.all(chatIds.map(async (chatId) => {
       const response = await fetchWithTimeout(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -251,6 +237,24 @@ async function sendTelegram(
   }
 }
 
+async function sendTelegram(
+  settings: NotificationSettings,
+  subject: string,
+  message: string,
+  orderUrl?: string,
+) {
+  const botSettings = await readTelegramBotSettings();
+  const token = botSettings.token || process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatIds = botSettings.chatIds.length > 0
+    ? botSettings.chatIds
+    : settings.telegramChatIds;
+  if (!token) throw new Error('Telegram bot token is not configured');
+  if (chatIds.length === 0) throw new Error('Telegram chat recipients are not configured');
+  const suffix = orderUrl && !message.includes(orderUrl) ? `\n\n${orderUrl}` : '';
+  const text = `${subject}\n\n${message}${suffix}`.slice(0, 4_000);
+  await sendTelegramToChatIds(token, chatIds, text);
+}
+
 function safeErrorMessage(error: unknown, extraSecrets: string[] = []) {
   const secrets = [process.env.TELEGRAM_BOT_TOKEN?.trim(), ...extraSecrets].filter(Boolean) as string[];
   const message = error instanceof Error ? error.message : 'Unknown notification error';
@@ -260,10 +264,15 @@ function safeErrorMessage(error: unknown, extraSecrets: string[] = []) {
 }
 
 export async function notifyNewOrder(order: NewOrderNotification) {
+  if (resolveOrderStoreBackend() === 'supabase') {
+    return notifyNewOrderSupabase(order);
+  }
   try {
     const settings = await readSettings();
     if (settings.channel === 'off') return;
-    const { subject, message, orderUrl } = renderedMessage(settings, order);
+    const { url } = directusConfig();
+    const orderUrl = `${url}/admin/content/carzo_orders/${encodeURIComponent(order.id)}`;
+    const { subject, message } = renderedMessage(settings, order, orderUrl);
     const deliveries: Array<{ channel: 'email' | 'telegram'; task: Promise<void> }> = [];
     if (settings.channel === 'email' || settings.channel === 'both') {
       deliveries.push({
@@ -290,6 +299,56 @@ export async function notifyNewOrder(order: NewOrderNotification) {
         });
       }
     });
+  } catch (error) {
+    console.error('Order notification setup failed', {
+      orderId: order.id,
+      error: safeErrorMessage(error),
+    });
+  }
+}
+
+/**
+ * Supabase-order notification path.
+ * Settings/templates/chat IDs from notification_settings (Supabase reader);
+ * bot token only from server-side TELEGRAM_BOT_TOKEN. No Directus inbox, no
+ * Directus bot-token table, no Directus admin URL.
+ * Channel email/both has no email provider on this path — Telegram-only
+ * delivery plus an explicit UNSUPPORTED log; never claim emails sent.
+ */
+async function notifyNewOrderSupabase(order: NewOrderNotification) {
+  try {
+    const repository = getNotificationSettingsRepository();
+    const settings = await repository.readSettings();
+    if (settings.channel === 'off') return;
+
+    if (settings.channel === 'email' || settings.channel === 'both') {
+      console.error('Order notification email channel unsupported on Supabase path', {
+        orderId: order.id,
+        channel: settings.channel,
+      });
+    }
+    if (settings.channel === 'email') return;
+
+    const { subject, message } = renderedMessage(settings, order, '');
+    const credentials = await repository.readTelegramCredentials();
+    const token = process.env.TELEGRAM_BOT_TOKEN?.trim() || credentials.token;
+    const chatIds = settings.telegramChatIds.length > 0
+      ? settings.telegramChatIds
+      : credentials.chatIds;
+    if (!token) {
+      console.error('Order notification telegram token missing on Supabase path', {
+        orderId: order.id,
+      });
+      return;
+    }
+    if (chatIds.length === 0) {
+      console.error('Order notification telegram recipients missing on Supabase path', {
+        orderId: order.id,
+      });
+      return;
+    }
+    const text = `${subject}\n\n${message}`.slice(0, 4_000);
+    await sendTelegramToChatIds(token, chatIds, text);
   } catch (error) {
     console.error('Order notification setup failed', {
       orderId: order.id,
