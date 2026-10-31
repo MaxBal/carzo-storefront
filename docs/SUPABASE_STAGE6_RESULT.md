@@ -476,22 +476,23 @@ shared by Preview and Production** in the same project. Putting a test chat id
 there would also route production notifications; removing the production id
 would break them. Neither is acceptable.
 
-**Routing decision needed.** Recipients must become environment-scoped so a
-test send can only reach the approved test chat. Two candidate mechanisms,
-smallest first:
+**Routing implemented.** Recipients are now environment-scoped so a test send
+can only reach the approved test chat. The shipped mechanism (see
+`lib/data/notifications/recipients.ts`, used by `notifyNewOrderSupabase`):
 
-1. **Env recipient override (recommended, minimal).** A Preview-only variable
-   `TELEGRAM_TEST_CHAT_IDS` (comma-separated numeric chat ids). In
-   `notifyNewOrderSupabase`, when `VERCEL_ENV` is `preview` or `development`
-   and the variable parses to ≥1 numeric id, use **exactly those** ids —
-   full replacement, never merged with `notification_settings`. Otherwise the
-   current behaviour is byte-identical.
-   Safety: unset → no change; a `VERCEL_ENV === 'production'` guard makes it
-   impossible to affect production even if mis-set there; full replacement
-   means a test send can never reach the work chat.
-2. **Environment-keyed settings row** (e.g. a `notification_settings` row per
-   environment). Cleaner long-term, but needs a schema change and a migration —
-   deliberately not taken in Stage 6.1.
+- **Non-production (Preview/development) → `TELEGRAM_TEST_CHAT_IDS` only.**
+  A Preview-only variable of comma-separated numeric chat ids. It **fully
+  replaces** the recipients — never merged with `notification_settings`.
+  If it is missing, empty or malformed the send is **blocked**
+  (`TEST_RECIPIENTS_UNAVAILABLE`); there is **no fallback** to the work chats.
+- **Production → unchanged.** It keeps the historical
+  `notification_settings` routing and ignores `TELEGRAM_TEST_CHAT_IDS` even if
+  that variable is ever set there, so production behaviour is impossible to
+  disturb by misconfiguration.
+
+Not taken: an environment-keyed `notification_settings` row (cleaner long-term,
+but needs a schema change and migration — deliberately out of scope for
+Stage 6.1).
 
 **Configuration to apply once routing is agreed** (values never entered in
 chat, logs, or git — owner sets them in Vercel directly):
@@ -513,6 +514,89 @@ from one of the three authorized orders. Verify order number, items, quantity
 discount, loyalty discount, total, and absence of Directus admin links. A
 repeat attempt must not resend. Channel `email` must be reported `UNSUPPORTED`
 rather than claiming delivery. Tokens and chat ids must never be printed.
+
+### A.10.2 Test bot + test chat setup in Vercel (operator runbook)
+
+Step-by-step for the owner. Nothing here has been executed by the agent; the
+agent never creates bots, never joins chats, and never enters token or chat id
+values anywhere.
+
+**1. Create the dedicated test bot**
+
+1. In Telegram open `@BotFather` → `/newbot`.
+2. Choose a name and a username that clearly marks it as a test bot (for
+   example `carzo_stage_test_bot`) so it cannot be mistaken for the production
+   bot.
+3. BotFather replies with the **bot token**. Treat it as a secret: do not paste
+   it into chat, tickets, git or logs. Store it in a password manager until it
+   is entered in Vercel.
+
+**2. Create the dedicated test chat**
+
+1. Create a new **private group** (or a channel) used only for Stage 6/7
+   acceptance. Do **not** reuse the Carzo work chat.
+2. Add **only** the new test bot to that chat. Do not add the production bot
+   and do not add real customers.
+3. Make the test bot an admin with permission to post messages.
+4. Obtain the chat's numeric id:
+   - add `@RawDataBot` (or `@userinfobot`) to the chat temporarily, read the
+     `chat.id`, then remove it; or
+   - call `https://api.telegram.org/bot<TOKEN>/getUpdates` after posting one
+     message in the chat and read `message.chat.id`.
+   The id is a negative number for groups/channels (for example
+   `-100xxxxxxxxxx`). It is not a secret, but it must not be mixed with the
+   production chat list, so keep it in the same password-manager entry as the
+   token rather than in chat.
+
+**3. Confirm the Preview route is isolated**
+
+Before setting anything, re-verify that `notification_settings.telegram_chat_ids`
+still contains **only** the production chat and that it is **not** modified by
+this setup. The test chat id must never be written into that row — the Supabase
+project is shared with production.
+
+**4. Set the two Preview-only variables in Vercel**
+
+Vercel → project `carzo-storefront` → Settings → Environment Variables, scope
+**Preview** and the git branch **`dev`** only. Never Production, never
+`All environments`.
+
+| Name | Value | Type |
+|---|---|---|
+| `TELEGRAM_BOT_TOKEN` | the test bot token from step 1 | Secret |
+| `TELEGRAM_TEST_CHAT_IDS` | the numeric test chat id from step 2 | Plain |
+
+Notes:
+- `TELEGRAM_TEST_CHAT_IDS` accepts one id or a comma-separated list; each entry
+  must be digits with an optional leading `-`. Anything else is ignored and the
+  send is blocked (by design).
+- Do not set `TELEGRAM_BOT_TOKEN` on Production — the production notification
+  path must keep working exactly as before.
+
+**5. Redeploy Preview**
+
+Push an empty commit or redeploy the `dev` branch so the new variables reach
+the running build. Confirm the deployment is `READY` before testing.
+
+**6. Behaviour after setup (already enforced by code)**
+
+- Preview sends **only** to `TELEGRAM_TEST_CHAT_IDS` — a full replacement, never
+  merged with `notification_settings.telegram_chat_ids`.
+- If `TELEGRAM_TEST_CHAT_IDS` is missing, empty or malformed on Preview, the
+  send is **blocked** and logged with reason `TEST_RECIPIENTS_UNAVAILABLE`; there
+  is no fallback to the work chats.
+- Production routing is unchanged and ignores `TELEGRAM_TEST_CHAT_IDS` even if
+  it is ever set there.
+- A replayed order (`created:false`) runs no follow-ups, so a retry cannot send
+  a second message.
+
+**7. Acceptance send (still not executed)**
+
+Only after the owner explicitly approves the routing: trigger **exactly one**
+controlled notification, verify order number / items / quantity discount /
+loyalty discount / total and the absence of Directus admin links, confirm a
+repeat attempt does not resend, and confirm channel `email` is reported
+`UNSUPPORTED`. Then the Telegram gate may move from BLOCKED to PASS.
 
 ## A.11 Migration version reconciliation (read-only)
 

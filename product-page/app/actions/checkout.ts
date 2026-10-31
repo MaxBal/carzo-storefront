@@ -16,7 +16,7 @@ import {
   upsertCustomerByPhone,
 } from '@/lib/cart/customers';
 import { withCheckoutPricing } from '@/lib/cart/checkout-pricing';
-import { runPostOrderSideEffects, safeErrorDetail } from '@/lib/cart/checkout-reliability';
+import { runPostOrderSideEffectsOnCreate, safeErrorDetail } from '@/lib/cart/checkout-reliability';
 import { computeRequestFingerprint, isCheckoutAttemptId, isFingerprintBound } from '@/lib/cart/checkout-attempt';
 import { resolveOrderStoreBackend } from '@/lib/data/config';
 import {
@@ -309,45 +309,43 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         // Order write succeeded — that is the success boundary.
         // Notify + customer upsert are best-effort and must not flip this to FAILED.
         // Replays never re-send notifications or re-upsert customers.
-        if (result.created) {
-          await runPostOrderSideEffects({
-            notify: async () => {
-              await notifyNewOrder({
-                id: result.id,
-                orderNumber: result.orderNumber,
-                customerName: parsed.data.customerName.trim(),
-                customerPhone: phone,
-                contactMethod: contactMethodLabel(parsed.data.contactMethod),
-                itemsQuantity: quote.itemsQuantity,
-                // Authoritative server amounts — never recomputed in notification layer.
-                quantityDiscount: quote.quantityDiscount,
-                loyaltyDiscountAmount: pricing.discount.amount,
-                // Authoritative discounted total, never the pre-loyalty quote.total.
-                total: authoritativeTotal,
-                deliveryMethod: DELIVERY_METHOD_LABELS[delivery.method],
-                deliveryCity: delivery.cityName,
-                deliveryDestination: destination,
-                items: quote.lines.map(line => ({
-                  title: line.title,
-                  quantity: line.quantity,
-                  lineTotal: line.lineTotal,
-                  fixationLabel: line.fixationLabel,
-                })),
-              });
-            },
-            upsertCustomer: async () => {
-              await upsertCustomerByPhone({
-                phone,
-                fullName: parsed.data.customerName.trim(),
-                source: 'site',
-                imported: false,
-              });
-            },
-            logError: (message, detail) => {
-              console.error(message, { orderNumber: result.orderNumber, detail });
-            },
-          });
-        }
+        await runPostOrderSideEffectsOnCreate(result.created, {
+          notify: async () => {
+            await notifyNewOrder({
+              id: result.id,
+              orderNumber: result.orderNumber,
+              customerName: parsed.data.customerName.trim(),
+              customerPhone: phone,
+              contactMethod: contactMethodLabel(parsed.data.contactMethod),
+              itemsQuantity: quote.itemsQuantity,
+              // Authoritative server amounts — never recomputed in notification layer.
+              quantityDiscount: quote.quantityDiscount,
+              loyaltyDiscountAmount: pricing.discount.amount,
+              // Authoritative discounted total, never the pre-loyalty quote.total.
+              total: authoritativeTotal,
+              deliveryMethod: DELIVERY_METHOD_LABELS[delivery.method],
+              deliveryCity: delivery.cityName,
+              deliveryDestination: destination,
+              items: quote.lines.map(line => ({
+                title: line.title,
+                quantity: line.quantity,
+                lineTotal: line.lineTotal,
+                fixationLabel: line.fixationLabel,
+              })),
+            });
+          },
+          upsertCustomer: async () => {
+            await upsertCustomerByPhone({
+              phone,
+              fullName: parsed.data.customerName.trim(),
+              source: 'site',
+              imported: false,
+            });
+          },
+          logError: (message, detail) => {
+            console.error(message, { orderNumber: result.orderNumber, detail });
+          },
+        });
 
         return {
           ok: true,

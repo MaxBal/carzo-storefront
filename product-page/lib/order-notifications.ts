@@ -7,6 +7,7 @@ import {
 import { formatOrderDiscountsSummary } from '@/lib/cart/order-discounts-summary';
 import { resolveOrderStoreBackend } from '@/lib/data/config';
 import { getNotificationSettingsRepository } from '@/lib/data/notifications';
+import { resolveTelegramRecipients } from '@/lib/data/notifications/recipients';
 
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
@@ -332,23 +333,30 @@ async function notifyNewOrderSupabase(order: NewOrderNotification) {
     const { subject, message } = renderedMessage(settings, order, '');
     const credentials = await repository.readTelegramCredentials();
     const token = process.env.TELEGRAM_BOT_TOKEN?.trim() || credentials.token;
-    const chatIds = settings.telegramChatIds.length > 0
-      ? settings.telegramChatIds
-      : credentials.chatIds;
+    // Preview/development must send only to TELEGRAM_TEST_CHAT_IDS; a missing
+    // or unusable value blocks the send rather than falling back to the shared
+    // work chats. Production routing is unchanged.
+    const recipients = resolveTelegramRecipients({
+      vercelEnv: process.env.VERCEL_ENV,
+      testChatIdsRaw: process.env.TELEGRAM_TEST_CHAT_IDS,
+      settingsChatIds: settings.telegramChatIds,
+      credentialsChatIds: credentials.chatIds,
+    });
     if (!token) {
       console.error('Order notification telegram token missing on Supabase path', {
         orderId: order.id,
       });
       return;
     }
-    if (chatIds.length === 0) {
-      console.error('Order notification telegram recipients missing on Supabase path', {
+    if (!recipients.ok) {
+      console.error('Order notification telegram recipients blocked on Supabase path', {
         orderId: order.id,
+        reason: recipients.reason,
       });
       return;
     }
     const text = `${subject}\n\n${message}`.slice(0, 4_000);
-    await sendTelegramToChatIds(token, chatIds, text);
+    await sendTelegramToChatIds(token, recipients.chatIds, text);
   } catch (error) {
     console.error('Order notification setup failed', {
       orderId: order.id,
