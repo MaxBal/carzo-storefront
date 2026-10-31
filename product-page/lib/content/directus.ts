@@ -1,14 +1,42 @@
 import 'server-only';
 import { cache } from 'react';
 import { DEFAULT_CONTENT_SOURCE } from './default-source';
+import { resolveMediaUrl, resolveJsonMediaUrl, normalizeExternalUrl } from '@/lib/media';
 import type {
   BenefitModalData,
   ContentSource,
   SizeContentGroup,
   SizeId,
+  ReviewsData,
 } from './types';
 
 type RecordValue = Record<string, unknown>;
+
+const MAGNETIC_SYSTEM_POSTER_FIELDS = [
+  { designSlug: '2-0', size: 'S', field: 'magnetic_system_cover_2_0_s' },
+  { designSlug: '2-0', size: 'M', field: 'magnetic_system_cover_2_0_m' },
+  { designSlug: '2-0', size: 'L', field: 'magnetic_system_cover_2_0_l' },
+  { designSlug: '2-0', size: 'XL', field: 'magnetic_system_cover_2_0_xl' },
+  { designSlug: '3-0', size: 'S', field: 'magnetic_system_cover_3_0_s' },
+  { designSlug: '3-0', size: 'M', field: 'magnetic_system_cover_3_0_m' },
+  { designSlug: '3-0', size: 'L', field: 'magnetic_system_cover_3_0_l' },
+  { designSlug: '3-0', size: 'XL', field: 'magnetic_system_cover_3_0_xl' },
+  { designSlug: '4-0', size: 'S', field: 'magnetic_system_cover_4_0_s' },
+  { designSlug: '4-0', size: 'M', field: 'magnetic_system_cover_4_0_m' },
+  { designSlug: '4-0', size: 'L', field: 'magnetic_system_cover_4_0_l' },
+  { designSlug: '4-0', size: 'XL', field: 'magnetic_system_cover_4_0_xl' },
+] as const;
+
+const MEDIA_SETTINGS_FIELDS = [
+  '*',
+  'image.id',
+  'magnetic_system_video.id',
+  'magnetic_system_default_cover.id',
+  'materials_video.id',
+  'edging_video.id',
+  'fixation_video.id',
+  ...MAGNETIC_SYSTEM_POSTER_FIELDS.map(item => `${item.field}.id`),
+].join(',');
 
 function getDirectusUrl() {
   return process.env.DIRECTUS_URL?.replace(/\/$/, '') || null;
@@ -31,26 +59,6 @@ function relationValue(value: unknown, field: string): string | null {
     return typeof nested === 'string' ? nested : null;
   }
   return typeof value === 'string' ? value : null;
-}
-
-function assetUrl(file: unknown, fallback = '') {
-  const directusUrl = getDirectusUrl();
-  if (!directusUrl || !file) return fallback;
-  const id = typeof file === 'string' ? file : (file as RecordValue).id;
-  if (typeof id !== 'string') return fallback;
-  return getDirectusToken()
-    ? `/api/directus-assets/${encodeURIComponent(id)}`
-    : `${directusUrl}/assets/${id}`;
-}
-
-function externalImageUrl(value: unknown) {
-  if (typeof value !== 'string' || !value.trim()) return '';
-  try {
-    const url = new URL(value);
-    return url.protocol === 'https:' ? url.toString() : '';
-  } catch {
-    return '';
-  }
 }
 
 async function readCollection(name: string, fields = '*'): Promise<RecordValue[]> {
@@ -87,6 +95,72 @@ function mergeByKey<T>(fallback: T[], remote: T[], key: (item: T) => string) {
   return [...remote, ...fallback.filter(item => !remoteKeys.has(key(item)))];
 }
 
+function parseReviewItems(raw: unknown): ContentSource['reviews']['items'] {
+  if (!Array.isArray(raw)) return DEFAULT_CONTENT_SOURCE.reviews.items;
+  const items = raw.map((item, index) => ({
+    key: string(item.key) || `review-${index}`,
+    reviewText: string(item.reviewText || item.review_text),
+    customerName: string(item.customerName || item.customer_name),
+    reviewDate: string(item.reviewDate || item.review_date),
+    rating: number(item.rating, 5),
+    sort: number(item.sort, index + 1),
+  })).filter(item => item.reviewText);
+  return items.length > 0 ? items : DEFAULT_CONTENT_SOURCE.reviews.items;
+}
+
+function parseReviewScreenshots(raw: unknown): ContentSource['reviews']['screenshots'] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item, index) => ({
+    key: string(item.key) || `screenshot-${index}`,
+    image: resolveJsonMediaUrl(item as { image?: unknown; imageUrl?: unknown }),
+    altText: string(item.altText || item.alt_text),
+    sort: number(item.sort, index + 1),
+  })).filter(item => item.image);
+}
+
+function parseVideoReviews(site: RecordValue | undefined): ContentSource['videoReviews'] {
+  const fallback = DEFAULT_CONTENT_SOURCE.videoReviews;
+  if (!site) return fallback;
+  const raw = site.video_reviews;
+  const videos = Array.isArray(raw)
+    ? raw.map((item, index) => ({
+        id: string(item.id) || `vr-${index + 1}`,
+        title: string(item.title),
+        videoUrl: normalizeExternalUrl(item.video_url) || string(item.video_url),
+        coverUrl: normalizeExternalUrl(item.cover_url) || string(item.cover_url),
+        sort: number(item.sort, index + 1),
+        isActive: item.is_active === undefined ? true : boolean(item.is_active, true),
+      }))
+        .filter(item => item.videoUrl)
+        .sort((a, b) => a.sort - b.sort)
+        .filter(item => item.isActive)
+    : [];
+
+  return {
+    enabled: site.video_reviews_enabled === undefined ? fallback.enabled : boolean(site.video_reviews_enabled, true),
+    title: string(site.video_reviews_title, fallback.title),
+    socialBadgeUrl: normalizeExternalUrl(site.video_reviews_social_badge_url) || string(site.video_reviews_social_badge_url) || fallback.socialBadgeUrl,
+    socialHandle: string(site.video_reviews_social_handle, fallback.socialHandle),
+    socialVerified: site.video_reviews_social_verified === undefined ? fallback.socialVerified : boolean(site.video_reviews_social_verified, true),
+    socialText: string(site.video_reviews_social_text, fallback.socialText),
+    stats: [
+      {
+        value: string(site.video_reviews_stat_1_value, fallback.stats[0]?.value ?? ''),
+        text: string(site.video_reviews_stat_1_text, fallback.stats[0]?.text ?? ''),
+      },
+      {
+        value: string(site.video_reviews_stat_2_value, fallback.stats[1]?.value ?? ''),
+        text: string(site.video_reviews_stat_2_text, fallback.stats[1]?.text ?? ''),
+      },
+      {
+        value: string(site.video_reviews_stat_3_value, fallback.stats[2]?.value ?? ''),
+        text: string(site.video_reviews_stat_3_text, fallback.stats[2]?.text ?? ''),
+      },
+    ],
+    videos,
+  };
+}
+
 async function loadDirectusSource(): Promise<ContentSource> {
   const [
     designs, sizes, brands, brandPricing, sizeShipping, fixations, variants, galleryImages, contentSets,
@@ -104,14 +178,14 @@ async function loadDirectusSource(): Promise<ContentSource> {
     readCollection('carzo_content_sets', '*,design.slug,size.code'),
     readCollection('carzo_content_sections', '*,content_set.key,image.id'),
     readCollection('carzo_faq_items'),
-    readCollection('carzo_logo_settings', '*,fallback_image.id'),
+    readCollection('carzo_logo_settings', '*,fallback_image.id,logo_placement_video.id'),
     readCollection('carzo_logo_placements', '*,design.slug,size.code,image.id'),
     readCollection('carzo_rich_sections'),
     readCollection('carzo_rich_section_images', '*,design.slug,section.key,image.id'),
     readCollection('carzo_benefit_modals'),
     readCollection('carzo_discount_tiers'),
     readCollection('carzo_site_settings'),
-    readCollection('carzo_media_settings', '*,image.id'),
+    readCollection('carzo_media_settings', MEDIA_SETTINGS_FIELDS),
   ]);
 
   const brandPricingBySlug = new Map(
@@ -121,17 +195,30 @@ async function loadDirectusSource(): Promise<ContentSource> {
     sizeShipping.map(item => [relationValue(item.size, 'code'), item]),
   );
   const mediaPlaceholder = mediaSettings[0]
-    ? assetUrl(
+    ? resolveMediaUrl(
+        mediaSettings[0].external_url,
         mediaSettings[0].image,
-        externalImageUrl(mediaSettings[0].external_url),
-      ) || DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder
+        DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder,
+      )
     : DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder;
+  const mediaSettingsItem = mediaSettings[0];
+  const magneticSystemPosters = MAGNETIC_SYSTEM_POSTER_FIELDS.reduce<Record<string, string>>(
+    (posters, item) => {
+      const poster = resolveMediaUrl(
+        mediaSettingsItem?.[`${item.field}_url`],
+        mediaSettingsItem?.[item.field],
+      );
+      if (poster) posters[`${item.designSlug}:${item.size}`] = poster;
+      return posters;
+    },
+    {},
+  );
 
   const remote: ContentSource = {
     origin: 'directus',
     designs: designs.map(item => ({
       slug: string(item.slug), version: string(item.version), label: string(item.label),
-      selectorImage: assetUrl(item.selector_image, '/Без_имени-1.jpg'), sort: number(item.sort),
+      selectorImage: resolveMediaUrl(item.selector_image_url, item.selector_image, '/Без_имени-1.jpg'), sort: number(item.sort),
     })),
     sizes: sizes.map(item => {
       const shipping = sizeShippingByCode.get(string(item.code));
@@ -155,11 +242,25 @@ async function loadDirectusSource(): Promise<ContentSource> {
     brands: brands.map(item => ({
       id: string(item.slug), name: item.name === null ? null : string(item.name), flag: string(item.flag),
       price: number(brandPricingBySlug.get(string(item.slug))?.logo_extra),
-      logoImage: assetUrl(item.logo_image), sort: number(item.sort),
+      logoImage: resolveMediaUrl(item.logo_image_url, item.logo_image), sort: number(item.sort),
     })),
-    fixations: fixations.map(item => ({
-      value: string(item.key), label: string(item.label), extra: number(item.extra), sort: number(item.sort),
-    })),
+    fixations: fixations.map(item => {
+      const rawExtraBySize = item.extra_by_size;
+      const extraBySize = (rawExtraBySize && typeof rawExtraBySize === 'object' && !Array.isArray(rawExtraBySize))
+        ? Object.fromEntries(
+            Object.entries(rawExtraBySize as Record<string, unknown>)
+              .flatMap(([key, value]) => {
+                const lower = String(key).toLowerCase();
+                const n = number(value);
+                return [[lower, n], [lower.toUpperCase(), n]] as Array<[string, number]>;
+              })
+          ) as ContentSource['fixations'][number]['extraBySize']
+        : undefined;
+      return {
+        value: string(item.key), label: string(item.label), extra: number(item.extra), sort: number(item.sort),
+        extraBySize,
+      };
+    }),
     variants: variants.map(item => ({
       key: string(item.key), designSlug: relationValue(item.design, 'slug') || '',
       size: relationValue(item.size, 'code') as SizeId,
@@ -169,7 +270,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     galleryImages: galleryImages.map(item => ({
       key: string(item.key), designSlug: relationValue(item.design, 'slug'),
       size: relationValue(item.size, 'code') as SizeId | null,
-      src: assetUrl(item.image, externalImageUrl(item.external_url)), alt: string(item.alt), sort: number(item.sort),
+      src: resolveMediaUrl(item.external_url, item.image, ''), alt: string(item.alt), sort: number(item.sort),
       fallbackSrc: mediaPlaceholder, isPlaceholder: false,
     })),
     contentSets: contentSets.map(item => ({
@@ -182,7 +283,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
     contentSections: contentSections.map(item => ({
       key: string(item.key), contentSetKey: relationValue(item.content_set, 'key') || '',
       title: string(item.title), text: string(item.text),
-      image: assetUrl(item.image, string(item.external_url)) || undefined,
+      image: resolveMediaUrl(item.external_url, item.image) || undefined,
       imagePlaceholder: string(item.image_placeholder) || undefined, sort: number(item.sort),
     })),
     faqItems: faqItems.map(item => ({
@@ -192,14 +293,15 @@ async function loadDirectusSource(): Promise<ContentSource> {
     logoSettings: logoSettings[0]
       ? {
           title: string(logoSettings[0].title), infoText: string(logoSettings[0].info_text),
-          fallbackImage: assetUrl(logoSettings[0].fallback_image, '/Без_имени-1.jpg'),
+          fallbackImage: resolveMediaUrl(logoSettings[0].fallback_image_url, logoSettings[0].fallback_image, '/Без_имени-1.jpg'),
+          placementVideo: resolveMediaUrl(logoSettings[0].logo_placement_video_url, logoSettings[0].logo_placement_video),
           specs: Array.isArray(logoSettings[0].specs) ? logoSettings[0].specs as ContentSource['logoSettings']['specs'] : [],
         }
       : DEFAULT_CONTENT_SOURCE.logoSettings,
     logoPlacements: logoPlacements.map(item => ({
       key: string(item.key), designSlug: relationValue(item.design, 'slug'),
       size: relationValue(item.size, 'code') as SizeId | null,
-      image: assetUrl(item.image, string(item.external_url)), sort: number(item.sort),
+      image: resolveMediaUrl(item.external_url, item.image), sort: number(item.sort),
     })),
     richSections: richSections.map(item => ({
       key: string(item.key), title: string(item.title),
@@ -216,17 +318,51 @@ async function loadDirectusSource(): Promise<ContentSource> {
       key: string(item.key),
       designSlug: relationValue(item.design, 'slug') || '',
       sectionKey: relationValue(item.section, 'key') || '',
-      src: assetUrl(item.image, externalImageUrl(item.external_url)),
+      src: resolveMediaUrl(item.external_url, item.image),
       alt: string(item.alt),
     })).filter(item => item.designSlug && item.sectionKey && item.src),
+    magneticSystemMedia: mediaSettingsItem
+      ? {
+          video: resolveMediaUrl(mediaSettingsItem.magnetic_system_video_url, mediaSettingsItem.magnetic_system_video),
+          defaultPoster: resolveMediaUrl(mediaSettingsItem.magnetic_system_default_cover_url, mediaSettingsItem.magnetic_system_default_cover),
+          posters: magneticSystemPosters,
+        }
+      : DEFAULT_CONTENT_SOURCE.magneticSystemMedia,
+    richContentVideos: mediaSettingsItem
+      ? {
+          'rich-materials': resolveMediaUrl(mediaSettingsItem.materials_video_url, mediaSettingsItem.materials_video),
+          'rich-edging': resolveMediaUrl(mediaSettingsItem.edging_video_url, mediaSettingsItem.edging_video),
+        }
+      : DEFAULT_CONTENT_SOURCE.richContentVideos,
+    fixationVideo: mediaSettingsItem
+      ? resolveMediaUrl(mediaSettingsItem.fixation_video_url, mediaSettingsItem.fixation_video) || DEFAULT_CONTENT_SOURCE.fixationVideo
+      : DEFAULT_CONTENT_SOURCE.fixationVideo,
     benefitModals: benefitModals.map(item => ({
       type: string(item.key), cardLabel: string(item.card_label), title: string(item.title),
       subtitle: string(item.subtitle),
+      sort: number(item.sort),
       blocks: (item.content as { blocks?: BenefitModalData['blocks'] } | null)?.blocks ?? [],
-    })) as BenefitModalData[],
+    })).sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0)) as BenefitModalData[],
     discountTiers: discountTiers.map(item => ({
       key: string(item.key), minQuantity: number(item.min_quantity), amount: number(item.amount), sort: number(item.sort),
     })),
+    reviews: {
+      settings: siteSettings[0]
+        ? {
+            enabled: boolean(siteSettings[0].reviews_enabled, true),
+            title: string(siteSettings[0].reviews_title),
+            descriptionLine1: string(siteSettings[0].reviews_description_line_1),
+            descriptionLine2: string(siteSettings[0].reviews_description_line_2),
+            instagramHandle: string(siteSettings[0].reviews_instagram_handle),
+            ctaLabel: string(siteSettings[0].reviews_cta_label),
+            modalTitle: string(siteSettings[0].reviews_modal_title),
+            modalDescription: string(siteSettings[0].reviews_modal_description),
+          }
+        : DEFAULT_CONTENT_SOURCE.reviews.settings,
+      items: parseReviewItems(siteSettings[0]?.reviews_items),
+      screenshots: parseReviewScreenshots(siteSettings[0]?.reviews_screenshots),
+    },
+    videoReviews: parseVideoReviews(siteSettings[0]),
     siteSettings: siteSettings[0]
       ? {
           designInfoText: string(siteSettings[0].design_info_text),
@@ -235,6 +371,7 @@ async function loadDirectusSource(): Promise<ContentSource> {
           featureMaterialText: string(siteSettings[0].feature_material_text),
           richSignoff: string(siteSettings[0].rich_signoff),
           mediaPlaceholder,
+          siteFlag: resolveMediaUrl(siteSettings[0].site_flag_url, siteSettings[0].site_flag, DEFAULT_CONTENT_SOURCE.siteSettings.siteFlag),
         }
       : DEFAULT_CONTENT_SOURCE.siteSettings,
   };
@@ -252,8 +389,16 @@ async function loadDirectusSource(): Promise<ContentSource> {
     faqItems: mergeByKey(DEFAULT_CONTENT_SOURCE.faqItems, remote.faqItems, item => item.key),
     richSections: remote.richSections,
     richSectionImages: remote.richSectionImages,
+    magneticSystemMedia: remote.magneticSystemMedia,
     benefitModals: mergeByKey(DEFAULT_CONTENT_SOURCE.benefitModals, remote.benefitModals, item => item.type),
     discountTiers: mergeByKey(DEFAULT_CONTENT_SOURCE.discountTiers, remote.discountTiers, item => item.key),
+    reviews: {
+      settings: remote.reviews.settings,
+      items: remote.reviews.items.length > 0
+        ? remote.reviews.items
+        : DEFAULT_CONTENT_SOURCE.reviews.items,
+      screenshots: remote.reviews.screenshots,
+    },
   };
 }
 

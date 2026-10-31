@@ -1,5 +1,11 @@
 import 'server-only';
 
+import {
+  formatOrderItemsSummary,
+  type NotificationOrderItem,
+} from '@/lib/cart/order-items-summary';
+import { formatOrderDiscountsSummary } from '@/lib/cart/order-discounts-summary';
+
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
 interface NotificationSettings {
@@ -22,10 +28,26 @@ export interface NewOrderNotification {
   customerPhone: string;
   contactMethod: string;
   itemsQuantity: number;
+  /** Authoritative quantity discount from server quote (0 when not applied). */
+  quantityDiscount: number;
+  /** Authoritative loyalty discount amount from server pricing (0 when not applied). */
+  loyaltyDiscountAmount: number;
   total: number;
+  deliveryMethod: string;
   deliveryCity: string;
-  deliveryPoint: string;
-  items: Array<{ title: string; quantity: number; lineTotal: number }>;
+  deliveryDestination: string;
+  items: NotificationOrderItem[];
+}
+
+export interface NewCarMatQuoteNotification {
+  customerName: string;
+  customerPhone: string;
+  carModel: string;
+  carYear: string;
+  bodyType: string;
+  interest: string;
+  contactMethod: string;
+  comment: string;
 }
 
 const VALID_CHANNELS = new Set<NotificationChannel>(['off', 'email', 'telegram', 'both']);
@@ -88,7 +110,7 @@ async function readSettings(): Promise<NotificationSettings> {
       : 'Нове замовлення {{order_number}}',
     messageTemplate: typeof data.message_template === 'string'
       ? data.message_template
-      : 'Покупець: {{customer_name}}\nТелефон: {{customer_phone}}\nСпосіб зв’язку: {{contact_method}}\nСума: {{total}} ₴\n{{order_url}}',
+      : 'Покупець: {{customer_name}}\nТелефон: {{customer_phone}}\nСпосіб зв’язку: {{contact_method}}\nТовари:\n{{items_summary}}\nКількість: {{items_quantity}}\n{{discounts_summary}}\nСума: {{total}} ₴\nДоставка: {{delivery_method}}\nАдреса: {{delivery_city}}, {{delivery_destination}}\n{{order_url}}',
   };
 }
 
@@ -112,35 +134,71 @@ function renderTemplate(template: string, variables: Record<string, string>) {
   return template.replace(/{{\s*([a-z_]+)\s*}}/gi, (_, key: string) => variables[key] ?? '');
 }
 
+const DISCOUNTS_SUMMARY_TOKEN = /\{\{\s*discounts_summary\s*\}\}/i;
+
+/**
+ * Custom Directus templates may predate `{{discounts_summary}}`.
+ * When the token is absent and discounts apply, insert the summary
+ * immediately before the `Сума:` total line (single insertion point).
+ */
+function applyDiscountsSummaryFallback(
+  template: string,
+  rendered: string,
+  discountsSummary: string,
+): string {
+  if (!discountsSummary || DISCOUNTS_SUMMARY_TOKEN.test(template)) return rendered;
+  const lines = rendered.split('\n');
+  const totalIndex = lines.findIndex((line) => /^\s*Сума\s*:/i.test(line));
+  const insertLines = discountsSummary.split('\n');
+  if (totalIndex >= 0) {
+    lines.splice(totalIndex, 0, ...insertLines);
+    return lines.join('\n');
+  }
+  return `${rendered}\n${discountsSummary}`;
+}
+
 function renderedMessage(settings: NotificationSettings, order: NewOrderNotification) {
   const { url } = directusConfig();
   const orderUrl = `${url}/admin/content/carzo_orders/${encodeURIComponent(order.id)}`;
+  const discountsSummary = formatOrderDiscountsSummary({
+    quantityDiscount: order.quantityDiscount,
+    loyaltyDiscountAmount: order.loyaltyDiscountAmount,
+  });
   const variables = {
     order_number: order.orderNumber,
     customer_name: order.customerName,
     customer_phone: order.customerPhone,
     contact_method: order.contactMethod,
     items_quantity: String(order.itemsQuantity),
-    items_summary: order.items
-      .map(item => `• ${item.title} × ${item.quantity} — ${item.lineTotal} ₴`)
-      .join('\n'),
+    items_summary: formatOrderItemsSummary(order.items),
+    discounts_summary: discountsSummary,
+    quantity_discount: order.quantityDiscount > 0 ? String(Math.trunc(order.quantityDiscount)) : '',
+    loyalty_discount: order.loyaltyDiscountAmount > 0 ? String(Math.trunc(order.loyaltyDiscountAmount)) : '',
     total: String(order.total),
+    delivery_method: order.deliveryMethod,
     delivery_city: order.deliveryCity,
-    delivery_point: order.deliveryPoint,
+    delivery_destination: order.deliveryDestination,
+    // Existing custom templates can keep using this token for all delivery methods.
+    delivery_point: order.deliveryDestination,
     order_url: orderUrl,
   };
+  const message = applyDiscountsSummaryFallback(
+    settings.messageTemplate,
+    renderTemplate(settings.messageTemplate, variables),
+    discountsSummary,
+  );
   return {
     subject: renderTemplate(settings.subjectTemplate, variables).trim().slice(0, 255),
-    message: renderTemplate(settings.messageTemplate, variables).trim().slice(0, 3_500),
+    message: message.trim().slice(0, 3_500),
     orderUrl,
   };
 }
 
-async function sendDirectusEmail(
+async function sendDirectusMessage(
   settings: NotificationSettings,
-  order: NewOrderNotification,
   subject: string,
   message: string,
+  context?: { collection: string; item: string },
 ) {
   if (settings.directusUserIds.length === 0) {
     throw new Error('Directus email recipients are not configured');
@@ -153,8 +211,7 @@ async function sendDirectusEmail(
       recipient,
       subject,
       message,
-      collection: 'carzo_orders',
-      item: order.id,
+      ...(context ? { collection: context.collection, item: context.item } : {}),
     }))),
     cache: 'no-store',
   });
@@ -165,7 +222,7 @@ async function sendTelegram(
   settings: NotificationSettings,
   subject: string,
   message: string,
-  orderUrl: string,
+  orderUrl?: string,
 ) {
   const botSettings = await readTelegramBotSettings();
   const token = botSettings.token || process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -174,7 +231,8 @@ async function sendTelegram(
     : settings.telegramChatIds;
   if (!token) throw new Error('Telegram bot token is not configured');
   if (chatIds.length === 0) throw new Error('Telegram chat recipients are not configured');
-  const text = `${subject}\n\n${message}${message.includes(orderUrl) ? '' : `\n\n${orderUrl}`}`.slice(0, 4_000);
+  const suffix = orderUrl && !message.includes(orderUrl) ? `\n\n${orderUrl}` : '';
+  const text = `${subject}\n\n${message}${suffix}`.slice(0, 4_000);
   try {
     await Promise.all(chatIds.map(async (chatId) => {
       const response = await fetchWithTimeout(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -210,7 +268,10 @@ export async function notifyNewOrder(order: NewOrderNotification) {
     if (settings.channel === 'email' || settings.channel === 'both') {
       deliveries.push({
         channel: 'email',
-        task: sendDirectusEmail(settings, order, subject, message),
+        task: sendDirectusMessage(settings, subject, message, {
+          collection: 'carzo_orders',
+          item: order.id,
+        }),
       });
     }
     if (settings.channel === 'telegram' || settings.channel === 'both') {
@@ -235,4 +296,47 @@ export async function notifyNewOrder(order: NewOrderNotification) {
       error: safeErrorMessage(error),
     });
   }
+}
+
+export async function notifyNewCarMatQuote(request: NewCarMatQuoteNotification) {
+  const settings = await readSettings();
+  if (settings.channel === 'off') return false;
+
+  const subject = 'Новий запит на прорахунок автокилимків';
+  const message = [
+    `Покупець: ${request.customerName}`,
+    `Телефон: ${request.customerPhone}`,
+    `Авто: ${request.carModel}`,
+    `Рік випуску: ${request.carYear}`,
+    `Тип кузова: ${request.bodyType}`,
+    `Цікавить: ${request.interest}`,
+    `Спосіб звʼязку: ${request.contactMethod}`,
+    request.comment ? `Коментар: ${request.comment}` : '',
+  ].filter(Boolean).join('\n').slice(0, 3_500);
+
+  const deliveries: Array<{ channel: 'email' | 'telegram'; task: Promise<void> }> = [];
+  if (settings.channel === 'email' || settings.channel === 'both') {
+    deliveries.push({
+      channel: 'email',
+      task: sendDirectusMessage(settings, subject, message),
+    });
+  }
+  if (settings.channel === 'telegram' || settings.channel === 'both') {
+    deliveries.push({
+      channel: 'telegram',
+      task: sendTelegram(settings, subject, message),
+    });
+  }
+
+  const results = await Promise.allSettled(deliveries.map(item => item.task));
+  results.forEach((result, index) => {
+    if (result.status === 'rejected') {
+      console.error('Car mat quote notification delivery failed', {
+        channel: deliveries[index]?.channel,
+        error: safeErrorMessage(result.reason),
+      });
+    }
+  });
+
+  return results.some(result => result.status === 'fulfilled');
 }

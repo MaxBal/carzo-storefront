@@ -54,6 +54,16 @@ export function getFixationByValue(value: string, catalog: ProductCatalog = DEFA
     ?? DEFAULT_CATALOG.fixations[0];
 }
 
+/** Size-aware fixation surcharge. Falls back to flat `extra` when size map is absent. */
+export function getFixationExtra(fixation: FixationInfo, size: SizeId): number {
+  const bySize = fixation.extraBySize;
+  if (bySize) {
+    const value = bySize[size] ?? bySize[size.toLowerCase() as SizeId];
+    if (typeof value === 'number') return value;
+  }
+  return fixation.extra ?? 0;
+}
+
 export function buildProductUrl(params: ProductParams, catalog: ProductCatalog = DEFAULT_CATALOG): string {
   const size = sizeIdToUrl(params.size, catalog);
   const brand = params.brandId && params.brandId !== 'none' ? `/${params.brandId}` : '';

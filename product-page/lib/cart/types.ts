@@ -42,25 +42,82 @@ export interface NovaPoshtaCity {
   type: string;
 }
 
+export const DELIVERY_METHOD_VALUES = ['BRANCH', 'POSTOMAT', 'COURIER'] as const;
+
+export type DeliveryMethod = typeof DELIVERY_METHOD_VALUES[number];
+
 export interface NovaPoshtaPoint {
   ref: string;
+  number: string;
   name: string;
   address: string;
   type: 'branch' | 'postomat';
 }
 
+export interface NovaPoshtaStreet {
+  ref: string;
+  name: string;
+  type: string;
+}
+
+export type CheckoutDelivery =
+  | {
+    method: 'BRANCH';
+    cityRef: string;
+    pointRef: string;
+  }
+  | {
+    method: 'POSTOMAT';
+    cityRef: string;
+    pointRef: string;
+  }
+  | {
+    method: 'COURIER';
+    cityRef: string;
+    streetRef: string;
+    streetName: string;
+    house: string;
+    apartment?: string;
+  };
+
 export interface CheckoutInput {
   items: CartInputItem[];
+  /** Final total shown to the user (includes loyalty discount when applied). */
   expectedTotal: number;
+  /** Quote total before loyalty (cart.quote.total). Used to classify PRICE vs LOYALTY changes. */
+  expectedBaseTotal?: number;
   customerName: string;
   customerPhone: string;
+  /** Canonical/raw phone the user used for loyalty lookup, if any. Server re-validates. */
+  loyaltyPhone?: string;
   customerComment?: string;
   contactMethod: ContactMethod;
-  deliveryCityRef: string;
-  deliveryPointRef: string;
+  delivery: CheckoutDelivery;
 }
+
+export interface CheckoutLoyaltyState {
+  applied: boolean;
+  eligible: boolean;
+  discountPercent: number;
+  discountAmount: number;
+  phoneMismatch: boolean;
+}
+
+export type CheckoutChangedResult = {
+  ok: false;
+  code: 'PRICE_CHANGED' | 'LOYALTY_CHANGED';
+  message: string;
+  quote: CartQuote;
+  loyalty: CheckoutLoyaltyState;
+  /** Authoritative server total after the change (what the UI must show next). */
+  total: number;
+};
 
 export type CheckoutResult =
   | { ok: true; orderNumber: string; total: number }
-  | { ok: false; code: 'PRICE_CHANGED'; message: string; quote: CartQuote }
-  | { ok: false; code: 'INVALID' | 'UNAVAILABLE' | 'FAILED'; message: string };
+  | CheckoutChangedResult
+  | {
+    ok: false;
+    code: 'INVALID' | 'UNAVAILABLE' | 'FAILED' | 'LOYALTY_UNAVAILABLE';
+    message: string;
+  };

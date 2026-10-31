@@ -13,6 +13,17 @@ const nextConfig = {
       },
     ];
   },
+  async headers() {
+    const isStaging = process.env.VERCEL_URL?.includes('staging') || 
+                      process.env.NEXT_PUBLIC_SITE_URL?.includes('staging');
+    if (!isStaging) return [];
+    return [
+      {
+        source: '/:path*',
+        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }],
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

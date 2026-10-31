@@ -46,14 +46,22 @@ function resolveGallery(params: ProductParams, source: ContentSource): GalleryIm
     size: params.size,
     src: source.siteSettings.mediaPlaceholder,
     fallbackSrc: source.siteSettings.mediaPlaceholder,
-    alt: `Автокейс ${params.size} Carzo ${design?.version ?? params.designSlug} — фото ще не додано`,
+    alt: `Автокейс ${params.size} Carzo ${design?.version ?? params.designSlug}`,
     sort: 1,
     isPlaceholder: true,
   }];
 }
 
-function contentSetSections(contentSet: ContentSet, source: ContentSource) {
-  return sorted(source.contentSections.filter(section => section.contentSetKey === contentSet.key));
+function contentSetSections(contentSet: ContentSet, source: ContentSource, size: SizeId) {
+  return sorted(source.contentSections.filter(section => section.contentSetKey === contentSet.key))
+    .map(section => ({
+      ...section,
+      title: interpolateSize(section.title, size),
+      text: interpolateSize(section.text, size),
+      imagePlaceholder: section.imagePlaceholder
+        ? interpolateSize(section.imagePlaceholder, size)
+        : section.imagePlaceholder,
+    }));
 }
 
 function faqs(group: 'inside' | 'fixation' | 'logo', source: ContentSource) {
@@ -66,11 +74,11 @@ function toModal(contentSet: ContentSet, size: SizeId, faqGroup: 'inside' | 'fix
     tabs: [
       {
         label: interpolateSize(contentSet.contentTabLabel, size),
-        sections: contentSetSections(contentSet, source),
+        sections: contentSetSections(contentSet, source, size),
       },
       {
         label: contentSet.faqTabLabel,
-        infoBox: contentSet.infoBox,
+        infoBox: contentSet.infoBox ? interpolateSize(contentSet.infoBox, size) : contentSet.infoBox,
         faqs: faqs(faqGroup, source),
       },
     ],
@@ -106,7 +114,9 @@ function resolveFixationModal(params: ProductParams, source: ContentSource) {
   if (resolved.designSlug !== params.designSlug || resolved.size !== params.size) {
     warnFallback('fixation modal', `${params.designSlug}:${params.size}`, resolved.key);
   }
-  return toModal(resolved, params.size, 'fixation', source);
+  const modal = toModal(resolved, params.size, 'fixation', source);
+  if (source.fixationVideo) modal.globalVideo = source.fixationVideo;
+  return modal;
 }
 
 function resolvePlacement(params: ProductParams, source: ContentSource) {
@@ -117,6 +127,10 @@ function resolvePlacement(params: ProductParams, source: ContentSource) {
   const globalFallback = source.logoPlacements.find(item => item.designSlug === null && item.size === null);
   warnFallback('logo placement', `${params.designSlug}:${params.size}`, globalFallback?.key ?? 'logo fallback image');
   return globalFallback?.image || source.logoSettings.fallbackImage;
+}
+
+function resolvePlacementVideo(source: ContentSource) {
+  return source.logoSettings.placementVideo || '';
 }
 
 function resolveRichContent(params: ProductParams, source: ContentSource): ResolvedRichContentSection[] {
@@ -138,6 +152,26 @@ function resolveRichContent(params: ProductParams, source: ContentSource): Resol
       isPlaceholder: !media?.src,
     };
   });
+}
+
+function resolveMagneticSystemMedia(
+  params: ProductParams,
+  source: ContentSource,
+  sections: ResolvedRichContentSection[],
+): ResolvedProductContent['richContent']['magneticSystemMedia'] {
+  const exactPoster = source.magneticSystemMedia.posters[`${params.designSlug}:${params.size}`];
+  const existingSectionPoster = sections.find(section => section.key === 'rich-magnets')?.image;
+  const poster = exactPoster
+    || source.magneticSystemMedia.defaultPoster
+    || existingSectionPoster
+    || source.siteSettings.mediaPlaceholder;
+
+  return {
+    video: source.magneticSystemMedia.video,
+    poster,
+    fallbackPoster: source.siteSettings.mediaPlaceholder,
+    isPosterPlaceholder: poster === source.siteSettings.mediaPlaceholder,
+  };
 }
 
 function fallbackVariant(designSlug: string, size: SizeId): ProductVariant {
@@ -172,6 +206,20 @@ export function getBenefitModalContent(type: BenefitModalType, source: ContentSo
     ?? DEFAULT_CONTENT_SOURCE.benefitModals.find(item => item.type === type)!;
 }
 
+function resolveDesignThumbnails(params: ProductParams, source: ContentSource): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const design of source.designs) {
+    const forSize = source.galleryImages
+      .filter(item => item.designSlug === design.slug && item.size === params.size && item.src && !item.isPlaceholder)
+      .sort((a, b) => a.sort - b.sort)[0];
+    const anySize = source.galleryImages
+      .filter(item => item.designSlug === design.slug && item.src && !item.isPlaceholder)
+      .sort((a, b) => a.sort - b.sort)[0];
+    result[design.slug] = forSize?.src || anySize?.src || design.selectorImage;
+  }
+  return result;
+}
+
 export function resolveProductContent(
   params: ProductParams,
   source: ContentSource = DEFAULT_CONTENT_SOURCE,
@@ -184,9 +232,12 @@ export function resolveProductContent(
     warnFallback('brand logo', selectedBrand.id, 'logo fallback image');
   }
 
+  const richSections = resolveRichContent(params, source);
+
   return {
     catalog: getProductCatalog(source),
     gallery: resolveGallery(params, source),
+    designThumbnails: resolveDesignThumbnails(params, source),
     insideModal: resolveInsideModal(params, source),
     fixationModal: resolveFixationModal(params, source),
     logoModal: {
@@ -195,15 +246,20 @@ export function resolveProductContent(
       infoText: source.logoSettings.infoText,
       logoImage: brandImage,
       placementImage: resolvePlacement(params, source),
+      placementVideo: resolvePlacementVideo(source),
       specs: source.logoSettings.specs,
       faqs: faqs('logo', source),
     },
     richContent: {
-      sections: resolveRichContent(params, source),
+      sections: richSections,
       signoff: source.siteSettings.richSignoff,
+      magneticSystemMedia: resolveMagneticSystemMedia(params, source, richSections),
+      richContentVideos: source.richContentVideos,
     },
     benefitModals: source.benefitModals,
     discountTiers: sorted(source.discountTiers),
+    reviews: source.reviews,
+    videoReviews: source.videoReviews,
     pricing: resolvePricing(params, source),
     siteSettings: source.siteSettings,
   };

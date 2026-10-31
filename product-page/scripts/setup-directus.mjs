@@ -26,6 +26,14 @@ const pageSeed = JSON.parse(await readFile(resolve(root, 'content/carzo-pages.se
 const headers = { Authorization: `Bearer ${adminToken}` };
 const ORDER_NOTIFICATION_FLOW_NAME = 'Carzo — Нове замовлення';
 const ORDER_NOTIFICATION_OPERATION_KEY = 'carzo_new_order_notification';
+const MAGNETIC_SYSTEM_COVER_FIELDS = ['2-0', '3-0', '4-0'].flatMap(designSlug => (
+  ['S', 'M', 'L', 'XL'].map(size => ({
+    designSlug,
+    size,
+    field: `magnetic_system_cover_${designSlug.replace('-', '_')}_${size.toLowerCase()}`,
+    label: `Обкладинка магнітної системи · Carzo ${designSlug.replace('-', '.')} · ${size}`,
+  }))
+));
 
 async function request(path, options = {}) {
   const response = await fetch(`${baseUrl}${path}`, {
@@ -192,10 +200,30 @@ function relationField(name, note, { required = false, unique = false } = {}) {
   });
 }
 
-function imageField(name, note) {
+function imageField(name, note, label) {
   return field(name, 'uuid', 'file-image', { is_nullable: true }, {
     special: ['file'],
     note,
+    translations: label ? studioTranslations(label) : undefined,
+  });
+}
+
+function fileField(name, note, label) {
+  return field(name, 'uuid', 'file', { is_nullable: true }, {
+    special: ['file'],
+    note,
+    translations: label ? studioTranslations(label) : undefined,
+  });
+}
+
+function urlField(name, note, label) {
+  return field(name, 'string', 'input', {
+    is_nullable: true,
+    max_length: 512,
+  }, {
+    width: 'full',
+    note,
+    translations: label ? studioTranslations(label) : undefined,
   });
 }
 
@@ -267,6 +295,7 @@ const collections = [
     shortText('seo_title', { note: 'Заголовок для пошукових систем та вкладки браузера.' }),
     longText('seo_description', { note: 'Опис сторінки для пошукових систем.' }),
     imageField('seo_image', 'Зображення для соціальних мереж.'),
+    urlField('seo_image_url', 'Пряме HTTPS-посилання на SEO-зображення (Cloudflare R2). Має пріоритет над файлом Directus.', 'SEO зображення · Cloudflare URL'),
     toggle('show_header', true, 'Показувати шапку сайту.'),
     toggle('show_footer', true, 'Показувати підвал сайту.'),
     toggle('no_index', false, 'Заборонити індексацію пошуковими системами.'),
@@ -303,6 +332,7 @@ const collections = [
     longText('subtitle'),
     richText('body', { note: 'Форматований текст блока.' }),
     imageField('image', 'Зображення блока.'),
+    urlField('image_url', 'Пряме HTTPS-посилання на зображення блока (Cloudflare R2). Має пріоритет над файлом Directus.', 'Фото блока · Cloudflare URL'),
     shortText('image_alt', { note: 'Опис зображення для доступності та SEO.' }),
     choice('image_position', [
       { text: 'Ліворуч', value: 'left' },
@@ -319,6 +349,7 @@ const collections = [
     shortText('version', { required: true, width: 'half' }),
     shortText('label', { required: true }),
     imageField('selector_image', 'Зображення у вікні вибору дизайну.'),
+    urlField('selector_image_url', 'Пряме HTTPS-посилання на зображення (Cloudflare R2). Має пріоритет над файлом Directus.', 'Вибір дизайну · Cloudflare URL'),
   ], { displayTemplate: '{{label}}' }),
   collection('carzo_sizes', 'straighten', 'Розміри виробу та їх контентні характеристики.', [
     idField(), statusField(), sortField(), keyField('code'),
@@ -331,6 +362,7 @@ const collections = [
     idField(), statusField(), sortField(), keyField('slug'),
     shortText('name', { width: 'half' }), shortText('flag', { width: 'half' }),
     imageField('logo_image', 'Фото логотипа конкретної марки; порожнє значення використовує резервне фото.'),
+    urlField('logo_image_url', 'Пряме HTTPS-посилання на фото логотипа (Cloudflare R2). Має пріоритет над файлом Directus.', 'Логотип марки · Cloudflare URL'),
   ], { displayTemplate: '{{flag}} {{name}}' }),
   collection('carzo_brand_pricing', 'price_change', 'Комерційні доплати за логотип автомобільної марки.', [
     idField(), statusField(),
@@ -362,8 +394,8 @@ const collections = [
     idField(), statusField(), sortField(), keyField(),
     relationField('design', 'Дизайн товарної конфігурації.', { required: true }),
     relationField('size', 'Розмір товарної конфігурації.', { required: true }),
-    imageField('image', 'Файл Directus має пріоритет над зовнішнім URL.'),
-    shortText('external_url', { note: 'Пряме HTTPS-посилання. Використовується лише якщо файл не завантажено.' }),
+    imageField('image', 'Файл Directus. Зовнішній URL має пріоритет.'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }),
     shortText('alt', { note: 'Необов’язково. Порожнє значення створюється автоматично з дизайну, розміру та номера фото.' }),
   ], { displayTemplate: '{{design}} · {{size}} · фото {{sort}}' }),
   collection('carzo_content_sets', 'view_carousel', 'Набори контенту модалок наповнення та фіксації.', [
@@ -381,7 +413,7 @@ const collections = [
     idField(), statusField(), sortField(), keyField(),
     relationField('content_set', 'Батьківський набір контенту.'),
     imageField('image', 'Зображення секції.'),
-    shortText('external_url'), shortText('image_placeholder'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }), shortText('image_placeholder'),
     shortText('title', { required: true }), longText('text', { required: true }),
   ], { displayTemplate: '{{title}}' }),
   collection('carzo_faq_items', 'quiz', 'Глобальні FAQ для модалок наповнення, фіксації та логотипа.', [
@@ -392,11 +424,12 @@ const collections = [
   collection('carzo_logo_settings', 'branding_watermark', 'Глобальні тексти, характеристики та резервне фото логотипа.', [
     idField(), statusField(), shortText('title', { required: true }), longText('info_text', { required: true }),
     imageField('fallback_image', 'Резерв для фото логотипа та його розміщення.'),
+    urlField('fallback_image_url', 'Пряме HTTPS-посилання на резервне фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Резервне фото · Cloudflare URL'),
     json('specs', 'Список характеристик [{ label, value }].'),
   ], { singleton: true, displayTemplate: '{{title}}' }),
   collection('carzo_logo_placements', 'pin_drop', 'Фото розміщення логотипа за матрицею дизайн × розмір.', [
     idField(), statusField(), sortField(), keyField(),
-    relationField('design'), relationField('size'), imageField('image'), shortText('external_url'),
+    relationField('design'), relationField('size'), imageField('image'), shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }),
   ], { displayTemplate: '{{key}}' }),
   collection('carzo_rich_sections', 'view_agenda', 'Єдиний впорядковуваний текстовий шаблон rich content для всіх дизайнів і розмірів.', [
     idField(), statusField(), sortField(), keyField(),
@@ -409,15 +442,57 @@ const collections = [
     idField(), statusField(), keyField(),
     relationField('design', 'Дизайн, для якого показується фото.', { required: true }),
     relationField('section', 'Блок глобального текстового шаблону.', { required: true }),
-    imageField('image', 'Файл Directus має пріоритет над зовнішнім URL.'),
-    shortText('external_url', { note: 'Пряме HTTPS-посилання. Використовується лише якщо файл не завантажено.' }),
+    imageField('image', 'Файл Directus. Зовнішній URL має пріоритет.'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання (Cloudflare R2). Має пріоритет над файлом Directus.' }),
     shortText('alt', { note: 'Необов’язково. Порожнє значення створюється автоматично із заголовка блока та дизайну.' }),
   ], { displayTemplate: '{{design}} · {{section}}' }),
-  collection('carzo_media_settings', 'image', 'Єдиний плейсхолдер для відсутніх або недоступних фото галереї та rich content.', [
+  collection('carzo_media_settings', 'video_library', 'Глобальне відео магнітної системи, його обкладинки та єдиний плейсхолдер для відсутніх медіа.', [
     idField(), statusField(),
-    imageField('image', 'SVG, PNG, JPEG, WebP або інший підтримуваний Directus формат. Файл має пріоритет.'),
-    shortText('external_url', { note: 'Пряме HTTPS-посилання, якщо файл не завантажено.' }),
-  ], { singleton: true, displayTemplate: 'Плейсхолдер медіа' }),
+    imageField('image', 'SVG, PNG, JPEG, WebP або інший підтримуваний Directus формат. Зовнішній URL має пріоритет.'),
+    shortText('external_url', { note: 'Пряме HTTPS-посилання на плейсхолдер (Cloudflare R2). Має пріоритет над файлом.' }),
+    fileField(
+      'magnetic_system_video',
+      'Одне глобальне відео для всіх дизайнів і розмірів. Рекомендований формат: MP4 (H.264).',
+      'Магнітна система · глобальне відео',
+    ),
+    urlField('magnetic_system_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Магнітна система · URL відео'),
+    imageField(
+      'magnetic_system_default_cover',
+      'Резервна обкладинка, якщо точну комбінацію дизайн × розмір не заповнено.',
+      'Магнітна система · резервна обкладинка',
+    ),
+    urlField('magnetic_system_default_cover_url', 'Пряме HTTPS-посилання на резервну обкладинку (Cloudflare R2).', 'Магнітна система · URL резервної обкладинки'),
+    ...MAGNETIC_SYSTEM_COVER_FIELDS.flatMap(item => [
+      imageField(
+        item.field,
+        `Показується тільки для Carzo ${item.designSlug.replace('-', '.')} розміру ${item.size}.`,
+        item.label,
+      ),
+      urlField(
+        `${item.field}_url`,
+        `Пряме HTTPS-посилання на обкладинку (Cloudflare R2). Пріоритет над файлом.`,
+        `${item.label} · URL`,
+      ),
+    ]),
+    fileField(
+      'materials_video',
+      'Одне глобальне відео для блоку «Основні матеріали». Рекомендований формат: MP4 (H.264).',
+      'Основні матеріали · глобальне відео',
+    ),
+    urlField('materials_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Основні матеріали · URL відео'),
+    fileField(
+      'edging_video',
+      'Одне глобальне відео для блоку «Якісна окантовка». Рекомендований формат: MP4 (H.264).',
+      'Якісна окантовка · глобальне відео',
+    ),
+    urlField('edging_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Якісна окантовка · URL відео'),
+    fileField(
+      'fixation_video',
+      'Одне глобальне відео для модалки «Фіксація з багажником». Рекомендований формат: MP4 (H.264).',
+      'Фіксація · глобальне відео',
+    ),
+    urlField('fixation_video_url', 'Пряме HTTPS-посилання на відео (Cloudflare R2). Має пріоритет над файлом Directus.', 'Фіксація · URL відео'),
+  ], { singleton: true, displayTemplate: 'Глобальні медіа товару' }),
   collection('carzo_benefit_modals', 'featured_play_list', 'Глобальні модалки переваг товару.', [
     idField(), statusField(), sortField(), keyField(),
     shortText('card_label', { required: true }), shortText('title', { required: true }),
@@ -449,7 +524,7 @@ const collections = [
     }),
     longText('message_template', {
       required: true,
-      note: 'Доступні: order_number, customer_name, customer_phone, contact_method, items_quantity, items_summary, total, delivery_city, delivery_point, order_url.',
+      note: 'Доступні: order_number, customer_name, customer_phone, contact_method, items_quantity, items_summary, total, delivery_method, delivery_city, delivery_destination, delivery_point, order_url.',
     }),
   ], {
     singleton: true,
@@ -492,15 +567,26 @@ const collections = [
       defaultValue: 'phone',
       note: 'Бажаний спосіб підтвердження замовлення менеджером.',
     }),
+    choice('delivery_method', [
+      { text: 'У відділення', value: 'BRANCH' },
+      { text: 'У поштомат', value: 'POSTOMAT' },
+      { text: 'Курʼєром', value: 'COURIER' },
+    ], { required: true, defaultValue: 'BRANCH' }),
     shortText('delivery_city_ref', { required: true }),
     shortText('delivery_city_name', { required: true }),
-    shortText('delivery_point_ref', { required: true }),
-    shortText('delivery_point_name', { required: true }),
-    shortText('delivery_point_address', { required: true }),
+    shortText('delivery_point_ref'),
+    shortText('delivery_point_number', { width: 'half' }),
+    shortText('delivery_point_name'),
+    shortText('delivery_point_address'),
     choice('delivery_point_type', [
       { text: 'Відділення', value: 'branch' },
       { text: 'Поштомат', value: 'postomat' },
-    ], { required: true, defaultValue: 'branch' }),
+    ]),
+    shortText('delivery_street_ref'),
+    shortText('delivery_street_name'),
+    shortText('delivery_street_type', { width: 'half' }),
+    shortText('delivery_house', { width: 'half' }),
+    shortText('delivery_apartment', { width: 'half' }),
     integer('items_quantity', { required: true }),
     integer('subtotal', { required: true }),
     integer('quantity_discount', { required: true, defaultValue: 0 }),
@@ -541,10 +627,57 @@ const collections = [
     shortText('feature_material_flag', { required: true, width: 'half' }),
     shortText('feature_material_text', { required: true }),
     shortText('rich_signoff', { required: true }),
+    imageField('site_flag', 'Прапор країни (SVG/PNG). Використовується в хедері, футері та на головній.'),
+    urlField('site_flag_url', 'Пряме HTTPS-посилання на прапор (Cloudflare R2). Має пріоритет над файлом Directus.', 'Прапор · Cloudflare URL'),
     longText('checkout_payment_details', {
       note: 'Показується під способом зв’язку під час оформлення замовлення. Порожнє значення приховує блок на сайті.',
       placeholder: 'Тут треба вставити реквізити',
     }),
+    toggle('reviews_enabled', true, 'Показувати блок відгуків на картках автокейсів.'),
+    shortText('reviews_title'),
+    longText('reviews_description_line_1'),
+    shortText('reviews_description_line_2'),
+    shortText('reviews_instagram_handle', { width: 'half' }),
+    shortText('reviews_cta_label'),
+    shortText('reviews_modal_title'),
+    shortText('reviews_modal_description'),
+    json('reviews_items', 'Текстові відгуки [{ reviewText, customerName, reviewDate, rating, sort }].'),
+    json('reviews_screenshots', 'Скріншоти відгуків [{ image (Directus file ID або URL), imageUrl (Cloudflare R2 URL), altText, sort }].'),
+    shortText('homepage_hero_eyebrow'),
+    shortText('homepage_hero_title'),
+    longText('homepage_hero_lead'),
+    shortText('homepage_hero_material_tag'),
+    json('homepage_hero_products', 'Масив продуктів [{ image (шлях або URL), alt, href, tag, title }].'),
+    shortText('homepage_badges_eyebrow'),
+    shortText('homepage_badges_title'),
+    longText('homepage_badges_description'),
+    imageField('homepage_badges_video', 'Відео шильдів (MP4).'),
+    urlField('homepage_badges_video_url', 'Пряме HTTPS-посилання на відео шильдів (Cloudflare R2). Має пріоритет над файлом Directus.', 'Відео шильдів · Cloudflare URL'),
+    shortText('homepage_badges_size_label'),
+    json('homepage_badges_features', 'Масив фіч [{ number, title, description }].'),
+    shortText('homepage_quality_eyebrow'),
+    shortText('homepage_quality_title'),
+    json('homepage_quality_stats', 'Масив статистики [{ value, suffix, description }].'),
+    shortText('about_hero_eyebrow'),
+    shortText('about_hero_title'),
+    longText('about_hero_paragraph_1'),
+    longText('about_hero_paragraph_2'),
+    json('about_process_blocks', 'Масив блоків процесу [{ index, title, paragraph1, paragraph2 }].'),
+    imageField('about_process_image_1', 'Фото для блоку «Розробляємо самостійно».'),
+    urlField('about_process_image_1_url', 'Пряме HTTPS-посилання на фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Про нас · фото 1 · Cloudflare URL'),
+    imageField('about_process_image_2', 'Фото для блоку «Виготовляємо на власному виробництві».'),
+    urlField('about_process_image_2_url', 'Пряме HTTPS-посилання на фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Про нас · фото 2 · Cloudflare URL'),
+    imageField('about_process_image_3', 'Фото для блоку «Перевіряємо на практиці».'),
+    urlField('about_process_image_3_url', 'Пряме HTTPS-посилання на фото (Cloudflare R2). Має пріоритет над файлом Directus.', 'Про нас · фото 3 · Cloudflare URL'),
+    shortText('about_principles_eyebrow'),
+    shortText('about_principles_title'),
+    json('about_principles_items', 'Масив принципів [{ index, title, description }].'),
+    shortText('about_development_title'),
+    longText('about_development_text'),
+    longText('about_statement_text'),
+    shortText('car_mat_modal_title'),
+    longText('car_mat_modal_description'),
+    json('car_mat_designs', 'Варіанти дизайну автокилимків [{ code, title, altText, image (Directus file ID або URL), imageUrl (Cloudflare R2 URL) }].'),
   ], { singleton: true, displayTemplate: 'Налаштування Carzo' }),
 ];
 
@@ -597,6 +730,20 @@ const relations = [
   { collection: 'carzo_rich_section_images', field: 'section', relatedCollection: 'carzo_rich_sections', schema: { on_delete: 'CASCADE' } },
   { collection: 'carzo_rich_section_images', field: 'image', relatedCollection: 'directus_files' },
   { collection: 'carzo_media_settings', field: 'image', relatedCollection: 'directus_files' },
+  { collection: 'carzo_media_settings', field: 'magnetic_system_video', relatedCollection: 'directus_files' },
+  { collection: 'carzo_media_settings', field: 'magnetic_system_default_cover', relatedCollection: 'directus_files' },
+  ...MAGNETIC_SYSTEM_COVER_FIELDS.map(item => ({
+    collection: 'carzo_media_settings',
+    field: item.field,
+    relatedCollection: 'directus_files',
+  })),
+  { collection: 'carzo_media_settings', field: 'materials_video', relatedCollection: 'directus_files' },
+  { collection: 'carzo_media_settings', field: 'edging_video', relatedCollection: 'directus_files' },
+  { collection: 'carzo_media_settings', field: 'fixation_video', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'about_process_image_1', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'about_process_image_2', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'about_process_image_3', relatedCollection: 'directus_files' },
+  { collection: 'carzo_site_settings', field: 'site_flag', relatedCollection: 'directus_files' },
   {
     collection: 'carzo_order_items',
     field: 'order',
@@ -605,6 +752,19 @@ const relations = [
     meta: { one_field: 'items', one_deselect_action: 'delete', sort_field: 'sort' },
   },
 ];
+
+const physicalRelationRepairKeys = new Set([
+  'carzo_media_settings.image',
+  'carzo_media_settings.magnetic_system_video',
+  'carzo_media_settings.magnetic_system_default_cover',
+  ...MAGNETIC_SYSTEM_COVER_FIELDS.map(item => `carzo_media_settings.${item.field}`),
+  'carzo_media_settings.materials_video',
+  'carzo_media_settings.edging_video',
+  'carzo_media_settings.fixation_video',
+  'carzo_rich_section_images.design',
+  'carzo_rich_section_images.section',
+  'carzo_rich_section_images.image',
+]);
 
 const legacyReadonlyFields = {
   carzo_brands: ['logo_extra'],
@@ -701,6 +861,50 @@ async function retireLegacyFields() {
 }
 
 async function configureCheckoutFieldMetadata() {
+  await request('/fields/carzo_orders/delivery_method', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      schema: { is_nullable: false, default_value: 'BRANCH' },
+      meta: {
+        required: true,
+        options: {
+          choices: [
+            { text: 'У відділення', value: 'BRANCH' },
+            { text: 'У поштомат', value: 'POSTOMAT' },
+            { text: 'Курʼєром', value: 'COURIER' },
+          ],
+        },
+      },
+    }),
+  });
+  for (const fieldName of [
+    'delivery_point_ref',
+    'delivery_point_number',
+    'delivery_point_name',
+    'delivery_point_address',
+    'delivery_point_type',
+  ]) {
+    await request(`/fields/carzo_orders/${fieldName}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        schema: { is_nullable: true },
+        meta: { required: false },
+      }),
+    });
+  }
+  await request('/fields/carzo_orders/delivery_point_type', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      meta: {
+        options: {
+          choices: [
+            { text: 'Відділення', value: 'branch' },
+            { text: 'Поштомат', value: 'postomat' },
+          ],
+        },
+      },
+    }),
+  });
   await request('/fields/carzo_orders/contact_method', {
     method: 'PATCH',
     body: JSON.stringify({
@@ -720,6 +924,32 @@ async function configureCheckoutFieldMetadata() {
       },
     }),
   });
+  await request('/fields/carzo_notification_settings/message_template', {
+    method: 'PATCH',
+    body: JSON.stringify({
+      meta: {
+        note: 'Доступні: order_number, customer_name, customer_phone, contact_method, items_quantity, items_summary, total, delivery_method, delivery_city, delivery_destination, delivery_point, order_url.',
+      },
+    }),
+  });
+}
+
+async function backfillOrderDeliveryMethods() {
+  const orders = await request(
+    '/items/carzo_orders?limit=-1&fields=id,delivery_method,delivery_point_type',
+  );
+  let updated = 0;
+  for (const order of orders) {
+    // Only repair historical locker orders that received the new BRANCH default.
+    // Current BRANCH/POSTOMAT values and every COURIER order are already canonical.
+    if (order.delivery_point_type !== 'postomat' || order.delivery_method !== 'BRANCH') continue;
+    await request(`/items/carzo_orders/${order.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ delivery_method: 'POSTOMAT' }),
+    });
+    updated += 1;
+  }
+  return { checked: orders.length, updated };
 }
 
 async function configureProductMediaFieldMetadata() {
@@ -741,32 +971,100 @@ async function configureProductMediaFieldMetadata() {
   });
 }
 
+async function assertRelationReferences(definition) {
+  const source = await request(
+    `/items/${definition.collection}?limit=-1&fields=id,${definition.field}`,
+  );
+  const relatedPath = definition.relatedCollection === 'directus_files'
+    ? '/files?limit=-1&fields=id'
+    : `/items/${definition.relatedCollection}?limit=-1&fields=id`;
+  const related = await request(relatedPath);
+  const sourceItems = Array.isArray(source) ? source : source ? [source] : [];
+  const relatedItems = Array.isArray(related) ? related : related ? [related] : [];
+  const relatedIds = new Set(relatedItems.map(item => String(item.id)));
+  const orphanedItemIds = sourceItems
+    .filter(item => {
+      const value = relatedId(item[definition.field]);
+      return value !== null && !relatedIds.has(String(value));
+    })
+    .map(item => item.id);
+
+  if (orphanedItemIds.length > 0) {
+    throw new Error(
+      `Cannot restore ${definition.collection}.${definition.field} foreign key: `
+      + `orphaned values exist in items ${orphanedItemIds.join(', ')}`,
+    );
+  }
+}
+
 async function ensureRelations() {
   const existing = await request('/relations');
   for (const definition of relations) {
-    const found = existing.some(relation => (
+    const found = existing.find(relation => (
       relation.collection === definition.collection && relation.field === definition.field
     ));
-    if (found) {
-      await request(`/relations/${definition.collection}/${definition.field}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          schema: definition.schema || { on_delete: 'SET NULL' },
-          meta: definition.meta || { one_deselect_action: 'nullify' },
-        }),
+    const schema = definition.schema || { on_delete: 'SET NULL' };
+    const meta = definition.meta || { one_deselect_action: 'nullify' };
+    const payload = {
+      collection: definition.collection,
+      field: definition.field,
+      related_collection: definition.relatedCollection,
+      schema,
+      meta,
+    };
+
+    if (!found) {
+      await request('/relations', {
+        method: 'POST',
+        body: JSON.stringify(payload),
       });
       continue;
     }
-    await request('/relations', {
-      method: 'POST',
-      body: JSON.stringify({
-        collection: definition.collection,
-        field: definition.field,
-        related_collection: definition.relatedCollection,
-        schema: definition.schema || { on_delete: 'SET NULL' },
-        meta: definition.meta || { one_deselect_action: 'nullify' },
-      }),
+
+    const key = `${definition.collection}.${definition.field}`;
+    const schemaMatches = found.schema
+      && found.schema.foreign_key_table === definition.relatedCollection
+      && found.schema.foreign_key_column === 'id'
+      && found.schema.on_delete === schema.on_delete;
+    const metaMatches = Object.entries(meta).every(
+      ([name, value]) => found.meta?.[name] === value,
+    );
+
+    if (schemaMatches && metaMatches) continue;
+
+    // Repair only relations explicitly covered by verification. Leave older
+    // metadata-only relations unchanged so setup does not broaden unrelated DDL.
+    if (!found.schema && !physicalRelationRepairKeys.has(key)) continue;
+
+    if (!found.schema) {
+      await assertRelationReferences(definition);
+    }
+
+    await request(`/relations/${definition.collection}/${definition.field}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     });
+  }
+
+  const refreshed = await request('/relations');
+  for (const key of physicalRelationRepairKeys) {
+    const [collectionName, fieldName] = key.split('.');
+    const definition = relations.find(item => (
+      item.collection === collectionName && item.field === fieldName
+    ));
+    const relation = refreshed.find(item => (
+      item.collection === collectionName && item.field === fieldName
+    ));
+    const expectedOnDelete = definition?.schema?.on_delete || 'SET NULL';
+    if (
+      !definition
+      || !relation?.schema
+      || relation.schema.foreign_key_table !== definition.relatedCollection
+      || relation.schema.foreign_key_column !== 'id'
+      || relation.schema.on_delete !== expectedOnDelete
+    ) {
+      throw new Error(`Directus did not restore the expected foreign key for ${key}`);
+    }
   }
 }
 
@@ -926,7 +1224,8 @@ async function ensureNotificationSettings() {
       '{{items_summary}}',
       'Кількість: {{items_quantity}}',
       'Сума: {{total}} ₴',
-      'Доставка: {{delivery_city}}, {{delivery_point}}',
+      'Доставка: {{delivery_method}}',
+      'Адреса: {{delivery_city}}, {{delivery_destination}}',
       'Замовлення: {{order_url}}',
     ].join('\n'),
   };
@@ -1015,8 +1314,11 @@ function mimeType(path) {
 }
 
 function relatedId(value) {
-  if (typeof value === 'string') return value;
-  return value && typeof value === 'object' && typeof value.id === 'string' ? value.id : null;
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (value && typeof value === 'object' && (typeof value.id === 'string' || typeof value.id === 'number')) {
+    return String(value.id);
+  }
+  return null;
 }
 
 async function ensureFile(relativePath, folderId) {
@@ -1230,18 +1532,126 @@ async function seedItems() {
     });
   }
 
+  // Car mat modal settings + designs in site_settings
+  await upsertSingleton('carzo_site_settings', {
+    car_mat_modal_title: 'Варіанти дизайну',
+    car_mat_modal_description: 'Виготовляємо тільки в чорному кольорі з чорною строчкою, можливий варіант зі зміною кольору окантовки або кольору строчки окантовки',
+    car_mat_designs: [
+      { code: '2.0', title: 'Дизайн Carzo 2.0', altText: 'Автокилимки Carzo дизайн 2.0', image: null },
+      { code: '3.0', title: 'Дизайн Carzo 3.0', altText: 'Автокилимки Carzo дизайн 3.0', image: null },
+      { code: '4.0', title: 'Дизайн Carzo 4.0', altText: 'Автокилимки Carzo дизайн 4.0', image: null },
+    ],
+  });
+
+  const aboutProcessImage1Id = await ensureFile('public/about-design.png', folder.id);
+  const aboutProcessImage2Id = await ensureFile('public/about-production.png', folder.id);
+  const aboutProcessImage3Id = await ensureFile('public/about-testing.png', folder.id);
+
   await upsertSingleton('carzo_site_settings', {
     status: 'published', design_info_text: seed.siteSettings.designInfoText,
     feature_magnetic_text: seed.siteSettings.featureMagneticText,
     feature_material_flag: seed.siteSettings.featureMaterialFlag,
     feature_material_text: seed.siteSettings.featureMaterialText,
     rich_signoff: seed.siteSettings.richSignoff,
+    reviews_enabled: true,
+    reviews_title: '🤘 Відгуки клієнтів',
+    reviews_description_line_1: 'Понад 5 років роботи та сотні реальних відгуків від наших клієнтів.',
+    reviews_description_line_2: 'Частина з них представлена в Instagram',
+    reviews_instagram_handle: '@carzo.ua',
+    reviews_cta_label: 'Дивитися більше відгуків',
+    reviews_modal_title: 'Відгуки клієнтів',
+    reviews_modal_description: 'Скріншоти з Instagram та месенджерів.',
+    reviews_items: [
+      { key: 'review-1', reviewText: 'Чудова якість матеріалів і пошиття. Дуже зручно та практично!', customerName: 'Олександр', reviewDate: '2026-05-18', rating: 5, sort: 1 },
+      { key: 'review-2', reviewText: 'Замовив другий автокейс — перший подарував другу. Рекомендую всім!', customerName: 'Марина', reviewDate: '2026-04-02', rating: 5, sort: 2 },
+      { key: 'review-3', reviewText: 'Швидка доставка, якісна упаковка. Автокейс виглядає як на фото.', customerName: 'Ігор', reviewDate: '2026-03-15', rating: 5, sort: 3 },
+    ],
+    reviews_screenshots: [],
+    homepage_hero_eyebrow: 'Стабільно якісно з 2020 року',
+    homepage_hero_title: 'Преміальні\nавтоаксесуари Carzo',
+    homepage_hero_lead: 'Німецька автомобільна еко-шкіра створена для авто',
+    homepage_hero_material_tag: 'ВИСОКОЯКІСНА ТА ЗНОСОСТІЙКА',
+    homepage_hero_products: [
+      { image: '/case.jpg', alt: 'Чорний автокейс Carzo у багажнику', href: '/case/design/l/4-0', tag: 'Магнітна система', title: 'Premium автокейси' },
+      { image: '/mats.png', alt: 'Комплект чорних автокилимків Carzo', href: '/catalog-carmat', tag: 'Точність лекал', title: 'Premium автокилимки' },
+    ],
+    homepage_badges_eyebrow: 'Власне виробництво',
+    homepage_badges_title: 'Високоякісні\nшильди',
+    homepage_badges_description: 'Від фрезування металу до готової деталі — усе контролюємо самі.',
+    homepage_badges_video: null,
+    homepage_badges_size_label: '20 × 80 мм',
+    homepage_badges_features: [
+      { number: '01', title: 'Фрезування металу', description: 'Основний процес виготовлення — точне фрезування металевої основи.' },
+      { number: '02', title: 'Для виробів Carzo', description: 'Додайте фірмовий шильд до автокейса за привабливою ціною.' },
+      { number: '03', title: 'Стандартні та індивідуальні', description: 'Готові рішення для популярних марок та виготовлення за вашим дизайном.' },
+    ],
+    homepage_quality_eyebrow: 'Carzo у цифрах',
+    homepage_quality_title: 'Відмінна якість\nпродукту та обслуговування',
+    homepage_quality_stats: [
+      { value: '15K', suffix: '+', description: 'задоволених клієнтів\nзі всієї країни' },
+      { value: '24', suffix: '%', description: 'клієнтів здійснюють\nповторну покупку' },
+      { value: '<1', suffix: '%', description: 'звернень із проханням\nповернути або обміняти товар' },
+    ],
+    about_hero_eyebrow: 'Про нас',
+    about_hero_title: 'Робимо добре те,\nза що беремося',
+    about_hero_paragraph_1: 'Carzo — український бренд автомобільних аксесуарів, який ми розвиваємо з 2020 року.',
+    about_hero_paragraph_2: 'Розробляємо продукцію та відповідаємо за її якість на всіх етапах — від задуму до готового виробу. Для нас важливі якісні матеріали, продумані рішення, акуратне виконання й увага до деталей.',
+    about_process_blocks: [
+      { index: '01', title: 'Розробляємо самостійно', paragraph1: 'Ми не працюємо з готовими типовими рішеннями. Конструкції, лекала та ключові елементи продуктів розробляємо самостійно.', paragraph2: 'Для автомобільних килимків створюємо власні лекала під конкретні моделі авто, приділяючи увагу точності геометрії та посадки. Для автокейсів розробляємо конструкцію, розміри й функціональні елементи.' },
+      { index: '02', title: 'Виготовляємо на власному виробництві', paragraph1: 'Власне виробництво дає змогу контролювати всі етапи роботи: поведінку матеріалів, точність виготовлення та поєднання деталей, якість виконання й можливості для вдосконалення технології.', paragraph2: 'Це також дозволяє оперативно впроваджувати зміни, коли вони роблять продукт кращим.' },
+      { index: '03', title: 'Перевіряємо на практиці', paragraph1: 'Перед запуском у продаж нові продукти тестуємо самостійно — оцінюємо зручність, надійність, зносостійкість і поведінку матеріалів у щоденній експлуатації.', paragraph2: 'Автомобільні килимки Carzo протягом пів року тестували у власному автомобілі: перевіряли точність посадки, зручність користування та стійкість до різних умов. Лише після цього продукт запустили в продаж.' },
+    ],
+    about_principles_eyebrow: 'Наш підхід',
+    about_principles_title: 'Наші принципи',
+    about_principles_items: [
+      { index: '01', title: 'Відповідальність за результат', description: 'Клієнт обирає Carzo — отже, відповідальність за якість продукту лежить на нас, незалежно від матеріалів, постачальників чи окремих виробничих процесів.' },
+      { index: '02', title: 'Практичність у кожному рішенні', description: 'Кожен елемент має зрозуміле призначення. Якщо рішення не робить продукт зручнішим, надійнішим або функціональнішим, у ньому немає потреби.' },
+      { index: '03', title: 'Увага до деталей', description: 'Точність посадки, геометрія, шви, краї, кріплення та інші конструктивні елементи формують загальне враження від продукту. Тому деталям ми приділяємо таку саму увагу, як і конструкції загалом.' },
+      { index: '04', title: 'Постійне вдосконалення', description: 'Власний досвід, тестування та відгуки клієнтів допомагають знаходити рішення, які можна зробити точнішими, зручнішими й надійнішими. Жоден продукт ми не сприймаємо як остаточно завершений.' },
+    ],
+    about_development_title: 'Розвиток Carzo з 2020 року',
+    about_development_text: 'Для нас розвиток — це не лише роки роботи чи кількість проданих виробів, а передусім те, як змінюється продукт і наскільки кращою стає кожна його наступна версія.',
+    about_statement_text: 'Ми самостійно розробляємо та виготовляємо продукцію Carzo й відповідаємо за кожен продукт, що виходить під нашим брендом.',
+    about_process_image_1: aboutProcessImage1Id,
+    about_process_image_2: aboutProcessImage2Id,
+    about_process_image_3: aboutProcessImage3Id,
   });
 
   const mediaSettings = await request('/items/carzo_media_settings?fields=*');
   if (!relatedId(mediaSettings?.image) && !mediaSettings?.external_url) {
     await upsertSingleton('carzo_media_settings', {
       status: 'published', image: mediaPlaceholderFileId, external_url: null,
+    });
+  }
+
+  const magneticPosterFileByDesign = new Map();
+  for (const designSlug of ['2-0', '3-0', '4-0']) {
+    const richMedia = await findOne(
+      'carzo_rich_section_images',
+      'key',
+      `${designSlug}:rich-magnets`,
+    );
+    const posterFileId = relatedId(richMedia?.image);
+    if (posterFileId) magneticPosterFileByDesign.set(designSlug, posterFileId);
+  }
+
+  const magneticMediaDefaults = {};
+  for (const item of MAGNETIC_SYSTEM_COVER_FIELDS) {
+    if (relatedId(mediaSettings?.[item.field])) continue;
+    const posterFileId = magneticPosterFileByDesign.get(item.designSlug);
+    if (posterFileId) magneticMediaDefaults[item.field] = posterFileId;
+  }
+  if (!relatedId(mediaSettings?.magnetic_system_default_cover)) {
+    const defaultPosterFileId = magneticPosterFileByDesign.get('2-0')
+      || magneticPosterFileByDesign.values().next().value;
+    if (defaultPosterFileId) {
+      magneticMediaDefaults.magnetic_system_default_cover = defaultPosterFileId;
+    }
+  }
+  if (Object.keys(magneticMediaDefaults).length > 0) {
+    await upsertSingleton('carzo_media_settings', {
+      status: 'published',
+      ...magneticMediaDefaults,
     });
   }
 
@@ -1405,6 +1815,7 @@ for (const definition of collections) {
 }
 await retireLegacyFields();
 await configureCheckoutFieldMetadata();
+const orderDeliveryBackfill = await backfillOrderDeliveryMethods();
 await configureProductMediaFieldMetadata();
 await ensureRelations();
 const previewConfigured = await configurePagePreview();
@@ -1443,6 +1854,7 @@ console.log(JSON.stringify({
   access,
   notificationSettings,
   telegramBotSettings,
+  orderDeliveryBackfill,
   legacyOrderNotificationFlow,
   previewConfigured,
 }, null, 2));

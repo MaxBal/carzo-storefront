@@ -1,35 +1,35 @@
 import Header from '@/components/Header';
-import ProductSubheader from '@/components/ProductSubheader';
 import ProductGallery from '@/components/ProductGallery';
 import ProductOptions from '@/components/ProductOptions';
 import ProductRichContent from '@/components/ProductRichContent';
+import VideoReviewsSection from '@/components/VideoReviewsSection';
 import type { ProductParams, ResolvedProductContent } from '@/lib/content/types';
+import '@/app/video-reviews.css';
+import '@/app/product-nav.css';
 
 interface ProductPageClientProps {
   params: ProductParams;
   content: ResolvedProductContent;
+  siteFlag?: string;
 }
 
-export default function ProductPageClient({ params, content }: ProductPageClientProps) {
+export default function ProductPageClient({ params, content, siteFlag }: ProductPageClientProps) {
+  const gallerySelection = `${params.designSlug}:${params.size}`;
+
   return (
     <div className="min-h-screen bg-white">
-      <Header />
+      <Header siteFlag={siteFlag} />
 
-      {/* Desktop subheader: sticky/fixed scroll behavior */}
-      <div className="hidden md:block">
-        <ProductSubheader
-          designSlug={params.designSlug}
-          designs={content.catalog.designs}
-          designInfoText={content.siteSettings.designInfoText}
-        />
-      </div>
-
-      <main>
+      <main className="has-msb">
         {/* Desktop: padded container with two columns */}
         <div className="hidden md:block max-w-[1280px] mx-auto px-4 pb-12 pt-6">
           <div className="flex gap-8">
             <div className="flex-[0_0_60%] max-w-[60%]">
-              <ProductGallery images={content.gallery} />
+              <ProductGallery
+                key={`desktop:${gallerySelection}`}
+                images={content.gallery}
+                selectionKey={gallerySelection}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <ProductOptions params={params} content={content} />
@@ -37,14 +37,12 @@ export default function ProductPageClient({ params, content }: ProductPageClient
           </div>
         </div>
 
-        {/* Mobile: gallery → subheader → content, all in normal flow */}
+        {/* Mobile: gallery → content, all in normal flow */}
         <div className="md:hidden pb-10">
-          <ProductGallery images={content.gallery} />
-          <ProductSubheader
-            inFlow
-            designSlug={params.designSlug}
-            designs={content.catalog.designs}
-            designInfoText={content.siteSettings.designInfoText}
+          <ProductGallery
+            key={`mobile:${gallerySelection}`}
+            images={content.gallery}
+            selectionKey={gallerySelection}
           />
           <div className="px-3 pt-4">
             <ProductOptions params={params} content={content} />
@@ -52,6 +50,7 @@ export default function ProductPageClient({ params, content }: ProductPageClient
         </div>
 
         <ProductRichContent data={content.richContent} />
+        <VideoReviewsSection data={content.videoReviews} />
       </main>
     </div>
   );

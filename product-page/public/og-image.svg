@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#000000"/>
+  <rect x="80" y="80" width="1040" height="470" rx="24" fill="#111111" stroke="#222222" stroke-width="1"/>
+  
+  <!-- Logo -->
+  <text x="600" y="240" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="72" font-weight="900" fill="#ffffff" letter-spacing="-2">CARZO</text>
+  
+  <!-- Accent line -->
+  <rect x="520" y="270" width="160" height="4" rx="2" fill="#5ce4ab"/>
+  
+  <!-- Tagline -->
+  <text x="600" y="330" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="400" fill="#9ca3af">Преміальні автомобільні органайзери</text>
+  
+  <!-- Features -->
+  <text x="600" y="400" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="500" fill="#6b7280">Німецька еко-шкіра • Магнітна система • Зроблено в Україні</text>
+  
+  <!-- URL -->
+  <text x="600" y="500" text-anchor="middle" font-family="Inter, system-ui, sans-serif" font-size="16" font-weight="400" fill="#4b5563">carzo-eight.vercel.app</text>
+</svg>

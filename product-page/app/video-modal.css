@@ -1,0 +1,76 @@
+/* ── Video modal (shared) ── */
+.vm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.92);
+  animation: vmFadeIn 0.25s ease-out;
+}
+
+@keyframes vmFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.vm-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.vm-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.vm-close svg {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vm-wrapper {
+  width: min(90vw, 420px);
+  max-height: 88vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vm-video {
+  width: 100%;
+  max-height: 85vh;
+  border-radius: 14px;
+  background: #000;
+  object-fit: contain;
+}
+
+@media (min-width: 901px) {
+  .vm-wrapper {
+    width: min(80vw, 440px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vm-overlay {
+    animation: none;
+  }
+}

@@ -37,12 +37,24 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     logoImage: '',
     sort: item.sort,
   })),
-  fixations: seed.fixations.map(item => ({
-    value: item.key,
-    label: item.label,
-    extra: item.extra,
-    sort: item.sort,
-  })),
+  fixations: seed.fixations.map(item => {
+    const raw = (item as { extraBySize?: Record<string, number> }).extraBySize;
+    const extraBySize = raw
+      ? Object.fromEntries(
+          Object.entries(raw).flatMap(([key, value]) => {
+            const lower = key.toLowerCase();
+            return [[lower, value], [lower.toUpperCase(), value]] as Array<[string, number]>;
+          }),
+        )
+      : undefined;
+    return {
+      value: item.key,
+      label: item.label,
+      extra: item.extra,
+      extraBySize: extraBySize as Partial<Record<SizeId, number>> | undefined,
+      sort: item.sort,
+    };
+  }),
   variants: seed.variants.map(item => ({
     key: item.key,
     designSlug: item.design,
@@ -83,6 +95,7 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     title: seed.logoSettings.title,
     infoText: seed.logoSettings.infoText,
     fallbackImage: seed.logoSettings.fallbackImagePath,
+    placementVideo: '',
     specs: seed.logoSettings.specs,
   },
   logoPlacements: [],
@@ -107,6 +120,13 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     src: item.imagePath,
     alt: `${item.title} — Carzo ${designSlug.replace('-', '.')}`,
   }))),
+  magneticSystemMedia: {
+    video: '',
+    defaultPoster: '',
+    posters: {},
+  },
+  richContentVideos: {},
+  fixationVideo: '',
   benefitModals: seed.benefitModals.map((item, index) => ({
     type: item.key,
     cardLabel: item.cardLabel,
@@ -127,5 +147,59 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     featureMaterialText: seed.siteSettings.featureMaterialText,
     richSignoff: seed.siteSettings.richSignoff,
     mediaPlaceholder: '/media/landscape-placeholder.svg',
+    siteFlag: '/flag-ua.svg',
+  },
+  reviews: {
+    settings: {
+      enabled: true,
+      title: '🤘 Відгуки клієнтів',
+      descriptionLine1: 'Понад 5 років роботи та сотні реальних відгуків від наших клієнтів.',
+      descriptionLine2: 'Частина з них представлена в Instagram',
+      instagramHandle: '@carzo.ua',
+      ctaLabel: 'Дивитися більше відгуків',
+      modalTitle: 'Відгуки клієнтів',
+      modalDescription: 'Скріншоти з Instagram та месенджерів.',
+    },
+    items: [
+      {
+        key: 'review-default-1',
+        reviewText: 'Чудова якість матеріалів і пошиття. Дуже зручно та практично!',
+        customerName: 'Олександр',
+        reviewDate: '2026-05-18',
+        rating: 5,
+        sort: 1,
+      },
+      {
+        key: 'review-default-2',
+        reviewText: 'Замовив другий автокейс — перший подарував другу. Рекомендую всім!',
+        customerName: 'Марина',
+        reviewDate: '2026-04-02',
+        rating: 5,
+        sort: 2,
+      },
+      {
+        key: 'review-default-3',
+        reviewText: 'Швидка доставка, якісна упаковка. Автокейс виглядає як на фото.',
+        customerName: 'Ігор',
+        reviewDate: '2026-03-15',
+        rating: 5,
+        sort: 3,
+      },
+    ],
+    screenshots: [],
+  },
+  videoReviews: {
+    enabled: true,
+    title: 'Відео-відгуки клієнтів',
+    socialBadgeUrl: '',
+    socialHandle: 'carzo.ua',
+    socialVerified: true,
+    socialText: '22 000+ клієнтів обрали Carzo',
+    stats: [
+      { value: '27%', text: 'здійснюють повторну покупку' },
+      { value: '<1%', text: 'клієнтів у 2025 році скористалися обміном або поверненням' },
+      { value: '100%', text: 'знаються на якості' },
+    ],
+    videos: [],
   },
 };

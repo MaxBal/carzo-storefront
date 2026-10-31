@@ -1,28 +1,49 @@
-import { draftMode } from 'next/headers';
-import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import PageRenderer from '@/components/cms/PageRenderer';
-import { getPreviewPage, getPublishedPage } from '@/lib/pages/directus';
-import { buildCmsMetadata } from '@/lib/pages/metadata';
+import Header from '@/components/Header';
+import HomePageContent from '@/components/HomePageContent';
+import { siteOrigin } from '@/lib/seo';
+import { getHomepageData } from '@/lib/content/homepage';
+import { getSiteFlag } from '@/lib/content/site-flag';
 
-interface HomeProps {
-  searchParams: { preview?: string };
-}
+export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
+  title: 'CARZO — преміальні автоаксесуари',
+  description: 'Преміальні автомобільні органайзери та килимки з магнітною системою та німецькою еко-шкірою.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'CARZO — преміальні автоаксесуари',
+    description: 'Преміальні автомобільні органайзери та килимки з магнітною системою та німецькою еко-шкірою.',
+    url: '/',
+    siteName: 'CARZO',
+    locale: 'uk_UA',
+    type: 'website',
+    images: [
+      {
+        url: '/case.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'CARZO — преміальні автоаксесуари',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CARZO — преміальні автоаксесуари',
+    description: 'Преміальні автомобільні органайзери та килимки з магнітною системою та німецькою еко-шкірою.',
+    images: ['/case.jpg'],
+  },
+};
 
-export async function generateMetadata(): Promise<Metadata> {
-  const page = await getPublishedPage('home');
-  return buildCmsMetadata(page, 'CARZO');
-}
+export default async function Home() {
+  const homepageData = await getHomepageData();
+  const siteFlag = await getSiteFlag();
 
-export default async function Home({ searchParams }: HomeProps) {
-  const previewEnabled = draftMode().isEnabled && Boolean(searchParams.preview);
-  const page = previewEnabled && searchParams.preview
-    ? await getPreviewPage(searchParams.preview)
-    : await getPublishedPage('home');
-
-  if (!page || (previewEnabled && page.slug !== 'home')) {
-    redirect('/case/design/m/2-0');
-  }
-
-  return <PageRenderer page={page} preview={previewEnabled} />;
+  return (
+    <div className="min-h-screen bg-white">
+      <Header siteFlag={siteFlag} />
+      <HomePageContent data={homepageData} siteFlag={siteFlag} />
+    </div>
+  );
 }

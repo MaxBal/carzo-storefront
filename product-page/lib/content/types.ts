@@ -1,6 +1,6 @@
 export type SizeId = 'S' | 'M' | 'L' | 'XL';
 export type SizeContentGroup = 'S' | 'M' | 'LXL';
-export type BenefitModalType = 'payment' | 'delivery' | 'returns' | 'bundle' | 'loyalty';
+export type BenefitModalType = 'warranty' | 'payment' | 'delivery' | 'returns' | 'bundle' | 'loyalty';
 
 export interface DesignInfo {
   slug: string;
@@ -42,6 +42,8 @@ export interface FixationInfo {
   value: string;
   label: string;
   extra: number;
+  /** Size-specific surcharge, e.g. both-fixation: s=60, m=80, l=100, xl=120. */
+  extraBySize?: Partial<Record<SizeId, number>>;
   sort: number;
 }
 
@@ -106,6 +108,7 @@ export interface InfoModalTab {
 export interface InfoModalData {
   title: string;
   tabs: [InfoModalTab, InfoModalTab];
+  globalVideo?: string;
 }
 
 export interface LogoSpec {
@@ -117,6 +120,7 @@ export interface LogoSettings {
   title: string;
   infoText: string;
   fallbackImage: string;
+  placementVideo: string;
   specs: LogoSpec[];
 }
 
@@ -134,6 +138,7 @@ export interface LogoModalData {
   infoText: string;
   logoImage: string;
   placementImage: string;
+  placementVideo: string;
   specs: LogoSpec[];
   faqs: FaqItem[];
 }
@@ -164,6 +169,19 @@ export interface ResolvedRichContentSection extends RichContentSection {
   imageAlt: string;
   fallbackSrc: string;
   isPlaceholder: boolean;
+}
+
+export interface MagneticSystemMedia {
+  video: string;
+  defaultPoster: string;
+  posters: Record<string, string>;
+}
+
+export interface ResolvedMagneticSystemMedia {
+  video: string;
+  poster: string;
+  fallbackPoster: string;
+  isPosterPlaceholder: boolean;
 }
 
 export type BenefitIcon =
@@ -211,6 +229,7 @@ export interface BenefitModalData {
   cardLabel: string;
   title: string;
   subtitle: string;
+  sort?: number;
   blocks: BenefitBlock[];
 }
 
@@ -221,6 +240,59 @@ export interface DiscountTier {
   sort: number;
 }
 
+export interface ReviewItem {
+  key: string;
+  reviewText: string;
+  customerName: string;
+  reviewDate: string;
+  rating: number;
+  sort: number;
+}
+
+export interface ReviewScreenshot {
+  key: string;
+  image: string;
+  altText: string;
+  sort: number;
+}
+
+export interface ReviewSettings {
+  enabled: boolean;
+  title: string;
+  descriptionLine1: string;
+  descriptionLine2: string;
+  instagramHandle: string;
+  ctaLabel: string;
+  modalTitle: string;
+  modalDescription: string;
+}
+
+export interface ReviewsData {
+  settings: ReviewSettings;
+  items: ReviewItem[];
+  screenshots: ReviewScreenshot[];
+}
+
+export interface VideoReviewItem {
+  id: string;
+  title: string;
+  videoUrl: string;
+  coverUrl: string;
+  sort: number;
+  isActive: boolean;
+}
+
+export interface VideoReviewsData {
+  enabled: boolean;
+  title: string;
+  socialBadgeUrl: string;
+  socialHandle: string;
+  socialVerified: boolean;
+  socialText: string;
+  stats: Array<{ value: string; text: string }>;
+  videos: VideoReviewItem[];
+}
+
 export interface SiteSettings {
   designInfoText: string;
   featureMagneticText: string;
@@ -228,6 +300,7 @@ export interface SiteSettings {
   featureMaterialText: string;
   richSignoff: string;
   mediaPlaceholder: string;
+  siteFlag: string;
 }
 
 export interface ProductCatalog {
@@ -248,8 +321,13 @@ export interface ContentSource extends ProductCatalog {
   logoPlacements: LogoPlacement[];
   richSections: RichContentSection[];
   richSectionImages: RichContentSectionImage[];
+  magneticSystemMedia: MagneticSystemMedia;
+  richContentVideos: Record<string, string>;
+  fixationVideo: string;
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
+  reviews: ReviewsData;
+  videoReviews: VideoReviewsData;
   siteSettings: SiteSettings;
 }
 
@@ -267,12 +345,21 @@ export interface ResolvedPricing {
 export interface ResolvedProductContent {
   catalog: ProductCatalog;
   gallery: GalleryImage[];
+  /** design slug → thumbnail URL (gallery #1 for current size, else selector image) */
+  designThumbnails: Record<string, string>;
   insideModal: InfoModalData;
   fixationModal: InfoModalData;
   logoModal: LogoModalData;
-  richContent: { sections: ResolvedRichContentSection[]; signoff: string };
+  richContent: {
+    sections: ResolvedRichContentSection[];
+    signoff: string;
+    magneticSystemMedia: ResolvedMagneticSystemMedia;
+    richContentVideos: Record<string, string>;
+  };
   benefitModals: BenefitModalData[];
   discountTiers: DiscountTier[];
+  reviews: ReviewsData;
+  videoReviews: VideoReviewsData;
   pricing: ResolvedPricing;
   siteSettings: SiteSettings;
 }

@@ -3,7 +3,7 @@ import 'server-only';
 const FILE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } },
 ) {
   const directusUrl = process.env.DIRECTUS_URL?.replace(/\/$/, '');
@@ -16,10 +16,24 @@ export async function GET(
     return new Response('Directus asset access is not configured', { status: 503 });
   }
 
-  const upstream = await fetch(`${directusUrl}/assets/${encodeURIComponent(params.id)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    next: { revalidate: 3600 },
-  });
+  const range = request.headers.get('range');
+  const upstreamHeaders: Record<string, string> = { Authorization: `Bearer ${token}` };
+  if (range) upstreamHeaders.Range = range;
+
+  const upstream = await fetch(
+    `${directusUrl}/assets/${encodeURIComponent(params.id)}`,
+    range
+      ? { headers: upstreamHeaders, cache: 'no-store' }
+      : { headers: upstreamHeaders, next: { revalidate: 3600 } },
+  );
+
+  if (upstream.status === 416) {
+    const contentRange = upstream.headers.get('content-range');
+    return new Response(null, {
+      status: 416,
+      headers: contentRange ? { 'Content-Range': contentRange } : undefined,
+    });
+  }
 
   if (!upstream.ok || !upstream.body) {
     return new Response('Not found', { status: upstream.status === 404 ? 404 : 502 });
@@ -28,10 +42,17 @@ export async function GET(
   const headers = new Headers({
     'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
   });
-  for (const name of ['content-type', 'content-length', 'etag', 'last-modified']) {
+  for (const name of [
+    'content-type',
+    'content-length',
+    'content-range',
+    'accept-ranges',
+    'etag',
+    'last-modified',
+  ]) {
     const value = upstream.headers.get(name);
     if (value) headers.set(name, value);
   }
 
-  return new Response(upstream.body, { status: 200, headers });
+  return new Response(upstream.body, { status: upstream.status, headers });
 }

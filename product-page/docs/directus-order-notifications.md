@@ -47,10 +47,13 @@ Directus налаштований SMTP або інший поштовий тра
 - `{{order_number}}`
 - `{{customer_name}}`
 - `{{customer_phone}}`
+- `{{contact_method}}`
 - `{{items_quantity}}`
 - `{{items_summary}}`
 - `{{total}}`
+- `{{delivery_method}}`
 - `{{delivery_city}}`
+- `{{delivery_destination}}`
 - `{{delivery_point}}`
 - `{{order_url}}`
 

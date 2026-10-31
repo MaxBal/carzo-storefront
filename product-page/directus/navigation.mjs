@@ -73,7 +73,7 @@ export const DIRECTUS_COLLECTION_NAVIGATION = Object.freeze({
   carzo_rich_sections: { group: 'carzo_group_product_content', label: 'Шаблон rich content', sort: 1 },
   carzo_rich_section_images: { group: 'carzo_group_product_content', label: 'Фото rich content за дизайнами', sort: 2 },
   carzo_gallery_images: { group: 'carzo_group_product_content', label: 'Галереї за дизайном і розміром', sort: 3 },
-  carzo_media_settings: { group: 'carzo_group_product_content', label: 'Плейсхолдер медіа', sort: 4 },
+  carzo_media_settings: { group: 'carzo_group_product_content', label: 'Глобальні медіа товару', sort: 4 },
   carzo_content_sets: { group: 'carzo_group_product_content', label: 'Набори контенту', sort: 5 },
   carzo_content_sections: { group: 'carzo_group_product_content', label: 'Секції контенту', sort: 6 },
   carzo_faq_items: { group: 'carzo_group_product_content', label: 'Питання та відповіді', sort: 7 },

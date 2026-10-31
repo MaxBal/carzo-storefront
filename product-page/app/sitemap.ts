@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { getContentSource } from '@/lib/content/directus';
-import { getPublishedPageSummaries } from '@/lib/pages/directus';
+import { getContentSource } from '@/lib/data/content';
+import { getPublishedPageSummaries } from '@/lib/data/pages';
 import { pagePath } from '@/lib/pages/metadata';
 import { absoluteSiteUrl, getPrimaryProductLinks } from '@/lib/seo';
 
@@ -17,6 +17,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: absoluteSiteUrl('/'),
     changeFrequency: 'weekly',
     priority: 1,
+  });
+
+  entries.set(absoluteSiteUrl('/about'), {
+    url: absoluteSiteUrl('/about'),
+    changeFrequency: 'monthly',
+    priority: 0.6,
   });
 
   pages

@@ -8,13 +8,21 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:customer-store": "tsx --test tests/customer-store.test.ts",
+    "test:loyalty": "tsx --test tests/loyalty-math.test.ts tests/checkout-pricing.test.ts tests/checkout-side-effects.test.ts",
+    "test:checkout-reliability": "tsx --test tests/checkout-reliability.test.ts",
+    "test:order-notifications": "tsx --test tests/order-items-summary.test.ts tests/order-discounts-summary.test.ts",
     "directus:setup": "node --env-file=.env.local scripts/setup-directus.mjs",
     "directus:import-carzo4": "node --env-file=.env.local scripts/import-carzo-4-media.mjs",
     "directus:validate": "node scripts/validate-directus-access.mjs",
     "directus:verify": "node --env-file=.env.local scripts/verify-directus-access.mjs",
-    "directus:verify-media": "node --env-file=.env.local scripts/verify-product-media.mjs"
+    "directus:verify-media": "node --env-file=.env.local scripts/verify-product-media.mjs",
+    "media:stage2a": "tsx scripts/complete-directus-media-to-r2.ts",
+    "test:stage2a": "tsx --test tests/complete-directus-media-to-r2.test.ts",
+    "test:stage4": "tsx --test tests/stage4-config.test.ts tests/stage4-orders.test.ts tests/stage4-quote.test.ts tests/stage4-content.test.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.758.0",
     "@hookform/resolvers": "^3.9.0",
     "@netlify/plugin-nextjs": "^5.15.1",
     "@radix-ui/react-accordion": "^1.2.0",
@@ -44,7 +52,7 @@
     "@radix-ui/react-toggle": "^1.1.0",
     "@radix-ui/react-toggle-group": "^1.1.0",
     "@radix-ui/react-tooltip": "^1.1.2",
-    "@supabase/supabase-js": "^2.58.0",
+    "@supabase/supabase-js": "2.110.8",
     "@types/node": "20.6.2",
     "@types/react": "18.2.22",
     "@types/react-dom": "18.2.7",
@@ -78,6 +86,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/sanitize-html": "^2.16.1"
+    "@types/sanitize-html": "^2.16.1",
+    "tsx": "4.20.3"
   }
 }
