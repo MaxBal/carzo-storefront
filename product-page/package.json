@@ -19,7 +19,8 @@
     "directus:verify-media": "node --env-file=.env.local scripts/verify-product-media.mjs",
     "media:stage2a": "tsx scripts/complete-directus-media-to-r2.ts",
     "test:stage2a": "tsx --test tests/complete-directus-media-to-r2.test.ts",
-    "test:stage4": "tsx --test tests/stage4-config.test.ts tests/stage4-orders.test.ts tests/stage4-quote.test.ts tests/stage4-content.test.ts"
+    "test:stage4": "tsx --test tests/stage4-config.test.ts tests/stage4-orders.test.ts tests/stage4-quote.test.ts tests/stage4-content.test.ts",
+    "test:supabase-catalog": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-catalog-integration.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.758.0",
