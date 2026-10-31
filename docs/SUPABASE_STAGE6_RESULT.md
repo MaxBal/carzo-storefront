@@ -255,3 +255,245 @@ until approved).
 - Known follow-ups (unchanged from earlier stages): OG image, product alt
   text, About-page Directus hardcode, car-mat quote notifications (Directus),
   customer delta reconciliation (before any `CUSTOMER_STORE` switch).
+
+---
+
+# Appendix A — Stage 6.1 Controlled Staging E2E Acceptance
+
+Date: 2026-10-31. Scope: close the two remaining Stage 6 acceptance gates on
+the shared Supabase project under an explicit owner authorization for
+**exactly three traceable synthetic orders** plus exact-scope cleanup of those
+orders and their items. Production/`main` untouched. Stage 7 not started.
+
+## A.1 STATUS
+
+**`PARTIAL / PASS-WITH-EXCEPTIONS`** — order E2E, idempotency and cleanup PASS.
+Telegram acceptance remains **BLOCKED** (separate gate, no test bot/chat
+configured). Stage 6 as a whole is therefore **not** a full PASS.
+
+| Gate | Status |
+|---|---|
+| STEP 1 pre-flight / write-side-effect audit | PASS (see A.3 — `BLOCKED_CUSTOMER_SIDE_EFFECT` cleared by approved isolation) |
+| STEP 2 evidence + cleanup plan | PASS |
+| STEP 3 BRANCH / POSTOMAT / COURIER E2E | **PASS** (3/3, live UI checkout on Preview) |
+| STEP 4 retry / fingerprint mismatch / timeout | **PASS** |
+| STEP 5 Telegram acceptance | **BLOCKED** — no `TELEGRAM_BOT_TOKEN`, no approved test chat |
+| STEP 6 exact-scope cleanup | **PASS** |
+| STEP 7 migration version reconciliation | PASS (read-only; discrepancy recorded, not repaired) |
+| Production unchanged | **PASS** |
+
+## A.2 Baseline
+
+| Item | Value |
+|---|---|
+| Git HEAD (start) | `793e8d6d5012eb0a675ad1e8cd65206380448cac` on `dev` |
+| Preview deployment | `dpl_9bQzCydg8fQRhUsbXbHEF8FAFMe8` → `carzo-storefront-hq0p7pa0r-yevgens-projects.vercel.app`, READY (24s build) |
+| Preview env (branch `dev`, names + non-secret values) | `CATALOG_STORE=supabase`, `CONTENT_STORE=supabase`, `PAGE_STORE=supabase`, `ORDER_STORE=supabase`, `NOTIFICATION_SETTINGS_STORE=supabase`, `CUSTOMER_STORE=directus`. **`TELEGRAM_BOT_TOKEN` absent** |
+| Supabase project | `Carzo`, `kmhegysmtsjqtwwaacht`, ACTIVE |
+| Row counts (before) | orders **10**, order_items **17**, customers **5994** (all 10 orders `checkout_attempt_id = NULL`) |
+| Production | `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9` — unchanged throughout |
+
+## A.3 Preflight write-side-effect audit
+
+Runtime paths inspected: `app/actions/checkout.ts` → `createOrderRecord`
+(`create_order_with_items` RPC) → `runPostOrderSideEffects`
+(`lib/cart/checkout-reliability.ts`) → `notifyNewOrder` + `upsertCustomerByPhone`.
+
+| Write | Authorized? | Outcome |
+|---|---|---|
+| `orders` / `order_items` via RPC | **yes** (the 3-order authorization) | 3 orders + 3 items |
+| Telegram send | separate gate | not attempted (no token, no approved chat) |
+| Directus **order** write | **no** | none — `ORDER_STORE=supabase` writes only Supabase; verified 0 matches in Directus `carzo_orders` for all three order numbers |
+| Directus **customer** write | **no** | none — see isolation below |
+| Supabase **customer** write | **no** | none |
+
+**`BLOCKED_CUSTOMER_SIDE_EFFECT` — resolved by owner-approved isolation.**
+`runPostOrderSideEffects` calls `upsertCustomerByPhone` unconditionally after a
+committed order. With `CUSTOMER_STORE=directus` that is `upsertByPhone`
+(`lib/cart/customer-store/directus.ts`), which POSTs to `/items/customers` or
+PATCHes the `carzo_site_settings` JSON registry **only when the phone is
+unknown**. When the customer already exists it returns the existing row without
+any write.
+
+The owner approved the pre-existing synthetic registry record
+**«Тестовий клієнт»** as the controlled test identity. Its phone is the
+business's own public contact line (also published in the site footer), not a
+third party's number; the value is withheld here. Pre-test verification
+replicated `findByPhone` (directus collection 403 → registry fallback) and
+confirmed exactly one match, so every post-order upsert was a **read-only
+no-op**. Customer count stayed **5994** before, during and after all writes.
+
+## A.4 Approval scope
+
+Exactly **three** synthetic orders (one per delivery method) created through
+the deployed Preview checkout flow, then **only** those three orders and their
+owned `order_items` deleted by exact UUID allowlist. No fourth order. No
+historical rows, no Directus data, no R2, no schema change beyond the bounded
+RPC repair in A.7, no real shipments, no Nova Poshta booking calls (lookups
+only).
+
+## A.5 Case matrix (live UI checkout on Preview)
+
+Server quote obtained from `POST /api/cart/quote` before each submit and
+compared with the persisted order total.
+
+| Case | Order number | Cart | Delivery snapshot | Quote → total | Result |
+|---|---|---|---|---|---|
+| **A. BRANCH** | `CZ-20261031-A46DB2` | 1 × L / design 4-0 / no logo / без фіксації | Київ → Відділення №1: вул. Пирогівський шлях, 135 (`type=branch`) | 2 590 → **2 590** | PASS |
+| **B. POSTOMAT** | `CZ-20261031-D1891E` | 1 × M / design 2-0 / no logo / без фіксації (single line, qty 1 — satisfies `allowPostomat`) | Київ → Поштомат «Нова Пошта» №1001: вул. Сім'ї Кульженків, 31а (`type=postomat`) | 2 249 → **2 249** | PASS |
+| **C. COURIER** | `CZ-20261031-3F83B7` | 1 × S / design 3-0 / no logo / без фіксації + loyalty | Київ → вул. Хрещатик, буд. 1 (courier) | 1 790 → **1 701** (loyalty −89) | PASS |
+
+Per-case assertions (all three PASS):
+
+- server quote equals the confirmed/persisted total;
+- one order committed via `create_order_with_items`, exactly one linked
+  `order_items` row;
+- delivery + item snapshots match the live Nova Poshta lookup / catalog label;
+- `checkout_attempt_id` non-null, unique, distinct per case;
+- `loyalty_*` structured columns correct (A/B: all zero/NULL/false;
+  C: `loyalty_phone` set, `eligible=true`, `percent=5`, `amount=89`,
+  `phone_mismatch=false`);
+- `manager_note` is `NULL` on all three — no loyalty JSON;
+- customer fields did not contaminate any record (`customers` 5994 unchanged);
+- no Directus order write (0 matches in `carzo_orders` per order number);
+- success response returned the correct order number and total.
+
+## A.6 Retry / fingerprint mismatch / timeout
+
+Attempt used: `85840ada-f42f-4990-a159-59193a6d4864` (case A).
+
+| Case | Expected | Observed |
+|---|---|---|
+| Replay identical request, identical `checkout_attempt_id` + fingerprint | `created:false`, same `id`/`order_number`/`total`, no new items | **PASS** — `created:false`, `5bac060a-…`, `CZ-20261031-A46DB2`, 2 590; `order_items` still 1 |
+| Retry after lost HTTP response / client timeout (same persisted intent) | same as above | **PASS** — the replay path is the retry path; no additional order |
+| Same `checkout_attempt_id`, **changed** material fingerprint | reject, leak no order data | **PASS** — `create_order_with_items: ATTEMPT_FINGERPRINT_MISMATCH` |
+| Same `checkout_attempt_id`, **NULL** fingerprint | reject (unverifiable binding) | **PASS** — `ATTEMPT_FINGERPRINT_MISMATCH` |
+| Best-effort side effects never flip a committed order to failed | order stays success | **PASS** — `runPostOrderSideEffects` semantics unchanged; notification/customer errors isolated |
+| Replay must not resend notifications | no repeat send | **PASS** — side effects run only when `created:true` |
+
+No duplicate order appeared at any point.
+
+## A.7 Bounded repair — RPC request-fingerprint binding
+
+**Defect found in Stage 6.1** (owner-directed repair): an order whose
+`request_fingerprint` was `NULL` was replayable with *any* material intent —
+the RPC returned `created:false` instead of rejecting, so a retry could
+silently answer for a different cart than the one that created the order.
+
+**Fix** (separate, verifiable, additive — function body only, no schema
+change):
+
+1. New orders must carry a non-empty `request_fingerprint`, else
+   `INVALID_FINGERPRINT`.
+2. A replay is accepted only when **both** sides have a fingerprint and they
+   are equal. NULL on either side is treated as a mismatch
+   (`ATTEMPT_FINGERPRINT_MISMATCH`), leaking no order data.
+
+Applied as its own migration entry `require_order_request_fingerprint`
+(`CREATE OR REPLACE FUNCTION`, grants re-applied: `service_role` only). Git
+file: `supabase/migrations/20261101200000_require_order_request_fingerprint.sql`.
+
+App layer aligned: `lib/cart/checkout-attempt.ts` gained
+`isFingerprintBound(stored, request)` (missing stored fingerprint never binds),
+used by `app/actions/checkout.ts` for the replay probe.
+
+Verification:
+
+- 6 rollback-only PostgreSQL cases (`BEGIN … ROLLBACK`, zero persistent rows):
+  new + NULL fp → `INVALID_FINGERPRINT`; new + empty fp → `INVALID_FINGERPRINT`;
+  new + valid fp → `created:true`; replay same fp → `created:false`; replay
+  changed fp → `ATTEMPT_FINGERPRINT_MISMATCH`; replay NULL fp →
+  `ATTEMPT_FINGERPRINT_MISMATCH`. **All PASS.**
+- 3 new unit tests on `isFingerprintBound`; full suite 121 tests green
+  (`test:stage6`, `checkout-attempt`, `test:loyalty`, `test:customer-store`,
+  `test:checkout-reliability`, `test:order-notifications`).
+- `tsc --noEmit` clean; `next lint` clean (pre-existing `no-img-element` /
+  `alt-text` warnings only).
+- The live case-A replay (A.6) exercises the repaired function on the shared
+  project.
+
+## A.8 Allowlisted UUIDs and cleanup outcome (no PII)
+
+| Case | order_id | checkout_attempt_id | order_number | items |
+|---|---|---|---|---|
+| A | `5bac060a-5aad-4df0-98b1-4946bcc78614` | `85840ada-f42f-4990-a159-59193a6d4864` | `CZ-20261031-A46DB2` | 1 |
+| B | `a682ae8d-0f63-4e82-a621-64586b056e3a` | `7461382b-d711-4650-ab46-36c9e3cbd018` | `CZ-20261031-D1891E` | 1 |
+| C | `fcb4f326-276b-44c4-8a93-e829f2454334` | `f337ff94-e31b-416d-ac4b-d40b0b3d4562` | `CZ-20261031-3F83B7` | 1 |
+
+Cleanup: single transaction, ownership assertions (each id ↔ expected
+`order_number` + `checkout_attempt_id`), exact `WHERE id = ANY(<three>)` for
+items then orders, row-count assertions, no date/name/phone/marker-wide
+deletes. Result: 3 `order_items` + 3 `orders` deleted; nothing else touched.
+
+An additional incident order (`b4c059f2-c99b-49d6-b13f-26ab8ccc27e6` /
+`CZ-20261031-7DEEFE`) was created accidentally while probing RPC
+discoverability before the test plan was executed. It used placeholder
+delivery refs and a NULL fingerprint (it demonstrated the A.7 defect). It was
+recorded, then deleted first under the same exact-UUID discipline, and its
+counters confirmed restored before any acceptance order was placed. No
+customer write and no Directus order write ever resulted from it.
+
+## A.9 Row counts and cleanup proof
+
+| Counter | Baseline | Peak (3 orders) | After cleanup |
+|---|---|---|---|
+| `orders` | 10 | 13 | **10** |
+| `order_items` | 17 | 20 | **17** |
+| `customers` | 5994 | 5994 | **5994** |
+| synthetic orders (`checkout_attempt_id IS NOT NULL`) | 0 | 3 | **0** |
+| legacy orders (`checkout_attempt_id IS NULL`) | 10 | 10 | **10** |
+| target order_ids remaining | 0 | 3 | **0** |
+
+## A.10 Telegram acceptance — BLOCKED
+
+`TELEGRAM_BOT_TOKEN` is absent from the Preview environment (confirmed by env
+pull of the `dev` branch scope). `notification_settings` has
+`channel = 'telegram'` and a non-empty `telegram_chat_ids` value that has
+**not** been owner-approved as a test recipient (it is the production team's
+chat) — it must not be used. No notification was sent.
+
+To close this gate the owner must configure, **directly in Preview settings**,
+a dedicated TEST bot token plus an explicitly approved test chat id, and
+confirm there are no real customer chat ids on the Preview notification route.
+Then at most one controlled message may be sent (ideally from one of the three
+authorized orders) and checked for number / items / quantity discount / loyalty
+discount / total and absence of Directus admin links; a repeat must not resend;
+channel `email` must be reported `UNSUPPORTED`. Passing order E2E alone is not
+a full Stage 6 PASS.
+
+## A.11 Migration version reconciliation (read-only)
+
+| Source | Entry |
+|---|---|
+| Git | `supabase/migrations/20261101120000_create_order_with_items_rpc.sql` |
+| Remote history | `20261031164057_create_order_with_items_rpc` |
+| Added by Stage 6.1 | remote `require_order_request_fingerprint` ↔ git `20261101200000_require_order_request_fingerprint.sql` |
+
+The first pair is a **filename/version mismatch only** — identical content
+(additive `orders.request_fingerprint` + `create_order_with_items`). Per the
+acceptance contract the historical remote entry was **not** renamed and the
+RPC was **not** re-applied as part of acceptance. Safe resolution: treat the
+remote version as authoritative history and align the git filename in a later
+non-acceptance chore commit, or record the mapping in the master plan. No
+action taken here.
+
+## A.12 Production unchanged
+
+`main` deployment still `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9`
+(`carzo-storefront-f3up8jypj`), created before this run and untouched
+throughout. No `--prod` deploy, no push/merge to `main`, no production env
+change. Keys remained server-only; no secrets, phone numbers, tokens or chat
+ids printed in this document or in logs.
+
+## A.13 Remaining blockers and next step
+
+1. **Telegram acceptance** — BLOCKED on a dedicated Preview test bot token and
+   an approved test chat id (A.10). Until then Stage 6 is `PARTIAL`.
+2. Migration filename mismatch (A.11) — cosmetic, needs a chore commit.
+3. Nothing else. All order-side gates (E2E matrix, idempotency, fingerprint
+   binding, cleanup, customer-store isolation) are closed.
+
+**Next step:** configure the Preview test bot + chat → run the single
+controlled Telegram acceptance → then Stage 6 may be declared PASS and only
+then may Stage 7 begin. Directus is not retired; `CUSTOMER_STORE` stays
+`directus`.
