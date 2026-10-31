@@ -461,6 +461,59 @@ discount / total and absence of Directus admin links; a repeat must not resend;
 channel `email` must be reported `UNSUPPORTED`. Passing order E2E alone is not
 a full Stage 6 PASS.
 
+### A.10.1 Preview-only test configuration (prepared, not applied)
+
+Nothing below has been applied. No message was sent, no `TELEGRAM_BOT_TOKEN`
+was created or set, and `notification_settings` — including its
+`telegram_chat_ids` — was **not** modified. The gate stays **BLOCKED** until
+the test-message routing below is owner-agreed.
+
+**Why the shared table is unsafe.** The Supabase notification reader
+(`lib/data/notifications/supabase.ts`) takes the bot token from
+`process.env.TELEGRAM_BOT_TOKEN` (environment-scoped — already safe) but takes
+recipients from `notification_settings.telegram_chat_ids`, a **single row
+shared by Preview and Production** in the same project. Putting a test chat id
+there would also route production notifications; removing the production id
+would break them. Neither is acceptable.
+
+**Routing decision needed.** Recipients must become environment-scoped so a
+test send can only reach the approved test chat. Two candidate mechanisms,
+smallest first:
+
+1. **Env recipient override (recommended, minimal).** A Preview-only variable
+   `TELEGRAM_TEST_CHAT_IDS` (comma-separated numeric chat ids). In
+   `notifyNewOrderSupabase`, when `VERCEL_ENV` is `preview` or `development`
+   and the variable parses to ≥1 numeric id, use **exactly those** ids —
+   full replacement, never merged with `notification_settings`. Otherwise the
+   current behaviour is byte-identical.
+   Safety: unset → no change; a `VERCEL_ENV === 'production'` guard makes it
+   impossible to affect production even if mis-set there; full replacement
+   means a test send can never reach the work chat.
+2. **Environment-keyed settings row** (e.g. a `notification_settings` row per
+   environment). Cleaner long-term, but needs a schema change and a migration —
+   deliberately not taken in Stage 6.1.
+
+**Configuration to apply once routing is agreed** (values never entered in
+chat, logs, or git — owner sets them in Vercel directly):
+
+| Where | Key | Value | Visibility |
+|---|---|---|---|
+| Vercel → Preview (`dev` branch) | `TELEGRAM_BOT_TOKEN` | token of the **dedicated test bot** | Secret |
+| Vercel → Preview (`dev` branch) | `TELEGRAM_TEST_CHAT_IDS` | numeric id of the **approved test chat** | Plain |
+| `notification_settings` (Supabase) | — | **unchanged** | — |
+| Vercel → Production | `TELEGRAM_BOT_TOKEN` | **not set** (unchanged) | — |
+
+**Owner preparation steps.** Create a dedicated test bot (e.g. BotFather) and
+a dedicated test chat/group to which **only** that bot is added; read the
+chat's numeric id; confirm the Preview notification route contains no real
+customer chat ids. Then set the two Preview variables above and redeploy.
+
+**Acceptance once configured.** Exactly one controlled message, ideally arising
+from one of the three authorized orders. Verify order number, items, quantity
+discount, loyalty discount, total, and absence of Directus admin links. A
+repeat attempt must not resend. Channel `email` must be reported `UNSUPPORTED`
+rather than claiming delivery. Tokens and chat ids must never be printed.
+
 ## A.11 Migration version reconciliation (read-only)
 
 | Source | Entry |
