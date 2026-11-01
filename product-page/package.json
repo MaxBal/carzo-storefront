@@ -21,7 +21,9 @@
     "test:stage2a": "tsx --test tests/complete-directus-media-to-r2.test.ts",
     "test:stage4": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/stage4-config.test.ts tests/stage4-orders.test.ts tests/stage4-quote.test.ts tests/stage4-content.test.ts",
     "test:stage6": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/stage4-orders.test.ts tests/checkout-attempt.test.ts tests/checkout-input-contract.test.ts",
-    "test:supabase-catalog": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-catalog-integration.test.ts"
+    "test:supabase-catalog": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-catalog-integration.test.ts",
+    "test:supabase-editorial": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-editorial-integration.test.ts",
+    "test:editorial-fallback": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/editorial-fallback-detection.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.758.0",

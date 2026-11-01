@@ -12,6 +12,7 @@ import type {
   SiteSettings,
   VideoReviewsData,
 } from '@/lib/content/types';
+import type { AboutData, CarMatContent, HomepageData } from '@/lib/content/settings-defaults';
 
 /**
  * Editorial portion of ContentSource (CONTENT_STORE).
@@ -32,6 +33,10 @@ export interface EditorialContent {
   reviews: ReviewsData;
   videoReviews: VideoReviewsData;
   siteSettings: SiteSettings;
+  /** Typed homepage/about/car-mat settings rows (filled by the Supabase adapter). */
+  homepage?: HomepageData;
+  about?: AboutData;
+  carMat?: CarMatContent;
 }
 
 export interface ContentRepository {

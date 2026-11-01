@@ -2,6 +2,20 @@ import 'server-only';
 
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import { DEFAULT_CONTENT_SOURCE } from '@/lib/content/default-source';
+import {
+  DEFAULT_ABOUT,
+  DEFAULT_CAR_MAT_DESIGNS,
+  DEFAULT_CAR_MAT_PLACEHOLDER,
+  DEFAULT_CAR_MAT_PROMO_MEDIA,
+  DEFAULT_HOMEPAGE,
+  parseAboutSettings,
+  parseCarMatDesigns,
+  parseCarMatPromoMedia,
+  parseHomepageSettings,
+  type AboutData,
+  type CarMatContent,
+  type HomepageData,
+} from '@/lib/content/settings-defaults';
 import type {
   BenefitModalData,
   ContentSet,
@@ -57,8 +71,21 @@ function r2Url(value: unknown): string {
   return '';
 }
 
-async function selectRows(table: string, columns: string): Promise<SupabaseRow[]> {
-  const { data, error } = await getSupabaseAdminClient().from(table).select(columns);
+/** Supabase media resolver: external/R2 URL only; legacy file refs are never present. */
+function supabaseMediaUrl(external: unknown, _file: unknown, fallback: string): string {
+  return r2Url(external) || fallback;
+}
+
+async function selectRows(
+  table: string,
+  columns: string,
+  options?: { publishedOnly?: boolean },
+): Promise<SupabaseRow[]> {
+  let query = getSupabaseAdminClient().from(table).select(columns);
+  if (options?.publishedOnly) {
+    query = query.eq('status', 'published');
+  }
+  const { data, error } = await query;
   if (error) {
     throw new EditorialUnavailableError(`Supabase ${table} read failed: ${error.message}`);
   }
@@ -88,6 +115,102 @@ function parseReviewScreenshots(raw: unknown): ReviewsData['screenshots'] {
   })).filter(item => item.image);
 }
 
+function mapHomepageRow(row: SupabaseRow): HomepageData {
+  return parseHomepageSettings(row, supabaseMediaUrl);
+}
+
+function mapAboutRow(row: SupabaseRow): AboutData {
+  return parseAboutSettings(row, supabaseMediaUrl);
+}
+
+function mapCarMatRow(row: SupabaseRow): CarMatContent {
+  return {
+    designs: parseCarMatDesigns(row.car_mat_designs),
+    promoMedia: parseCarMatPromoMedia(row, supabaseMediaUrl),
+    placeholderImage: r2Url(row.placeholder_image_url) || DEFAULT_CAR_MAT_PLACEHOLDER,
+    modalTitle: text(row.car_mat_modal_title),
+    modalDescription: text(row.car_mat_modal_description),
+  };
+}
+
+const HOMEPAGE_SETTINGS_COLUMNS = [
+  'homepage_hero_eyebrow', 'homepage_hero_title', 'homepage_hero_lead', 'homepage_hero_material_tag',
+  'homepage_hero_products', 'homepage_logo_video_url',
+  'homepage_badges_eyebrow', 'homepage_badges_title', 'homepage_badges_description',
+  'homepage_badges_video_url', 'homepage_badges_size_label', 'homepage_badges_features',
+  'homepage_quality_eyebrow', 'homepage_quality_title', 'homepage_quality_stats',
+].join(',');
+
+const ABOUT_SETTINGS_COLUMNS = [
+  'about_hero_eyebrow', 'about_hero_title', 'about_hero_paragraph_1', 'about_hero_paragraph_2',
+  'about_process_blocks', 'about_process_image_1_url', 'about_process_image_2_url', 'about_process_image_3_url',
+  'about_principles_eyebrow', 'about_principles_title', 'about_principles_items',
+  'about_development_title', 'about_development_text', 'about_statement_text',
+].join(',');
+
+const CAR_MAT_SETTINGS_COLUMNS = [
+  'car_mat_designs', 'car_mat_modal_title', 'car_mat_modal_description',
+  'car_mat_promo_video_url', 'car_mat_promo_cover_url', 'placeholder_image_url',
+].join(',');
+
+const REVIEW_SETTINGS_COLUMNS = [
+  'reviews_enabled', 'reviews_title', 'reviews_description_line_1', 'reviews_description_line_2',
+  'reviews_cta_label', 'reviews_instagram_handle', 'reviews_items', 'reviews_screenshots',
+  'reviews_modal_title', 'reviews_modal_description',
+].join(',');
+
+const VIDEO_REVIEW_SETTINGS_COLUMNS = [
+  'video_reviews_enabled', 'video_reviews_title', 'video_reviews',
+  'video_reviews_social_badge_url', 'video_reviews_social_handle', 'video_reviews_social_text',
+  'video_reviews_social_verified',
+  'video_reviews_stat_1_value', 'video_reviews_stat_1_text',
+  'video_reviews_stat_2_value', 'video_reviews_stat_2_text',
+  'video_reviews_stat_3_value', 'video_reviews_stat_3_text',
+].join(',');
+
+const SITE_SETTINGS_COLUMNS = [
+  'design_info_text', 'feature_magnetic_text', 'feature_material_flag', 'feature_material_text',
+  'rich_signoff', 'media_placeholder_url', 'site_flag_url', 'checkout_payment_details',
+].join(',');
+
+const GALLERY_COLUMNS =
+  'key,design_id,size_id,media_url,alt,sort,designs:design_id(slug),sizes:size_id(code)';
+const CONTENT_SET_COLUMNS =
+  'key,kind,design_id,size_id,size_group,title,content_tab_label,faq_tab_label,info_box,designs:design_id(slug),sizes:size_id(code)';
+const CONTENT_SECTION_COLUMNS =
+  'key,content_set_id,title,text,media_url,image_placeholder,sort,content_sets:content_set_id(key)';
+const RICH_SECTION_IMAGE_COLUMNS =
+  'key,section_id,design_id,media_url,alt,designs:design_id(slug),rich_sections:section_id(key)';
+const LOGO_SETTINGS_COLUMNS = 'title,info_text,fallback_image_url,placement_video_url,specs';
+const PRODUCT_MEDIA_COLUMNS = 'slot,media_url';
+
+/**
+ * Narrow editorial settings loaders (Supabase). Throw on query failure so the
+ * staging audit can distinguish live data from the local fallback.
+ */
+export async function loadSupabaseHomepageSettings(): Promise<HomepageData> {
+  const rows = await selectRows('homepage_settings', HOMEPAGE_SETTINGS_COLUMNS, { publishedOnly: true });
+  return rows[0] ? mapHomepageRow(rows[0]) : DEFAULT_HOMEPAGE;
+}
+
+export async function loadSupabaseAboutSettings(): Promise<AboutData> {
+  const rows = await selectRows('about_settings', ABOUT_SETTINGS_COLUMNS, { publishedOnly: true });
+  return rows[0] ? mapAboutRow(rows[0]) : DEFAULT_ABOUT;
+}
+
+export async function loadSupabaseCarMatSettings(): Promise<CarMatContent> {
+  const rows = await selectRows('car_mat_settings', CAR_MAT_SETTINGS_COLUMNS, { publishedOnly: true });
+  return rows[0]
+    ? mapCarMatRow(rows[0])
+    : {
+        designs: DEFAULT_CAR_MAT_DESIGNS,
+        promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
+        placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
+        modalTitle: '',
+        modalDescription: '',
+      };
+}
+
 /**
  * Supabase editorial adapter — SELECT-only, R2 URLs only, 17/17 product_media required.
  * Never queries Directus and never supplies commerce/pricing data.
@@ -113,31 +236,31 @@ export function createSupabaseContentRepository(): ContentRepository {
           videoReviewSettingsRows,
           carMatSettingsRows,
         ] = await Promise.all([
-          selectRows('gallery_images', 'key,design_slug,size,src,alt,sort'),
-          selectRows('content_sets', 'key,kind,design_slug,size,size_group,title,content_tab_label,faq_tab_label,info_box'),
-          selectRows('content_sections', 'key,content_set_key,title,text,image_url,image_placeholder,sort'),
-          selectRows('faq_items', 'key,faq_group,question,answer,sort'),
-          selectRows('rich_sections', 'key,title,subtitle,description,additional_title,additional_text,additional_list,sort'),
-          selectRows('rich_section_images', 'key,design_slug,section_key,src,alt'),
-          selectRows('benefit_modals', 'key,card_label,title,subtitle,sort,content'),
-          selectRows('logo_settings', 'title,info_text,fallback_image_url,logo_placement_video_url,specs'),
-          selectRows('product_media', 'slot,url'),
-          selectRows('site_settings', 'design_info_text,feature_magnetic_text,feature_material_flag,feature_material_text,rich_signoff,media_placeholder_url,site_flag_url,checkout_payment_details'),
-          selectRows('homepage_settings', 'hero_eyebrow,hero_title,hero_lead,hero_material_tag,hero_products,logo_video_url,badges_eyebrow,badges_title,badges_description,badges_video_url,badges_size_label,badges_features,quality_eyebrow,quality_title,quality_stats'),
-          selectRows('about_settings', '*'),
-          selectRows('review_settings', 'enabled,title,description_line_1,description_line_2,instagram_handle,cta_label,modal_title,modal_description,items,screenshots'),
-          selectRows('video_review_settings', 'enabled,title,social_badge_url,social_handle,social_verified,social_text,stat_1_value,stat_1_text,stat_2_value,stat_2_text,stat_3_value,stat_3_text,items'),
-          selectRows('car_mat_settings', '*'),
+          selectRows('gallery_images', GALLERY_COLUMNS, { publishedOnly: true }),
+          selectRows('content_sets', CONTENT_SET_COLUMNS, { publishedOnly: true }),
+          selectRows('content_sections', CONTENT_SECTION_COLUMNS, { publishedOnly: true }),
+          selectRows('faq_items', 'key,faq_group,question,answer,sort', { publishedOnly: true }),
+          selectRows(
+            'rich_sections',
+            'key,title,subtitle,description,additional_title,additional_text,additional_list,sort',
+            { publishedOnly: true },
+          ),
+          selectRows('rich_section_images', RICH_SECTION_IMAGE_COLUMNS, { publishedOnly: true }),
+          selectRows('benefit_modals', 'key,card_label,title,subtitle,sort,content', { publishedOnly: true }),
+          selectRows('logo_settings', LOGO_SETTINGS_COLUMNS, { publishedOnly: true }),
+          selectRows('product_media', PRODUCT_MEDIA_COLUMNS),
+          selectRows('site_settings', SITE_SETTINGS_COLUMNS, { publishedOnly: true }),
+          selectRows('homepage_settings', HOMEPAGE_SETTINGS_COLUMNS, { publishedOnly: true }),
+          selectRows('about_settings', ABOUT_SETTINGS_COLUMNS, { publishedOnly: true }),
+          selectRows('review_settings', REVIEW_SETTINGS_COLUMNS, { publishedOnly: true }),
+          selectRows('video_review_settings', VIDEO_REVIEW_SETTINGS_COLUMNS, { publishedOnly: true }),
+          selectRows('car_mat_settings', CAR_MAT_SETTINGS_COLUMNS, { publishedOnly: true }),
         ]);
-
-        void homepageSettingsRows;
-        void aboutSettingsRows;
-        void carMatSettingsRows;
 
         const mediaBySlot = new Map<string, string>();
         for (const row of productMediaRows) {
           const slot = text(row.slot);
-          const url = r2Url(row.url);
+          const url = r2Url(row.media_url);
           if (slot && url) mediaBySlot.set(slot, url);
         }
         for (const slot of PRODUCT_MEDIA_REQUIRED_SLOTS) {
@@ -174,9 +297,9 @@ export function createSupabaseContentRepository(): ContentRepository {
 
         const gallery: GalleryImage[] = galleryImages.map((row, index) => ({
           key: text(row.key) || `gallery-${index}`,
-          designSlug: text(row.design_slug) || null,
-          size: (text(row.size) || null) as SizeId | null,
-          src: r2Url(row.src),
+          designSlug: text((row.designs as SupabaseRow | undefined)?.slug) || null,
+          size: (text((row.sizes as SupabaseRow | undefined)?.code) || null) as SizeId | null,
+          src: r2Url(row.media_url),
           alt: text(row.alt),
           sort: number(row.sort, index + 1),
           fallbackSrc: '',
@@ -186,8 +309,8 @@ export function createSupabaseContentRepository(): ContentRepository {
         const sets: ContentSet[] = contentSets.map(row => ({
           key: text(row.key),
           kind: text(row.kind) as 'inside' | 'fixation',
-          designSlug: text(row.design_slug) || null,
-          size: (text(row.size) || null) as SizeId | null,
+          designSlug: text((row.designs as SupabaseRow | undefined)?.slug) || null,
+          size: (text((row.sizes as SupabaseRow | undefined)?.code) || null) as SizeId | null,
           sizeGroup: (text(row.size_group) || null) as SizeContentGroup | null,
           title: text(row.title),
           contentTabLabel: text(row.content_tab_label),
@@ -197,10 +320,10 @@ export function createSupabaseContentRepository(): ContentRepository {
 
         const sections: ContentSection[] = contentSections.map(row => ({
           key: text(row.key),
-          contentSetKey: text(row.content_set_key),
+          contentSetKey: text((row.content_sets as SupabaseRow | undefined)?.key),
           title: text(row.title),
           text: text(row.text),
-          image: r2Url(row.image_url) || undefined,
+          image: r2Url(row.media_url) || undefined,
           imagePlaceholder: text(row.image_placeholder) || undefined,
           sort: number(row.sort),
         }));
@@ -219,7 +342,7 @@ export function createSupabaseContentRepository(): ContentRepository {
               title: text(logoRow.title),
               infoText: text(logoRow.info_text),
               fallbackImage: r2Url(logoRow.fallback_image_url),
-              placementVideo: r2Url(logoRow.logo_placement_video_url),
+              placementVideo: r2Url(logoRow.placement_video_url),
               specs: Array.isArray(logoRow.specs)
                 ? (logoRow.specs as LogoSettings['specs'])
                 : [],
@@ -243,9 +366,9 @@ export function createSupabaseContentRepository(): ContentRepository {
 
         const richImages: RichContentSectionImage[] = richSectionImages.map(row => ({
           key: text(row.key),
-          designSlug: text(row.design_slug),
-          sectionKey: text(row.section_key),
-          src: r2Url(row.src),
+          designSlug: text((row.designs as SupabaseRow | undefined)?.slug),
+          sectionKey: text((row.rich_sections as SupabaseRow | undefined)?.key),
+          src: r2Url(row.media_url),
           alt: text(row.alt),
         })).filter(item => item.designSlug && item.sectionKey && item.src);
 
@@ -262,23 +385,23 @@ export function createSupabaseContentRepository(): ContentRepository {
         const reviews: ReviewsData = {
           settings: reviewRow
             ? {
-                enabled: bool(reviewRow.enabled, true),
-                title: text(reviewRow.title),
-                descriptionLine1: text(reviewRow.description_line_1),
-                descriptionLine2: text(reviewRow.description_line_2),
-                instagramHandle: text(reviewRow.instagram_handle),
-                ctaLabel: text(reviewRow.cta_label),
-                modalTitle: text(reviewRow.modal_title),
-                modalDescription: text(reviewRow.modal_description),
+                enabled: bool(reviewRow.reviews_enabled, true),
+                title: text(reviewRow.reviews_title),
+                descriptionLine1: text(reviewRow.reviews_description_line_1),
+                descriptionLine2: text(reviewRow.reviews_description_line_2),
+                instagramHandle: text(reviewRow.reviews_instagram_handle),
+                ctaLabel: text(reviewRow.reviews_cta_label),
+                modalTitle: text(reviewRow.reviews_modal_title),
+                modalDescription: text(reviewRow.reviews_modal_description),
               }
             : DEFAULT_CONTENT_SOURCE.reviews.settings,
-          items: parseReviewItems(reviewRow?.items),
-          screenshots: parseReviewScreenshots(reviewRow?.screenshots),
+          items: parseReviewItems(reviewRow?.reviews_items),
+          screenshots: parseReviewScreenshots(reviewRow?.reviews_screenshots),
         };
 
         const videoRow = videoReviewSettingsRows[0];
-        const videoItems: VideoReviewItem[] = Array.isArray(videoRow?.items)
-          ? (videoRow.items as SupabaseRow[]).map((item, index) => ({
+        const videoItems: VideoReviewItem[] = Array.isArray(videoRow?.video_reviews)
+          ? (videoRow.video_reviews as SupabaseRow[]).map((item, index) => ({
               id: text(item.id) || `vr-${index + 1}`,
               title: text(item.title),
               videoUrl: r2Url(item.video_url) || text(item.video_url),
@@ -292,28 +415,28 @@ export function createSupabaseContentRepository(): ContentRepository {
           : [];
 
         const videoReviews: VideoReviewsData = {
-          enabled: videoRow?.enabled === undefined
+          enabled: videoRow?.video_reviews_enabled === undefined
             ? DEFAULT_CONTENT_SOURCE.videoReviews.enabled
-            : bool(videoRow.enabled, true),
-          title: text(videoRow?.title, DEFAULT_CONTENT_SOURCE.videoReviews.title),
-          socialBadgeUrl: r2Url(videoRow?.social_badge_url) || DEFAULT_CONTENT_SOURCE.videoReviews.socialBadgeUrl,
-          socialHandle: text(videoRow?.social_handle, DEFAULT_CONTENT_SOURCE.videoReviews.socialHandle),
-          socialVerified: videoRow?.social_verified === undefined
+            : bool(videoRow.video_reviews_enabled, true),
+          title: text(videoRow?.video_reviews_title, DEFAULT_CONTENT_SOURCE.videoReviews.title),
+          socialBadgeUrl: r2Url(videoRow?.video_reviews_social_badge_url) || DEFAULT_CONTENT_SOURCE.videoReviews.socialBadgeUrl,
+          socialHandle: text(videoRow?.video_reviews_social_handle, DEFAULT_CONTENT_SOURCE.videoReviews.socialHandle),
+          socialVerified: videoRow?.video_reviews_social_verified === undefined
             ? DEFAULT_CONTENT_SOURCE.videoReviews.socialVerified
-            : bool(videoRow.social_verified, true),
-          socialText: text(videoRow?.social_text, DEFAULT_CONTENT_SOURCE.videoReviews.socialText),
+            : bool(videoRow.video_reviews_social_verified, true),
+          socialText: text(videoRow?.video_reviews_social_text, DEFAULT_CONTENT_SOURCE.videoReviews.socialText),
           stats: [
             {
-              value: text(videoRow?.stat_1_value, DEFAULT_CONTENT_SOURCE.videoReviews.stats[0]?.value ?? ''),
-              text: text(videoRow?.stat_1_text, DEFAULT_CONTENT_SOURCE.videoReviews.stats[0]?.text ?? ''),
+              value: text(videoRow?.video_reviews_stat_1_value, DEFAULT_CONTENT_SOURCE.videoReviews.stats[0]?.value ?? ''),
+              text: text(videoRow?.video_reviews_stat_1_text, DEFAULT_CONTENT_SOURCE.videoReviews.stats[0]?.text ?? ''),
             },
             {
-              value: text(videoRow?.stat_2_value, DEFAULT_CONTENT_SOURCE.videoReviews.stats[1]?.value ?? ''),
-              text: text(videoRow?.stat_2_text, DEFAULT_CONTENT_SOURCE.videoReviews.stats[1]?.text ?? ''),
+              value: text(videoRow?.video_reviews_stat_2_value, DEFAULT_CONTENT_SOURCE.videoReviews.stats[1]?.value ?? ''),
+              text: text(videoRow?.video_reviews_stat_2_text, DEFAULT_CONTENT_SOURCE.videoReviews.stats[1]?.text ?? ''),
             },
             {
-              value: text(videoRow?.stat_3_value, DEFAULT_CONTENT_SOURCE.videoReviews.stats[2]?.value ?? ''),
-              text: text(videoRow?.stat_3_text, DEFAULT_CONTENT_SOURCE.videoReviews.stats[2]?.text ?? ''),
+              value: text(videoRow?.video_reviews_stat_3_value, DEFAULT_CONTENT_SOURCE.videoReviews.stats[2]?.value ?? ''),
+              text: text(videoRow?.video_reviews_stat_3_text, DEFAULT_CONTENT_SOURCE.videoReviews.stats[2]?.text ?? ''),
             },
           ],
           videos: videoItems,
@@ -347,6 +470,15 @@ export function createSupabaseContentRepository(): ContentRepository {
           reviews,
           videoReviews,
           siteSettings,
+          homepage: homepageSettingsRows[0] ? mapHomepageRow(homepageSettingsRows[0]) : DEFAULT_HOMEPAGE,
+          about: aboutSettingsRows[0] ? mapAboutRow(aboutSettingsRows[0]) : DEFAULT_ABOUT,
+          carMat: carMatSettingsRows[0] ? mapCarMatRow(carMatSettingsRows[0]) : {
+            designs: DEFAULT_CAR_MAT_DESIGNS,
+            promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
+            placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
+            modalTitle: '',
+            modalDescription: '',
+          },
         };
       } catch (error) {
         if (error instanceof EditorialUnavailableError) throw error;
@@ -357,5 +489,3 @@ export function createSupabaseContentRepository(): ContentRepository {
     },
   };
 }
-
-

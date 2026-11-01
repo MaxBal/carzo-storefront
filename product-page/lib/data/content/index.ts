@@ -2,6 +2,18 @@ import 'server-only';
 
 import { cache } from 'react';
 import { DEFAULT_CONTENT_SOURCE } from '@/lib/content/default-source';
+import {
+  DEFAULT_ABOUT,
+  DEFAULT_CAR_MAT_DESIGNS,
+  DEFAULT_CAR_MAT_PLACEHOLDER,
+  DEFAULT_CAR_MAT_PROMO_MEDIA,
+  DEFAULT_HOMEPAGE,
+  type AboutData,
+  type CarMatDesign,
+  type CarMatContent,
+  type CarMatPromoMedia,
+  type HomepageData,
+} from '@/lib/content/settings-defaults';
 import type {
   ContentSource,
   ProductCatalog,
@@ -11,11 +23,28 @@ import type {
 import { resolveCatalogStoreBackend, resolveContentStoreBackend } from '../config';
 import { loadCatalogData } from '../catalog';
 import { createDirectusContentRepository } from './directus';
-import { createSupabaseContentRepository } from './supabase';
+import {
+  loadDirectusAboutSettings,
+  loadDirectusCarMatDesigns,
+  loadDirectusCarMatMediaPlaceholder,
+  loadDirectusCarMatPromoMedia,
+  loadDirectusHomepageSettings,
+} from './directus-settings';
+import {
+  createSupabaseContentRepository,
+  loadSupabaseAboutSettings,
+  loadSupabaseCarMatSettings,
+  loadSupabaseHomepageSettings,
+} from './supabase';
 import type { ContentRepository, EditorialContent } from './types';
 
 export type { ContentRepository, EditorialContent } from './types';
 export { EditorialUnavailableError } from './supabase';
+export {
+  loadSupabaseHomepageSettings,
+  loadSupabaseAboutSettings,
+  loadSupabaseCarMatSettings,
+} from './supabase';
 
 function createContentRepository(
   backend: ReturnType<typeof resolveContentStoreBackend>,
@@ -48,7 +77,25 @@ function editorialFallback(): EditorialContent {
     reviews: DEFAULT_CONTENT_SOURCE.reviews,
     videoReviews: DEFAULT_CONTENT_SOURCE.videoReviews,
     siteSettings: DEFAULT_CONTENT_SOURCE.siteSettings,
+    homepage: DEFAULT_HOMEPAGE,
+    about: DEFAULT_ABOUT,
+    carMat: {
+      designs: DEFAULT_CAR_MAT_DESIGNS,
+      promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
+      placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
+      modalTitle: '',
+      modalDescription: '',
+    },
   };
+}
+
+function reportEditorialFallback(scope: string, error: unknown): void {
+  // Always-on marker so staging audits can detect fallback use; a failed DB
+  // query must never be scored PASS because DEFAULT_CONTENT_SOURCE loaded.
+  console.error(
+    `[carzo-content] EDITORIAL_FALLBACK_ACTIVE scope=${scope}:`,
+    error instanceof Error ? error.message : error,
+  );
 }
 
 /**
@@ -85,14 +132,14 @@ export const getContentSource = cache(async (): Promise<ContentSource> => {
   }
 
   let editorial: EditorialContent;
+  let editorialFallbackUsed = false;
   try {
     editorial = await createContentRepository(contentBackend).loadEditorial();
   } catch (error) {
     // Editorial-only fallback is allowed; never overwrites catalog.
-    if (process.env.NODE_ENV !== 'production') {
-      console.warn('[carzo-content] editorial backend failed; using local editorial fallback.', error);
-    }
+    reportEditorialFallback('content-source', error);
     editorial = editorialFallback();
+    editorialFallbackUsed = true;
   }
 
   const origin: ContentSource['origin'] = contentBackend === 'directus' && catalogBackend === 'directus'
@@ -103,6 +150,7 @@ export const getContentSource = cache(async (): Promise<ContentSource> => {
 
   return {
     origin,
+    editorialFallbackUsed,
     designs: catalog.designs,
     sizes: catalog.sizes,
     brands: catalog.brands,
@@ -130,4 +178,81 @@ export const getContentSource = cache(async (): Promise<ContentSource> => {
 /** Test helper: compose without cache. */
 export async function composeContentSource(): Promise<ContentSource> {
   return getContentSource();
+}
+
+async function loadHomepageDataUncached(): Promise<HomepageData> {
+  const backend = resolveContentStoreBackend();
+  try {
+    return backend === 'supabase'
+      ? await loadSupabaseHomepageSettings()
+      : await loadDirectusHomepageSettings();
+  } catch (error) {
+    reportEditorialFallback('homepage', error);
+    return DEFAULT_HOMEPAGE;
+  }
+}
+
+async function loadAboutDataUncached(): Promise<AboutData> {
+  const backend = resolveContentStoreBackend();
+  try {
+    return backend === 'supabase'
+      ? await loadSupabaseAboutSettings()
+      : await loadDirectusAboutSettings();
+  } catch (error) {
+    reportEditorialFallback('about', error);
+    return DEFAULT_ABOUT;
+  }
+}
+
+const loadCarMatContent = cache(async (): Promise<CarMatContent> => {
+  const backend = resolveContentStoreBackend();
+  if (backend === 'supabase') {
+    try {
+      return await loadSupabaseCarMatSettings();
+    } catch (error) {
+      reportEditorialFallback('car-mat', error);
+      return {
+        designs: DEFAULT_CAR_MAT_DESIGNS,
+        promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
+        placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
+        modalTitle: '',
+        modalDescription: '',
+      };
+    }
+  }
+  try {
+    const [designs, promoMedia, placeholderImage] = await Promise.all([
+      loadDirectusCarMatDesigns(),
+      loadDirectusCarMatPromoMedia(),
+      loadDirectusCarMatMediaPlaceholder(),
+    ]);
+    return { designs, promoMedia, placeholderImage, modalTitle: '', modalDescription: '' };
+  } catch (error) {
+    reportEditorialFallback('car-mat', error);
+    return {
+      designs: DEFAULT_CAR_MAT_DESIGNS,
+      promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
+      placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
+      modalTitle: '',
+      modalDescription: '',
+    };
+  }
+});
+
+/** Backend-neutral homepage editorial loader (CONTENT_STORE-aware). */
+export const loadHomepageData = cache(loadHomepageDataUncached);
+
+/** Backend-neutral about editorial loader (CONTENT_STORE-aware). */
+export const loadAboutData = cache(loadAboutDataUncached);
+
+export async function loadCarMatDesigns(): Promise<CarMatDesign[]> {
+  return (await loadCarMatContent()).designs;
+}
+
+export async function loadCarMatPromoMedia(): Promise<CarMatPromoMedia> {
+  return (await loadCarMatContent()).promoMedia;
+}
+
+export async function loadCarMatMediaPlaceholder(): Promise<string> {
+  return (await loadCarMatContent()).placeholderImage;
 }
