@@ -876,3 +876,24 @@ explicit owner instruction.
 | 8 | Supabase migration version reconciliation | REQUIRED — 2 Stage 6 filename mismatches (P2-5) |
 | 9 | SEO canonical + Footer fixes | BEFORE STAGE 9 — `SITE_URL`/`carzo-eight` root cause in `lib/seo.ts:7` + `app/layout.tsx:24` |
 | 10 | Supabase Free / Production availability decision | REQUIRED owner decision before cutover |
+
+---
+
+## STAGE 8A GATE RE-VERIFICATION (2026-11-03)
+
+Read-only re-check performed at the start of Stage 8A delta discovery.
+This section does **not** replace the owner sign-off above — it records that the
+gate was re-validated before Stage 8A work began.
+
+- Owner sign-off record: commit `8ab7529` (2026-11-04 local / 2026-11-03 22:47 UTC),
+  `STAGE 7 = PASS`, all four §0 acceptance conditions present and honestly labelled
+  (owner acceptance ≠ automated viewport PASS; Network panel never claimed;
+  preview secret never exposed; D-1/D-2 closed).
+- New P0/P1 regressions since sign-off: **none** (read-only parity run 2026-11-03:
+  catalog/pricing/content/media/notification clean; the 4 reported parity FAILs are
+  the approved `delivery-and-payment` removal + the live +1 order delta — see
+  `docs/SUPABASE_STAGE8A_DELTA_DISCOVERY.md`, neither is a Stage 7 regression).
+- Git consistency: `dev` @ `8ab7529` = `origin/dev`; `origin/main` = `df8f353` (untouched).
+
+**Stage 7 gate remains CLOSED (PASS).** Historical findings and NOT-VERIFIED
+limitations above are preserved unchanged.

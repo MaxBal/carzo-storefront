@@ -824,3 +824,17 @@ limitations remain recorded above.
 10. Решение по Supabase Free и доступности Production (owner).
 
 **`Stage 8 = NOT STARTED`** — начинается только по явной команде владельца.
+
+---
+
+## 15. STAGE 8A GATE RE-VERIFICATION (2026-11-03)
+
+Read-only confirmation for the Stage 8A entry gate; supersedes nothing in §14.
+
+- Owner visual acceptance record (`8ab7529`, 2026-11-04 local) holds; the
+  historical NOT-VERIFIED viewport limitations (1440×900, 390×844) remain recorded
+  and were **not** retroactively marked as performed.
+- No new visual P0/P1 found in Stage 8A read-only checks; no browser automation
+  was requested or run.
+
+**`STAGE 7 = PASS` (unchanged).**
