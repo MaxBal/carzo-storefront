@@ -712,3 +712,18 @@ matrix in §4.2.
 - Plain `curl` to **Production** only (public, read-only) for the
   unchanged-proof and the P2-1 comparison.
 - Browser automation: **not used** (rejected; see §5).
+
+---
+
+## Superseding status — 2026-11-03 (Stage 7.x repair + Stage 7.1 visual QA)
+
+This section supersedes the §0 STATUS verdict only. All historical findings
+above are preserved as originally recorded.
+
+| Item | Update |
+|---|---|
+| D-1 (car-mat placeholder) | **CLOSED by owner decision** — placeholder removed from UI/runtime on both backends (no R2 upload). See `docs/SUPABASE_STAGE7X_REPAIR_RESULT.md` §6. |
+| D-2 (Directus reads in switched content paths) | **CLOSED** — content facade routing + fetch-spy proof (0 Directus reads). See `SUPABASE_STAGE7X_REPAIR_RESULT.md` §4. |
+| Visual / browser QA (this report §5) | **Now executed** — authorized browser session covered the V1–V9 interaction matrix at the nearest reproducible viewport (675×782). See `docs/SUPABASE_STAGE7_1_VISUAL_QA_RESULT.md`. |
+| New defects | none P0/P1. New P2: `/delivery-and-payment` renders an editor placeholder instead of content (P2-a); CMS title duplicates `\| CARZO` suffix (P2-b). |
+| Overall Stage 7 (updated) | **PARTIAL / BLOCKED** — remains not-PASS until: (1) exact 1440×900 + 390×844 viewport screenshot pass, (2) positive authorized draft preview or explicit owner adjudication, (3) owner adjudication of browser-network vs HTTP evidence. Detailed checklist in `SUPABASE_STAGE7_1_VISUAL_QA_RESULT.md` §8. |
