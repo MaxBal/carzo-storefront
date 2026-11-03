@@ -473,7 +473,7 @@ key=… RETURNING …`) — **exactly 1 row** returned. Post-check: `pages` = 3,
 
 | Check | Result |
 |---|---|
-| `/delivery-and-payment` → 404 | **PASS after Preview rebuild** — the page HTML was baked into deployment `jvfbf7a5q` at build time (Next 14 default `force-cache` fetches via supabase-js; `CACHE_REVALIDATE_SECONDS` is not applied to page reads), so the pre-deletion build kept serving the old shell until the next build. The docs push in §12.5 triggered a fresh `dev` build from which the route returns the 404 page («ПОМИЛКА 404 / Сторінку не знайдено») — verified post-build in §12.5. |
+| `/delivery-and-payment` → 404 | **PASS after the scoped CMS-pages cache fix (§12.5)** — final proof on Preview `carzo-storefront-o3n5sdi08-yevgens-projects.vercel.app`: `HTTP/2 404`, body is the 404 page («Сторінку не знайдено»), zero «Додайте блоки» remnants. |
 | Sitemap excludes the page | **PASS** — `/sitemap.xml` contains **0** occurrences of `delivery-and-payment` (and was already excluded pre-delete via the `noIndex` filter in `app/sitemap.ts`); sitemap is ISR (`revalidate = 60`) |
 | PDP benefit tile «Доставка 1-2 дні» | **PASS** — opens the delivery modal; content byte-identical to Stage 7.1 E-10 evidence («Відправляємо швидко, пакуємо надійно…») |
 | PDP benefit tile «Варіанти оплати» | **PASS** — opens the payment modal («Прозорі умови та жодних прихованих платежів…») |
@@ -500,12 +500,58 @@ Production (which still reads Directus) keeps the record until that later
 removal; `/delivery-and-payment` on Production is therefore unchanged and
 **was not touched** in Stage 7.1.
 
-### 12.5 Rebuild note and post-build proof
+### 12.5 Stale-response root cause and the CMS-pages cache fix
 
-The docs commit for this addendum triggers a fresh Preview build of `dev`
-(expected behavior recorded per the Stage 7.1 brief). Post-build verification
-result: see the final status line below — `/delivery-and-payment` → **404**
-on the rebuilt Preview, sitemap still 0 hits, modals unchanged.
+**Symptom.** After the Supabase DELETE, `/delivery-and-payment` kept returning
+`HTTP/2 200` with the old page shell on *every* Preview deployment, including
+fresh builds.
+
+**Diagnosis (hard evidence).** Response headers on deployment `r94h8wez3`:
+`x-vercel-cache: MISS`, `cache-control: private, no-cache, no-store`, `x-matched-path: /[...slug]`
+— the HTML is re-rendered on each request, so the **Full Route Cache / CDN was
+not the carrier**. The stale value lived in the **Next.js fetch Data Cache**:
+supabase-js page reads go through the patched global fetch, and in Next 14 a
+fetch without cache options resolves to `revalidate = false` — i.e. a
+**1-year cache entry** (`patch-fetch.js`, `normalizedRevalidate → CACHE_ONE_YEAR`).
+That Data Cache is project-scoped and survives redeploys. Confirmed in the
+Next 14.2.35 sources (`server/lib/incremental-cache/index.js`):
+`fetchCacheKey` hashes `url, method, headers, init.cache, body…` but **not
+`init.next`,** so merely adding `next.revalidate` would not have displaced the
+old entry. The unused `__PAGE_CACHE` constant showed the original 60s intent
+was never wired.
+
+**Fix (scope: CMS pages only).** `product-page/lib/data/pages/supabase.ts` now
+builds two pages-scoped Supabase clients instead of using the shared admin
+client:
+
+- published reads: custom fetch with `cache: 'force-cache'` (present in the
+  cache key → pre-fix no-TTL entries stop matching) **and**
+  `next: { revalidate: 60, tags: [pages] }` (60s TTL, so CMS edits appear
+  within a minute — requirement «корректное обновление CMS-страниц»);
+- preview reads: `cache: 'no-store'` — draft preview is never cached.
+
+The shared `lib/supabase/server.ts` client is **untouched** — catalog, cart and
+orders keep their previous fetch behaviour exactly.
+
+**Code validation.** `tsc --noEmit` clean; `lint` clean (pre-existing `<img>`/alt
+warnings only); `pnpm run build` succeeds; bounded suite `test:stage4` **19/19**.
+Commits on `dev` only: `3edbacf` (wire `__PAGE_CACHE` revalidate/tags) and
+`1413ec8` (explicit `force-cache` in the key to displace stale entries).
+
+**Final verification (deployment `carzo-storefront-o3n5sdi08-yevgens-projects.vercel.app`, commit `1413ec8`):**
+
+| Check | Result |
+|---|---|
+| `/delivery-and-payment` | **`HTTP/2 404`**, body = «Сторінку не знайдено» / «Помилка 404», no placeholder text | 
+| `/sitemap.xml` | 0 occurrences of `delivery-and-payment` |
+| `/home` (published CMS page) | `308 → /` (canonical redirect by design), `/` = `HTTP/2 200` |
+| `/about` | `HTTP/2 200` |
+| `/privacy-policy`, `/public-offer` (drafts) | `HTTP/2 404` each |
+| `/api/draft?slug=privacy-policy` (no secret) | `401 Invalid preview request` |
+| Benefit modal «Доставка 1-2 дні» (PDP tile) | opens; content identical («Відправляємо швидко, пакуємо надійно…») |
+| Benefit modal «Варіанти оплати» (PDP tile) | opens; content identical («Прозорі умови та жодних прихованих платежів…») |
+| Footer «Покупцеві» → «Доставка» / «Оплата» | open the same modals via `preventDefault`; URL unchanged |
+| Modal texts/buttons/design | **unchanged** — no modal code touched |
 
 ### 12.6 Mutations in this addendum (all authorized by the owner decision)
 
@@ -514,6 +560,7 @@ on the rebuilt Preview, sitemap still 0 hits, modals unchanged.
 | Supabase `pages` DELETE (target row only) | **1** |
 | Supabase DDL / other tables | 0 |
 | Directus writes | 0 |
-| Code/schema/env changes | 0 |
+| Code changes | 2 commits on `dev` only (`3edbacf`, `1413ec8`, `lib/data/pages/supabase.ts`) |
+| Schema / env changes | 0 |
 | Orders/customers/settings/media | 0 |
 | Production / `main` | 0 |
