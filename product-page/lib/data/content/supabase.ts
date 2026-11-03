@@ -5,7 +5,6 @@ import { DEFAULT_CONTENT_SOURCE } from '@/lib/content/default-source';
 import {
   DEFAULT_ABOUT,
   DEFAULT_CAR_MAT_DESIGNS,
-  DEFAULT_CAR_MAT_PLACEHOLDER,
   DEFAULT_CAR_MAT_PROMO_MEDIA,
   DEFAULT_HOMEPAGE,
   parseAboutSettings,
@@ -127,7 +126,6 @@ function mapCarMatRow(row: SupabaseRow): CarMatContent {
   return {
     designs: parseCarMatDesigns(row.car_mat_designs),
     promoMedia: parseCarMatPromoMedia(row, supabaseMediaUrl),
-    placeholderImage: r2Url(row.placeholder_image_url) || DEFAULT_CAR_MAT_PLACEHOLDER,
     modalTitle: text(row.car_mat_modal_title),
     modalDescription: text(row.car_mat_modal_description),
   };
@@ -150,7 +148,7 @@ const ABOUT_SETTINGS_COLUMNS = [
 
 const CAR_MAT_SETTINGS_COLUMNS = [
   'car_mat_designs', 'car_mat_modal_title', 'car_mat_modal_description',
-  'car_mat_promo_video_url', 'car_mat_promo_cover_url', 'placeholder_image_url',
+  'car_mat_promo_video_url', 'car_mat_promo_cover_url',
 ].join(',');
 
 const REVIEW_SETTINGS_COLUMNS = [
@@ -205,7 +203,6 @@ export async function loadSupabaseCarMatSettings(): Promise<CarMatContent> {
     : {
         designs: DEFAULT_CAR_MAT_DESIGNS,
         promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
-        placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
         modalTitle: '',
         modalDescription: '',
       };
@@ -475,7 +472,6 @@ export function createSupabaseContentRepository(): ContentRepository {
           carMat: carMatSettingsRows[0] ? mapCarMatRow(carMatSettingsRows[0]) : {
             designs: DEFAULT_CAR_MAT_DESIGNS,
             promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
-            placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
             modalTitle: '',
             modalDescription: '',
           },

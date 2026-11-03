@@ -11,12 +11,11 @@
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 
-import { DEFAULT_CAR_MAT_PLACEHOLDER, DEFAULT_HOMEPAGE } from '../lib/content/settings-defaults';
+import { DEFAULT_HOMEPAGE } from '../lib/content/settings-defaults';
 import {
   getContentSource,
   loadAboutData,
   loadCarMatDesigns,
-  loadCarMatMediaPlaceholder,
   loadCarMatPromoMedia,
   loadHomepageData,
   loadSupabaseHomepageSettings,
@@ -67,20 +66,17 @@ describe('Editorial fallback is observable (Stage 7.x)', () => {
     const aboutRun = await captureConsoleErrors(() => loadAboutData());
     const designsRun = await captureConsoleErrors(() => loadCarMatDesigns());
     const promoRun = await captureConsoleErrors(() => loadCarMatPromoMedia());
-    const placeholderRun = await captureConsoleErrors(() => loadCarMatMediaPlaceholder());
 
     assert.equal(homepageRun.result.hero.title, DEFAULT_HOMEPAGE.hero.title, 'homepage falls back to DEFAULT');
     assert.equal(aboutRun.result.hero.title.length >= 1, true);
     assert.equal(designsRun.result.length >= 1, true);
     assert.equal(promoRun.result.videoUrl.length >= 1, true);
-    assert.equal(placeholderRun.result, DEFAULT_CAR_MAT_PLACEHOLDER, 'placeholder falls back to the local asset');
 
     const allErrors = [
       ...homepageRun.errors,
       ...aboutRun.errors,
       ...designsRun.errors,
       ...promoRun.errors,
-      ...placeholderRun.errors,
     ];
     const markers = allErrors.filter(line => line.includes('EDITORIAL_FALLBACK_ACTIVE'));
     assert.ok(

@@ -8,7 +8,6 @@ import 'server-only';
 import { resolveMediaUrl } from '@/lib/media';
 import {
   DEFAULT_ABOUT,
-  DEFAULT_CAR_MAT_PLACEHOLDER,
   DEFAULT_CAR_MAT_PROMO_MEDIA,
   DEFAULT_CAR_MAT_DESIGNS,
   DEFAULT_HOMEPAGE,
@@ -74,28 +73,4 @@ export async function loadDirectusCarMatPromoMedia(): Promise<CarMatPromoMedia> 
   );
   if (!data) return DEFAULT_CAR_MAT_PROMO_MEDIA;
   return parseCarMatPromoMedia(data, resolveMediaUrl);
-}
-
-/**
- * Legacy car-mat placeholder: Directus `carzo_media_settings` lookup.
- * Known Stage 7.x D-1 defect on this path (Directus file ref / broken proxy);
- * preserved verbatim for rollback only.
- */
-export async function loadDirectusCarMatMediaPlaceholder(): Promise<string> {
-  const directusUrl = getDirectusUrl();
-  if (!directusUrl) return DEFAULT_CAR_MAT_PLACEHOLDER;
-  try {
-    const query = new URLSearchParams({ fields: 'image.id,external_url' });
-    const response = await fetch(`${directusUrl}/items/carzo_media_settings?${query}`, {
-      headers: directusHeaders(),
-      next: { revalidate: 60 },
-    });
-    if (!response.ok) return DEFAULT_CAR_MAT_PLACEHOLDER;
-    const payload = await response.json() as { data?: RecordValue };
-    const data = payload.data;
-    if (!data) return DEFAULT_CAR_MAT_PLACEHOLDER;
-    return resolveMediaUrl(data.external_url, data.image, DEFAULT_CAR_MAT_PLACEHOLDER);
-  } catch {
-    return DEFAULT_CAR_MAT_PLACEHOLDER;
-  }
 }

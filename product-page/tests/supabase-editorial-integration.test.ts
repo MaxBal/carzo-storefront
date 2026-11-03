@@ -10,14 +10,12 @@
 import assert from 'node:assert/strict';
 import { after, before, describe, it } from 'node:test';
 
-import { DEFAULT_CAR_MAT_PLACEHOLDER } from '../lib/content/settings-defaults';
 import { PRODUCT_MEDIA_REQUIRED_SLOTS } from '../lib/data/content/media-slots';
 import type { EditorialContent } from '../lib/data/content/types';
 import {
   getContentSource,
   loadAboutData,
   loadCarMatDesigns,
-  loadCarMatMediaPlaceholder,
   loadCarMatPromoMedia,
   loadHomepageData,
   loadSupabaseAboutSettings,
@@ -101,7 +99,6 @@ describe('Supabase editorial integration (read-only, Stage 7.x)', () => {
     const probes: Array<[string, string]> = [
       ['homepage_settings', 'homepage_hero_title'],
       ['about_settings', 'about_hero_title'],
-      ['car_mat_settings', 'placeholder_image_url'],
       ['review_settings', 'reviews_title'],
       ['video_review_settings', 'video_reviews'],
       ['site_settings', 'media_placeholder_url'],
@@ -202,12 +199,6 @@ describe('Supabase editorial integration (read-only, Stage 7.x)', () => {
     assert.equal(about.statement.text, String(aboutRow.about_statement_text));
     assert.equal(carMat.promoMedia.videoUrl, String(carMatRow.car_mat_promo_video_url));
     assert.equal(carMat.promoMedia.coverUrl, String(carMatRow.car_mat_promo_cover_url));
-    assert.equal(
-      carMat.placeholderImage,
-      carMatRow.placeholder_image_url
-        ? String(carMatRow.placeholder_image_url)
-        : DEFAULT_CAR_MAT_PLACEHOLDER,
-    );
 
     // Discriminators: DB values that differ from DEFAULT_* prove live sourcing.
     assert.equal(
@@ -236,14 +227,12 @@ describe('Supabase editorial integration (read-only, Stage 7.x)', () => {
     const about = await loadAboutData();
     const designs = await loadCarMatDesigns();
     const promo = await loadCarMatPromoMedia();
-    const placeholder = await loadCarMatMediaPlaceholder();
     await createSupabaseContentRepository().loadEditorial();
 
     assert.ok(homepage.hero.title.length >= 1);
     assert.ok(about.hero.title.length >= 1);
     assert.ok(designs.length >= 1);
     assert.ok(promo.videoUrl.length >= 1);
-    assert.ok(placeholder.length >= 1);
 
     const directusCalls = fetchLog.filter(url => (
       url.includes('directus-sentinel.invalid') || url.includes('/items/carzo_')
@@ -264,19 +253,22 @@ describe('Supabase editorial integration (read-only, Stage 7.x)', () => {
 
     const homepage = await loadHomepageData();
     const carMat = await loadCarMatPromoMedia();
-    const placeholder = await loadCarMatMediaPlaceholder();
     const urls = collectUrls(editorial);
     collectUrls(homepage, urls);
     collectUrls(carMat, urls);
-    urls.push(placeholder);
 
     const directusAssets = urls.filter(url => url.includes('/api/directus-assets/'));
     assert.deepEqual(directusAssets, [], 'published Supabase content must not reference the Directus proxy');
     const directusHosts = urls.filter(url => url.includes('directus'));
     assert.deepEqual(directusHosts, [], 'no Directus hosts in editorial media');
-    assert.ok(
-      placeholder.startsWith('https://media.carzo.com.ua/') || placeholder.startsWith('/'),
-      'placeholder is R2 or an intentional local fallback',
-    );
+
+    // Car-mat runtime must carry no placeholder at all (Stage 7.x D-1 owner
+    // decision). siteSettings.mediaPlaceholder (PDP gallery/rich fallback) is
+    // intentionally out of this scope and kept.
+    const carMatUrls = collectUrls(editorial.carMat ?? {});
+    collectUrls(homepage, carMatUrls);
+    collectUrls(carMat, carMatUrls);
+    const landscapeRefs = carMatUrls.filter(url => url.includes('landscape-placeholder'));
+    assert.deepEqual(landscapeRefs, [], 'no car-mat placeholder references in car-mat runtime');
   });
 });

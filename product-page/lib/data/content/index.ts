@@ -5,7 +5,6 @@ import { DEFAULT_CONTENT_SOURCE } from '@/lib/content/default-source';
 import {
   DEFAULT_ABOUT,
   DEFAULT_CAR_MAT_DESIGNS,
-  DEFAULT_CAR_MAT_PLACEHOLDER,
   DEFAULT_CAR_MAT_PROMO_MEDIA,
   DEFAULT_HOMEPAGE,
   type AboutData,
@@ -26,7 +25,6 @@ import { createDirectusContentRepository } from './directus';
 import {
   loadDirectusAboutSettings,
   loadDirectusCarMatDesigns,
-  loadDirectusCarMatMediaPlaceholder,
   loadDirectusCarMatPromoMedia,
   loadDirectusHomepageSettings,
 } from './directus-settings';
@@ -82,7 +80,6 @@ function editorialFallback(): EditorialContent {
     carMat: {
       designs: DEFAULT_CAR_MAT_DESIGNS,
       promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
-      placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
       modalTitle: '',
       modalDescription: '',
     },
@@ -214,25 +211,22 @@ const loadCarMatContent = cache(async (): Promise<CarMatContent> => {
       return {
         designs: DEFAULT_CAR_MAT_DESIGNS,
         promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
-        placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
         modalTitle: '',
         modalDescription: '',
       };
     }
   }
   try {
-    const [designs, promoMedia, placeholderImage] = await Promise.all([
+    const [designs, promoMedia] = await Promise.all([
       loadDirectusCarMatDesigns(),
       loadDirectusCarMatPromoMedia(),
-      loadDirectusCarMatMediaPlaceholder(),
     ]);
-    return { designs, promoMedia, placeholderImage, modalTitle: '', modalDescription: '' };
+    return { designs, promoMedia, modalTitle: '', modalDescription: '' };
   } catch (error) {
     reportEditorialFallback('car-mat', error);
     return {
       designs: DEFAULT_CAR_MAT_DESIGNS,
       promoMedia: DEFAULT_CAR_MAT_PROMO_MEDIA,
-      placeholderImage: DEFAULT_CAR_MAT_PLACEHOLDER,
       modalTitle: '',
       modalDescription: '',
     };
@@ -251,8 +245,4 @@ export async function loadCarMatDesigns(): Promise<CarMatDesign[]> {
 
 export async function loadCarMatPromoMedia(): Promise<CarMatPromoMedia> {
   return (await loadCarMatContent()).promoMedia;
-}
-
-export async function loadCarMatMediaPlaceholder(): Promise<string> {
-  return (await loadCarMatContent()).placeholderImage;
 }

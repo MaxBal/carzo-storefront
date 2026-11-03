@@ -109,7 +109,6 @@ export interface CarMatPromoMedia {
 export interface CarMatContent {
   designs: CarMatDesign[];
   promoMedia: CarMatPromoMedia;
-  placeholderImage: string;
   modalTitle: string;
   modalDescription: string;
 }
@@ -224,9 +223,6 @@ export const DEFAULT_CAR_MAT_PROMO_MEDIA: CarMatPromoMedia = {
   videoUrl: '/carmat-video.mov',
   coverUrl: '/carmat-desktop.jpeg',
 };
-
-/** Local intentional placeholder; not proof of the R2 asset migration (Stage 7.x D-1). */
-export const DEFAULT_CAR_MAT_PLACEHOLDER = '/media/landscape-placeholder.svg';
 
 export function parseProducts(raw: unknown): HomepageProduct[] {
   if (!Array.isArray(raw)) return DEFAULT_HOMEPAGE.hero.products;
