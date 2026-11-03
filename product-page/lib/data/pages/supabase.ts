@@ -54,6 +54,10 @@ function getCachedPageClient(): SupabaseClient {
     cachedPageClient = createPageClient((input, init) =>
       fetch(input, {
         ...init,
+        // `init.cache` is part of the fetch-cache key while `init.next` is not
+        // (next@14 incremental-cache fetchCacheKey) — set cache explicitly so
+        // pre-fix no-TTL entries stop matching, and give the entry a 60s TTL.
+        cache: 'force-cache',
         next: { revalidate: __PAGE_CACHE.revalidate, tags: [...__PAGE_CACHE.tags] },
       } as NextFetchInit),
     );
