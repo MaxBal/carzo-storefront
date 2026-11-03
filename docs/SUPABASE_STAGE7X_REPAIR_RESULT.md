@@ -8,17 +8,17 @@ on `dev`. Stage 7 is **not** closed by this document; see §10.
 
 ## 1. STATUS
 
-**`Stage 7.x corrective work = PARTIAL`**
+**`Stage 7.x corrective work = PASS`** (D-1 closed by owner decision — see §6)
 
 | Area | Result |
 |---|---|
 | Step 1 — Supabase editorial SELECT/mapping repair | **PASS** (live PostgREST proof, 7/7 integration tests) |
 | Step 2 — D-2 Directus reads in switched content paths | **PASS** (facade routing + fetch-spy proof, zero Directus reads) |
-| Step 3 — D-1 car-mat placeholder (authentic source / schema / code) | **PARTIAL** — source verified, schema applied, code routed; **R2 object upload + URL data update pending** (blocked on write access, see §6) |
+| Step 3 — D-1 car-mat placeholder | **PASS (closed by removal)** — owner cancelled the landscape placeholder entirely; it is removed from the car-mat UI and runtime (both backends), no R2 upload needed (§6) |
 | Step 4 — Automated validation | **PASS** (164/164 tests, tsc, lint) |
 | Step 5 — Preview deploy + QA boundary | **PASS for build gate**; browser/visual QA **NOT VERIFIED** |
 | Step 6 — Documentation | this file |
-| Stage 7 as a whole | **BLOCKED** — D-1 not fully closed + visual QA NOT VERIFIED |
+| Stage 7 as a whole | **BLOCKED** — visual QA NOT VERIFIED (browser gate) |
 
 Per the Stage 7 rule, Stage 7 may only become PASS when the full QA matrix has
 passed. This task explicitly does **not** claim that.
@@ -33,11 +33,12 @@ passed. This task explicitly does **not** claim that.
 | Baseline HEAD (pre-work) | `4407452ab329f4c3c0ecc503078beb9814b028b8` — `docs: record stage 7 QA git and deployment state` (matches the expected baseline in the brief) |
 | Worktree at baseline | clean except untracked `.DS_Store` / `.playwright-cli/` (never staged) |
 | Repair commit | `9d84917` — `fix: repair supabase editorial reads and car-mat R2 media` (pushed to `dev` only) |
+| Follow-up commits | `e990ffe` — `docs: record stage 7.x editorial repair result`; `02f3eaa` — `fix: remove car-mat landscape placeholder per owner decision` (D-1 v2, see §6) |
 | `main` (before / after) | `df8f3531ff9de2408525ac5caf6844d8c6e4d340` — **unchanged**; only `git push origin dev` was executed |
 | Production deployment (before / after) | `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9` → `carzo-storefront-f3up8jypj-yevgens-projects.vercel.app`, READY, created 2026-10-31 12:33:30Z — **identical ID both times** |
-| Preview deployment (new) | `dpl_EKstzxhVca1zLC822zkyyZdCNcin` → `carzo-storefront-os1ahkxon-yevgens-projects.vercel.app`, **READY**, build 41s, created 2026-11-01 19:56 (local) |
-| Preview Git alias | `carzo-storefront-git-dev-yevgens-projects.vercel.app` → same deployment |
-| Preview build provenance | deployment auto-triggered by push of `9d84917`; build succeeded (the Vercel UI build log line `Commit: 9d84917` should be attached in the release checklist) |
+| Preview deployment (current) | `dpl_89sGuJHKcbhsUtT1UiQj4C3Z7jJS` → `carzo-storefront-oftz3ocn6-yevgens-projects.vercel.app`, **READY**, build 36s (commit `02f3eaa`) |
+| Preview deployment (earlier gate) | `dpl_EKstzxhVca1zLC822zkyyZdCNcin` → `carzo-storefront-os1ahkxon-yevgens-projects.vercel.app`, READY, build 41s (commit `9d84917`) |
+| Preview Git alias | `carzo-storefront-git-dev-yevgens-projects.vercel.app` → current `dev` deployment |
 | Supabase project | `Carzo`, `kmhegysmtsjqtwwaacht` — ACTIVE; read-only queries + one approved additive DDL only |
 | R2 public media origin | `https://media.carzo.com.ua` |
 | Deployment Protection | ON (unchanged; Preview served via `vercel curl` protection bypass) |
@@ -145,100 +146,93 @@ Full matrix (from `product-page`):
 Vercel Preview build of the pushed commit succeeded (41s, READY) — the
 production-like build gate.
 
-## 6. D-1 — car-mat design placeholder
+## 6. D-1 — car-mat design placeholder (CLOSED by owner decision)
 
-**Authentic source located (no image invented):** Directus file
-`8448fa94-89cd-4f2a-8596-fa871d7144bd` metadata (read-only, single GET):
-`filename_download = landscape-placeholder.svg`, `title = Carzo:
-public/media/landscape-placeholder.svg`, `type = image/svg+xml`,
-`filesize = 813`. The **original repo asset is therefore
-`product-page/public/media/landscape-placeholder.svg`** (813 bytes,
-sha256 `7610a3cb41c030cf8b8cf7d88c377ff4fdb8950664624ce9a7c8b74a984a1b8a`).
+**Owner decision (2026-11-03): the landscape placeholder is cancelled entirely.**
+`landscape-placeholder.svg` is an unwanted technical stub and must not be used
+on the car-mat surface. D-1 is therefore closed **by removing the element**,
+not by migrating a file to R2. No replacement image was invented.
 
-Attempted and recorded (bounded, no retries):
+What was done:
 
-- `GET {DIRECTUS_URL}/assets/8448fa94-…` with `DIRECTUS_READ_TOKEN` → 403 FORBIDDEN (matches QA).
-- Same GET with the provisioned `DIRECTUS_ADMIN_TOKEN` → 403 FORBIDDEN. No permission brute force; no Directus writes.
-- Cloudflare R2 API (ListBuckets / HeadObject) with the local `.env.local`
-  `R2_*` credentials → **401 Unauthorized**. Public CDN reads of existing
-  objects are fine (`…/car-mats/promo-video.mp4` and `…/car-mats/cover-video.webp`
-  return 200). No R2 keys were created or modified.
+1. **No R2 upload.** The previously prepared `content/car-mats/landscape-placeholder.svg`
+   upload is cancelled and was never performed (the local R2 write credentials
+   returned 401 and no retry loop was run; no R2 keys were created or changed).
+2. **Removed from the car-mat UI.** `components/DesignVariantsModal.tsx` no
+   longer takes a `placeholderImage`, no longer renders the fallback image
+   layer (`EMERGENCY_PLACEHOLDER`, `.dvm-img-fallback`), and renders the image
+   block **only while a real design photo is present and has not failed** —
+   a design without an image shows the selector/text content with **no image
+   block at all** (no fake picture, no broken `<img>`).
+3. **Removed from the car-mat runtime on both backends.**
+   `getCarMatMediaPlaceholder()` / `loadCarMatMediaPlaceholder()` /
+   `loadDirectusCarMatMediaPlaceholder()` and the `CarMatContent.placeholderImage`
+   field are deleted. This also removes the legacy Directus
+   `/api/directus-assets/8448fa94-89cd-4f2a-8596-fa871d7144bd` lookup (the
+   502/403 proxy path) from the car-mat request path on the rollback backend.
+4. **`car_mat_settings.placeholder_image_url` usage audit → dropped.** The
+   column had been added exclusively for this placeholder and had zero other
+   consumers; it was NULL in every row. Removed by the separate additive-free
+   migration `20261103125918_stage7x_drop_car_mat_placeholder_url`
+   (`supabase/migrations/20261103125918_stage7x_drop_car_mat_placeholder_url.sql`).
+   Rollback: re-add the nullable column (lossless in both directions).
+5. **`site_settings.media_placeholder_url` usage audit → kept.** It is not
+   car-mat-specific: `lib/content/resolver.ts` feeds it into the PDP
+   gallery/rich-section/magnetic-poster `fallbackSrc` chain
+   (`components/ManagedProductImage` renders it when a real product photo is
+   missing or fails to load), and the untouched Directus adapter resolves the
+   same value from `carzo_media_settings`. Per the instruction it was **not**
+   removed blindly; deleting it would change PDP behaviour outside the car-mat
+   scope. The R2-upload spec for a car-mat object is therefore obsolete.
+   Note: `DEFAULT_CONTENT_SOURCE.siteSettings.mediaPlaceholder` still points at
+   `/media/landscape-placeholder.svg` **for that PDP fallback chain only**;
+   car-mat code has zero references to the file.
 
-**Approved additive schema change (owner-approved, applied via Supabase MCP,
-recorded as `supabase_migrations` version `20261101172930`,
-`stage7x_add_editorial_media_urls`; local file
-`supabase/migrations/20261101172930_stage7x_add_editorial_media_urls.sql`):**
+Runtime evidence (`vercel curl`, deployment `dpl_89sGuJHKcbhsUtT1UiQj4C3Z7jJS`):
+`/catalog-carmat` renders with `0` `placeholderImage` props, `0`
+`landscape-placeholder` refs, `0` `/api/directus-assets/` refs, `0` `directus`
+refs; real car-mat media (`…/car-mats/promo-video.mp4`,
+`…/car-mats/cover-video.webp`) and design variant content still render.
+`/` and `/about` unchanged (R2 logo video / process images intact).
 
-```sql
-alter table public.car_mat_settings add column if not exists placeholder_image_url text;
-alter table public.site_settings   add column if not exists media_placeholder_url text;
-```
-
-Both columns are nullable text; no existing rows were updated or deleted.
-Rollback: `alter table … drop column …` (columns are currently NULL, so the
-rollback is lossless). RLS/policies unchanged; no grants were touched.
-
-**Code (done):** `getCarMatMediaPlaceholder()` now goes through the
-CONTENT_STORE facade; the Supabase path reads
-`car_mat_settings.placeholder_image_url` and falls back to the intentional
-local `/media/landscape-placeholder.svg` (byte-identical to the authentic
-asset). Preview runtime evidence (`vercel curl /catalog-carmat` on
-`dpl_EKstzxhVca1zLC822zkyyZdCNcin`):
-`placeholderImage = "/media/landscape-placeholder.svg"`, **0**
-`/api/directus-assets/` references. The 502/403 proxy defect is gone from
-published content.
-
-**Pending (owner action) — R2 upload spec for one immutable object:**
-
-| Field | Value |
-|---|---|
-| Bucket | `R2_BUCKET_NAME` from `product-page/.env.local` (existing bucket, do not create buckets/keys) |
-| Object key | `content/car-mats/landscape-placeholder.svg` |
-| Content-Type | `image/svg+xml` |
-| Source bytes | `product-page/public/media/landscape-placeholder.svg` (813 bytes) |
-| SHA-256 | `7610a3cb41c030cf8b8cf7d88c377ff4fdb8950664624ce9a7c8b74a984a1b8a` |
-| Immutability | upload **once**; never overwrite/delete existing objects; if the key already exists, stop and report instead of overwriting |
-| Verify after upload | `HEAD https://media.carzo.com.ua/content/car-mats/landscape-placeholder.svg` → HTTP 200, `content-type: image/svg+xml`, body hash matches |
-
-After the object is live, one data update (approved scope) sets
-`car_mat_settings.placeholder_image_url` (and `site_settings.media_placeholder_url`)
-to `https://media.carzo.com.ua/content/car-mats/landscape-placeholder.svg`.
-Until then the field stays NULL and the local placeholder serves.
-
-**D-1 verdict:** `PARTIAL — awaiting R2 object upload (BLOCKED_R2_WRITE)`.
-Not claimed as PASS: the local placeholder is a temporary safe fallback and is
-explicitly **not** proof that the authentic R2 asset has been migrated.
+**D-1 verdict: CLOSED — placeholder removed per owner decision.**
 
 ## 7. Supabase / R2 mutation inventory
 
 | Mutation | Scope | Rollback |
 |---|---|---|
-| `alter table car_mat_settings add column placeholder_image_url text` | additive DDL, owner-approved | `drop column` (column currently NULL) |
-| `alter table site_settings add column media_placeholder_url text` | additive DDL, owner-approved | `drop column` (column currently NULL) |
-| Data updates | **none yet** (placeholder URL update pending R2 upload) | n/a |
-| R2 writes | **none** (no credentials; per owner decision the upload is done manually per §6 spec) | n/a |
+| `alter table car_mat_settings add column placeholder_image_url text` | additive DDL, owner-approved (`20261101172930`) | superseded by the drop below |
+| `alter table site_settings add column media_placeholder_url text` | additive DDL, owner-approved (`20261101172930`); feeds the PDP fallback chain — **kept** | `drop column` (column currently NULL) |
+| `alter table car_mat_settings drop column placeholder_image_url` | owner decision to remove the cancelled placeholder (`20261103125918`); column was NULL in every row — lossless | re-add nullable text column |
+| Data updates | **none** | n/a |
+| R2 writes | **none** (upload cancelled; 401 on local keys, no retries, no new keys) | n/a |
 | Directus writes | **zero** | n/a |
 | Orders / customers / Telegram | **zero** | n/a |
 
 ## 8. Preview QA boundary (HTTP-level only)
 
+Latest deployment `dpl_89sGuJHKcbhsUtT1UiQj4C3Z7jJS` (READY) — current `dev`:
+
 | Route | Result | Evidence |
 |---|---|---|
-| `/` | 200 | hero title present; homepage logo video served from `media.carzo.com.ua/…/home/logo-video.mp4` (Supabase `homepage_settings` — DEFAULT is empty, so this proves live sourcing); 0 `directus` refs |
+| `/` | 200 | hero + homepage logo video from `homepage_settings` (R2); 0 `directus` refs |
 | `/about` | 200 | hero text + `about/develop.webp` from `about_settings` |
-| `/catalog-carmat` | 200 | `placeholderImage="/media/landscape-placeholder.svg"`; 0 `/api/directus-assets/` refs |
+| `/catalog-carmat` | 200 | **0** `placeholderImage`, **0** `landscape-placeholder`, **0** `/api/directus-assets/`, **0** `directus` refs; promo video/cover (R2) and design variant text intact |
+
+Earlier deployment `dpl_EKstzxhVca1zLC822zkyyZdCNcin` (commit `9d84917`)
+verified the pre-decision state (placeholder served locally, 0 proxy refs).
 
 **Browser/interactive QA: NOT VERIFIED.** (Modal open/close, sticky CTA, tabs,
 cropping, mobile layout, autoplay, cart drawer.) Browser automation was refused
 in Stage 7 and is not re-attempted here. HTTP-level rendering is **not** a
 substitute. `Stage 7 visual QA = NOT VERIFIED` — Stage 7 stays **BLOCKED**
-until a separate authorized/manual visual test runs **and** D-1 is fully closed.
+until a separate authorized/manual visual test runs.
 
 ## 9. P0/P1 defects remaining
 
 | ID | Severity | State |
 |---|---|---|
-| D-1 | P1 | **OPEN (partial)** — code + schema done; R2 object + URL data update pending (§6) |
+| D-1 | P1 | **CLOSED** — placeholder removed per owner decision (§6) |
 | D-2 | P1 | **CLOSED** |
 
 No new P0/P1 introduced by this change.
@@ -247,9 +241,12 @@ No new P0/P1 introduced by this change.
 
 - **`Stage 7.x code repair = PASS`** for Steps 1/2/4 (editorial SELECTs,
   mappings, D-2 routing, tests) and for the build gate.
-- **`Stage 7.x D-1 = PARTIAL`** (R2 object pending).
+- **`Stage 7.x D-1 = PASS (closed by removal)`** — owner cancelled the
+  landscape placeholder; car-mat UI/runtime has no placeholder and no Directus
+  asset-proxy path.
 - **`Stage 7 visual QA = NOT VERIFIED`** (browser gate).
-- **`Stage 7 = BLOCKED`** overall (unchanged; explicitly not PASS).
+- **`Stage 7 = BLOCKED`** overall until the authorized/manual visual QA matrix
+  passes. Explicitly not PASS.
 
 Stages 8–12 and permanent Directus retirement were **not** started.
 
