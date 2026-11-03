@@ -460,16 +460,17 @@
     border-radius: 12px;
   }
 
-  /* Mobile case card: horizontal ~16:9 (not near-square) */
+  /* Mobile case card: taller 4:3 so the whole case stays visible (like desktop) */
   .hp-product-case {
     min-height: 0;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     height: auto;
   }
 
   .hp-product-case img {
     object-fit: cover;
-    object-position: 50% 55%;
+    /* Same framing as desktop: keeps lid, front, side and bottom in view */
+    object-position: 50% 63%;
     transform: scale(1.02);
   }
 
