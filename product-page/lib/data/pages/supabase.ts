@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { cache } from 'react';
-import { getSupabaseAdminClient } from '@/lib/supabase/server';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type {
   CmsBlockItem,
   CmsBlockTheme,
@@ -15,6 +15,65 @@ import { CACHE_REVALIDATE_SECONDS, CACHE_TAGS } from '../config';
 import type { PageRepository } from './types';
 
 type SupabaseRow = Record<string, unknown>;
+
+export const __PAGE_CACHE = {
+  revalidate: CACHE_REVALIDATE_SECONDS,
+  tags: [CACHE_TAGS.pages],
+} as const;
+
+type NextFetchInit = RequestInit & {
+  next?: { revalidate?: number | false; tags?: string[] };
+};
+
+/**
+ * Pages-scoped Supabase clients only. Published reads go through the Next data * cache with a 60s TTL so CMS edits appear within a minute; preview reads are
+ * never cached. The shared admin client is deliberately untouched — catalog,
+ * cart and orders keep their existing fetch behaviour.
+ */
+function createPageClient(fetchImpl: typeof fetch): SupabaseClient {
+  const url = process.env.SUPABASE_URL?.trim();
+  const secretKey = process.env.SUPABASE_SECRET_KEY?.trim();
+  if (!url || !secretKey) {
+    throw new Error('Missing required Supabase environment variable for pages client');
+  }
+  return createClient(url, secretKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+    global: {
+      fetch: fetchImpl,
+    },
+  });
+}
+
+let cachedPageClient: SupabaseClient | null = null;
+function getCachedPageClient(): SupabaseClient {
+  if (!cachedPageClient) {
+    cachedPageClient = createPageClient((input, init) =>
+      fetch(input, {
+        ...init,
+        next: { revalidate: __PAGE_CACHE.revalidate, tags: [...__PAGE_CACHE.tags] },
+      } as NextFetchInit),
+    );
+  }
+  return cachedPageClient;
+}
+
+let previewPageClient: SupabaseClient | null = null;
+function getPreviewPageClient(): SupabaseClient {
+  if (!previewPageClient) {
+    previewPageClient = createPageClient((input, init) =>
+      fetch(input, { ...init, cache: 'no-store' }),
+    );
+  }
+  return previewPageClient;
+}
+
+function getPageClient(preview: boolean): SupabaseClient {
+  return preview ? getPreviewPageClient() : getCachedPageClient();
+}
 
 const PAGE_TYPES = new Set<CmsPageType>(['landing', 'content', 'legal']);
 const BLOCK_TYPES = new Set<CmsBlockType>(['hero', 'rich_text', 'image_text', 'feature_grid', 'faq', 'cta']);
@@ -93,7 +152,8 @@ async function readPage(
   filterValue: string,
   preview: boolean,
 ): Promise<CmsPage | null> {
-  let pageQuery = getSupabaseAdminClient()
+  const client = getPageClient(preview);
+  let pageQuery = client
     .from('pages')
     .select(
       'id,status,key,title,slug,page_type,seo_title,seo_description,seo_image_url,show_header,show_footer,no_index',
@@ -112,7 +172,7 @@ async function readPage(
   const pageRow = (pageRows ?? [])[0] as SupabaseRow | undefined;
   if (!pageRow) return null;
 
-  let blockQuery = getSupabaseAdminClient()
+  let blockQuery = client
     .from('page_blocks')
     .select(
       'id,status,sort,key,block_type,theme,anchor,eyebrow,title,subtitle,body,image_url,image_alt,image_position,primary_label,primary_url,secondary_label,secondary_url,items',
@@ -163,7 +223,7 @@ export function createSupabasePageRepository(): PageRepository {
     }),
     getPublishedPageSummaries: cache(async (): Promise<CmsPageSummary[]> => {
       try {
-        const { data, error } = await getSupabaseAdminClient()
+        const { data, error } = await getCachedPageClient()
           .from('pages')
           .select('id,key,title,slug,seo_description,no_index')
           .eq('status', 'published')
@@ -192,8 +252,3 @@ export function createSupabasePageRepository(): PageRepository {
     },
   };
 }
-
-export const __PAGE_CACHE = {
-  revalidate: CACHE_REVALIDATE_SECONDS,
-  tags: [CACHE_TAGS.pages],
-} as const;
