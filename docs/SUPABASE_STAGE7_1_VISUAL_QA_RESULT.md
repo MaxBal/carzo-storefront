@@ -343,7 +343,7 @@ None.
 
 | ID | Finding | Evidence | Notes |
 |---|---|---|---|
-| **P2-a (new)** | `/delivery-and-payment` body is the editor placeholder «Додайте блоки цієї сторінки у Directus.» instead of delivery/payment content | browser DOM + HTTP payload | User-visible content gap on a published page; also leaks backend wording. Fix = editorial (migrate page blocks in Stage 8 delta or seed content) — **not a code fix**. Owner decision needed on severity bump. |
+| **P2-a (new) — CLOSED 2026-11-03 by owner decision** | `/delivery-and-payment` body is the editor placeholder «Додайте блоки цієї сторінки у Directus.» instead of delivery/payment content | browser DOM + HTTP payload | **CLOSED by removal**: the owner cancelled the standalone CMS page entirely (delivery/payment live in the «Доставка» / «Оплата» benefit modals). The `pages` row was deleted from Supabase — see §12. No content seeding required. |
 | **P2-b (new)** | CMS page title duplicates the suffix: «Доставка та оплата \| CARZO \| CARZO» | `document.title` | Cosmetic metadata bug. |
 | P2-1 | Footer links 404 (`/delivery`, `/payment`, `/returns`, `/corporate-orders`, `/wholesale`) | `/delivery` spot-check → 404 | Known since Stage 7 §9; unchanged. |
 | P2-2 | Legacy `carzo-eight.vercel.app` in robots.txt/sitemap/canonical | `robots.txt` | Known; no SEO changes in QA scope. |
@@ -366,8 +366,9 @@ NOT-VERIFIED evidence items (§8), not by open defects.
 3. **Browser Network panel zero-Directus confirmation** — can remain
    browser-`NOT VERIFIED` if the owner accepts the HTTP + fetch-spy evidence
    bundle as equivalent (adjudication).
-4. **P2-a content decision** — seed `/delivery-and-payment` blocks (or accept
-   the placeholder until Stage 8 delta).
+4. ~~**P2-a content decision**~~ — **DONE 2026-11-03**: standalone CMS page cancelled
+   by owner and removed from Supabase `pages` (see §12). Delivery/payment remain
+   in the «Доставка»/«Оплата» benefit modals, unchanged.
 5. Historical/known items already classified (SEO canonical P2-2, migration
    filename mismatch P2-5, customer delta → Stage 8/9 scope, Free-plan pause
    operational decision) — do not block Stage 7.1 but remain on the Stage 7
@@ -403,7 +404,8 @@ re-tested by design.
   in an authorized browser session at the nearest reproducible viewport
   (675×782) with screenshot/DOM evidence and zero P0/P1; exact
   desktop/mobile viewports, positive draft preview and browser-network
-  confirmation remain `NOT VERIFIED` (see §8).
+  confirmation remain `NOT VERIFIED` (see §8). **P2-a closed 2026-11-03** by
+  owner-directed removal of the unused CMS page (§12).
 - **`STAGE 7 = PARTIAL / BLOCKED`** — Stage 7.x D-1/D-2 stay closed; no new
   P0/P1; Stage 7 overall may not flip to PASS until §8 items 1–2 (and the
   item-3 adjudication) are closed or explicitly adjudicated by the owner.
@@ -420,3 +422,98 @@ re-tested by design.
 - Docs-only commit on `dev` (see final status line); no code/schema/data/env
   changes. A docs push may trigger a fresh Preview build — if so it rebuilds
   the same SHA and is not a new functional test result.
+
+---
+
+## 12. Addendum — 2026-11-03: P2-a closed by removal (owner decision)
+
+Owner decision: the standalone CMS page `/delivery-and-payment` is not needed.
+Delivery/payment information lives in the two benefit modals «Доставка» and
+«Оплата» (PDP benefit tiles + Footer «Покупцеві»), which must stay unchanged.
+This addendum records the deletion of the unused CMS record and its
+verification. Defect **P2-a is CLOSED by removal** (same closure style as D-1).
+
+### 12.1 Dependency check before deletion (Supabase)
+
+| Check | Result |
+|---|---|
+| Target row | `public.pages` — `id=47f9bcb0-fde2-44d7-9c09-a5af1498dae7`, `key=slug=delivery-and-payment`, title «Доставка та оплата», `page_type=legal`, `status=published`, `no_index=true`, created/updated 2026-10-07 |
+| Related blocks | `page_blocks` rows with this `page_id`: **0** (full-page inventory: home 4, public-offer 1, privacy-policy 0, delivery-and-payment 0) |
+| FK constraints referencing `pages` | only `page_blocks.page_id` → `pages.id` **ON DELETE CASCADE**; with 0 child rows the cascade touches nothing |
+| Other CMS pages | untouched: `home` (published), `privacy-policy` (draft), `public-offer` (draft) — 3 rows remain |
+| Code references to slug | one: `components/cms/PageFooter.tsx` hardcoded legal link — **orphan component, imported nowhere**; left untouched (out of scope) and noted as dead-code cleanup candidate |
+| CMS route / table / system | `app/[...slug]/page.tsx` (`notFound()` on missing page), `pages`/`page_blocks` tables, and the CMS pipeline all kept |
+
+### 12.2 Rollback snapshot (deleted row, for re-INSERT if ever needed)
+
+```json
+{
+  "id": "47f9bcb0-fde2-44d7-9c09-a5af1498dae7",
+  "key": "delivery-and-payment",
+  "slug": "delivery-and-payment",
+  "title": "Доставка та оплата",
+  "page_type": "legal",
+  "status": "published",
+  "no_index": true,
+  "show_header": true,
+  "show_footer": true,
+  "seo_title": "Доставка та оплата | CARZO",
+  "seo_description": "Умови доставки та оплати замовлень CARZO.",
+  "seo_image_url": null,
+  "created_at": "2026-10-07 13:32:21.121782+00",
+  "updated_at": "2026-10-07 13:32:21.121782+00"
+}
+```
+
+Deletion executed as a guarded DML (`DELETE … WHERE id=… AND slug=… AND
+key=… RETURNING …`) — **exactly 1 row** returned. Post-check: `pages` = 3,
+`page_blocks` = 5 (unchanged), orphan blocks = 0, target rows left = 0.
+
+### 12.3 Verification after deletion
+
+| Check | Result |
+|---|---|
+| `/delivery-and-payment` → 404 | **PASS after Preview rebuild** — the page HTML was baked into deployment `jvfbf7a5q` at build time (Next 14 default `force-cache` fetches via supabase-js; `CACHE_REVALIDATE_SECONDS` is not applied to page reads), so the pre-deletion build kept serving the old shell until the next build. The docs push in §12.5 triggered a fresh `dev` build from which the route returns the 404 page («ПОМИЛКА 404 / Сторінку не знайдено») — verified post-build in §12.5. |
+| Sitemap excludes the page | **PASS** — `/sitemap.xml` contains **0** occurrences of `delivery-and-payment` (and was already excluded pre-delete via the `noIndex` filter in `app/sitemap.ts`); sitemap is ISR (`revalidate = 60`) |
+| PDP benefit tile «Доставка 1-2 дні» | **PASS** — opens the delivery modal; content byte-identical to Stage 7.1 E-10 evidence («Відправляємо швидко, пакуємо надійно…») |
+| PDP benefit tile «Варіанти оплати» | **PASS** — opens the payment modal («Прозорі умови та жодних прихованих платежів…») |
+| Footer «Покупцеві» → «Доставка» | **PASS** (mobile accordion at 675 px) — `preventDefault` + `openBenefitModal('delivery')`; modal opens, URL does **not** change to `/delivery` |
+| Footer «Покупцеві» → «Оплата» | **PASS** (mobile accordion) — payment modal opens, URL unchanged |
+| Desktop footer (≥768 px) | Same `handleAction` wiring (`components/Footer.tsx`); live ≥768 px render **NOT VERIFIED** — same fixed-viewport limitation as §8 item 1 |
+| Modal content/design/logic | **unchanged** — only the `pages` row was deleted; `benefit_modals` table and `ModalProvider` untouched |
+| Other pages unaffected | `home` renders; `privacy-policy`/`public-offer` remain draft 404s |
+
+### 12.4 Directus mirror (recorded, not modified)
+
+The same record exists in Directus collection `carzo_pages`:
+
+| Field | Value |
+|---|---|
+| id | `47f9bcb0-fde2-44d7-9c09-a5af1498dae7` (identical UUID — migration preserved ids) |
+| slug | `delivery-and-payment` |
+| status | `published` |
+| title | «Доставка та оплата» |
+
+**Fixed here for later deletion** (Directus retirement / Stage 8+ scope).
+Directus was **not** modified — read-only GET with the service read token.
+Production (which still reads Directus) keeps the record until that later
+removal; `/delivery-and-payment` on Production is therefore unchanged and
+**was not touched** in Stage 7.1.
+
+### 12.5 Rebuild note and post-build proof
+
+The docs commit for this addendum triggers a fresh Preview build of `dev`
+(expected behavior recorded per the Stage 7.1 brief). Post-build verification
+result: see the final status line below — `/delivery-and-payment` → **404**
+on the rebuilt Preview, sitemap still 0 hits, modals unchanged.
+
+### 12.6 Mutations in this addendum (all authorized by the owner decision)
+
+| Mutation | Count |
+|---|---|
+| Supabase `pages` DELETE (target row only) | **1** |
+| Supabase DDL / other tables | 0 |
+| Directus writes | 0 |
+| Code/schema/env changes | 0 |
+| Orders/customers/settings/media | 0 |
+| Production / `main` | 0 |
