@@ -727,3 +727,18 @@ above are preserved as originally recorded.
 | Visual / browser QA (this report §5) | **Now executed** — authorized browser session covered the V1–V9 interaction matrix at the nearest reproducible viewport (675×782). See `docs/SUPABASE_STAGE7_1_VISUAL_QA_RESULT.md`. |
 | New defects | none P0/P1. New P2: `/delivery-and-payment` renders an editor placeholder instead of content (P2-a); CMS title duplicates `\| CARZO` suffix (P2-b). |
 | Overall Stage 7 (updated) | **PARTIAL / BLOCKED** — remains not-PASS until: (1) exact 1440×900 + 390×844 viewport screenshot pass, (2) positive authorized draft preview or explicit owner adjudication, (3) owner adjudication of browser-network vs HTTP evidence. Detailed checklist in `SUPABASE_STAGE7_1_VISUAL_QA_RESULT.md` §8. |
+
+---
+
+## Superseding status — 2026-11-03 (Stage 7.1 final acceptance)
+
+Supersedes verdicts only; historical findings above are preserved.
+
+| Item | Update |
+|---|---|
+| Visual/browser QA | Executed for the full interaction matrix at 675×782 (see `SUPABASE_STAGE7_1_VISUAL_QA_RESULT.md` §4–§7). Exact desktop 1440×900 / mobile 390×844 passes remain **NOT VERIFIED** — browser tooling was rejected by the security layer (not retried); owner manual checklist provided in §13.4 of the supplemental report. |
+| P2-a `/delivery-and-payment` placeholder | **CLOSED by removal** (owner decision) — row deleted from Supabase `pages`, Preview returns **HTTP 404**, sitemap clean, modals «Доставка»/«Оплата» unchanged (§12). |
+| CMS pages fetch cache | **FIXED** — stale Next.js fetch Data Cache root-caused and corrected for CMS pages only (`3edbacf`, `1413ec8`). |
+| Draft preview | Negative checks PASS; positive test **NOT VERIFIED** — owner decision requested (§13.5). |
+| Browser network zero-Directus | HTTP/DOM + fetch-spy evidence PASS; Network-panel level **NOT VERIFIED** — owner adjudication requested (§13.6). |
+| Overall Stage 7 (updated) | **PARTIAL / BLOCKED** — no open P0/P1; closes when §13.11 items 1–3 are satisfied by owner evidence or explicit adjudication. Stage 8 not started. |

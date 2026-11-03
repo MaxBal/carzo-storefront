@@ -564,3 +564,206 @@ Commits on `dev` only: `3edbacf` (wire `__PAGE_CACHE` revalidate/tags) and
 | Schema / env changes | 0 |
 | Orders/customers/settings/media | 0 |
 | Production / `main` | 0 |
+
+---
+
+## 13. FINAL ACCEPTANCE — 2026-11-03 (owner-directed close-out)
+
+Context: during this close-out the security layer rejected browser-tooling
+access again ("high risk"). The rejected request was **not** retried and no
+bypass was attempted — per owner directive Playwright and further browser
+automation were abandoned for this pass. All previously recorded Stage 7.1 /
+Stage 7.x evidence is preserved. Remaining mandatory visual criteria are
+therefore **NOT VERIFIED** and the gate stays **PARTIAL**.
+
+### 13.1 STATUS
+
+**`STAGE 7.1 VISUAL = PARTIAL`** (unchanged) — and **`STAGE 7 = PARTIAL / BLOCKED`**.
+
+Open mandatory criteria: (1) desktop 1440×900 visual pass, (2) mobile 390×844
+visual pass, (3) positive draft preview or explicit owner adjudication,
+(4) owner adjudication of browser-network vs alternative evidence.
+
+### 13.2 GIT / DEPLOYMENT
+
+| Item | Value |
+|---|---|
+| Branch | `dev` |
+| Baseline SHA (this pass) | `578ac41fd25b659b1bf75d7bd65273f4babace2d` — confirmed as actual HEAD at start |
+| Final SHA | `578ac41` + this docs-only appendix commit |
+| Preview (git alias) | `carzo-storefront-lwa9oj5gn-yevgens-projects.vercel.app`, READY (build of `578ac41`) |
+| Preview checked in §12 | `carzo-storefront-o3n5sdi08-yevgens-projects.vercel.app` (build of `1413ec8`, same code + cache fix); 404 re-confirmed on the alias deployment as well |
+| Production unchanged | `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9` / `main=df8f3531ff9de2408525ac5caf6844d8c6e4d340` — not touched |
+| Supabase | read-only in this pass (SELECT only) |
+
+### 13.3 VISUAL QA
+
+| Viewport | Status | Notes |
+|---|---|---|
+| Desktop 1440×900 | **NOT VERIFIED** | exact-viewport automation unavailable (browser tooling rejected as high risk; not retried). The earlier 675×782 matrix is retained as interaction evidence but is **not** claimed as 1440×900. |
+| Mobile 390×844 | **NOT VERIFIED** | same limitation |
+| Tablet 768×1024 | **NOT VERIFIED** | same limitation |
+
+Evidence retained from the earlier pass (viewport 675×782, `qa-artifacts/stage7.1/`, IDs E-01…E-17): homepage, menu, PDP S/2.0+M/2.0+S/3.0, fixation/logo/warranty modals, reviews+sticky CTA, video review, cart drawer, checkout lookups, car-mat page+design modal+quote form. Interactions V1–V9 were witnessed in an authorized session; no P0/P1 found.
+
+### 13.4 Owner manual visual QA checklist (Chrome DevTools)
+
+Run against the Preview (open from the Vercel dashboard while logged in — do
+not share the URL publicly; Deployment Protection will ask the account login):
+
+Base URL: `https://carzo-storefront-git-dev-yevgens-projects.vercel.app`
+
+Setup: Chrome → F12 → device toolbar → **1440×900**, then **390×844**.
+For each item capture a screenshot with the filename given.
+
+**A. Desktop 1440×900**
+
+| # | URL / action | Check | Screenshot |
+|---|---|---|---|
+| A1 | `/` | header/nav, hero, product cards, R2 media, benefit blocks, video, footer, no horizontal scroll | `manual-desktop-home-1440.png` |
+| A2 | `/case/design/s/2-0` | main photo, gallery, title, price 1790/old 2100, design/size/logo/fixation switches, tabs+FAQ, Buy | `manual-desktop-pdp-s20-1440.png` |
+| A3 | `/case/design/l/4-0` | same list; price 2590/old 2900 | `manual-desktop-pdp-l40-1440.png` |
+| A4 | on A3: scroll past Buy | sticky CTA appears; no clipped content | `manual-desktop-sticky-1440.png` |
+| A5 | open any benefit modal (e.g. «Доставка») | opens, overlay dims page, closes by X/overlay, no cut-off text | `manual-desktop-modal-1440.png` |
+| A6 | Buy → cart drawer | line item, qty, totals; close | `manual-desktop-cart-1440.png` |
+
+**B. Mobile 390×844**
+
+| # | URL / action | Check | Screenshot |
+|---|---|---|---|
+| B1 | `/` | mobile header, hamburger menu, hero, cards, images cropped correctly, no horizontal scroll, footer | `manual-mobile-home-390.png` |
+| B2 | menu open | full menu usable, targets tappable | `manual-mobile-menu-390.png` |
+| B3 | `/case/design/s/2-0` | gallery, title, prices, switches, Buy; text inside blocks | `manual-mobile-pdp-s20-390.png` |
+| B4 | `/case/design/l/4-0` | same | `manual-mobile-pdp-l40-390.png` |
+| B5 | scroll past Buy on B3/B4 | sticky CTA appears at right moment; buttons do not cover content | `manual-mobile-sticky-390.png` |
+| B6 | open «Доставка»/«Оплата» modals | fit screen or scroll correctly, close works | `manual-mobile-modal-390.png` |
+| B7 | Buy → cart → «Оформити замовлення» | cart readable, delivery BRANCH/POSTOMAT/COURIER switches, city search works — **do NOT submit** | `manual-mobile-checkout-390.png` |
+| B8 | `/catalog-carmat` | promo video/cover, design modal (no image blocks), quote form opens — **do NOT submit** | `manual-mobile-carmat-390.png` |
+
+Optional C. Tablet 768×1024: repeat A1–A2 + B6.
+
+Send back the screenshots with a one-line PASS/FAIL per row.
+
+### 13.5 Draft preview — audit result and open questions (owner decision)
+
+Read-only audit findings (no secret used or extracted):
+
+| Question | Finding |
+|---|---|
+| How `/api/draft` works | `GET /api/draft?secret=<PREVIEW_SECRET>&id=<pageId>` → 401 unless secret matches `PREVIEW_SECRET` (legacy `DIRECTUS_PREVIEW_SECRET` fallback, `lib/data/config.ts:74`); loads page by **id** (`getPreviewPage`), enables `draftMode`, 307 → `/{slug}?preview={id}`; `/api/draft/disable` exits draft mode (`app/api/draft/route.ts`) |
+| Draft CMS pages | `privacy-policy`, `public-offer` (Supabase `pages.status=draft`; same statuses in Directus) |
+| Storefront preview UI | **none** — entry point is the secret link itself; no in-repo generator found (where editors obtain the link is not visible from this repository) |
+| PAGE_STORE=supabase preview | implemented: `getPreviewPage` → `readPage(..., preview=true)` reads draft rows through a **no-store** pages client (after the §12.5 fix). Positive runtime test **NOT VERIFIED** (requires the secret) |
+| Remaining Directus deps for preview | none in the code path (Supabase reads) |
+| Negative security checks | `401 Invalid preview request` without/bogus secret — **PASS** (re-verified 2026-11-03) |
+
+**Questions requiring the owner's decision (not taken unilaterally):**
+
+1. Is a **positive** draft-preview test mandatory to close Stage 7 for this
+   cutover? (Master plan lists "Preview — draft mode with secret" as a QA area.)
+2. Is the draft-preview feature actually used in the Carzo editorial workflow
+   today? If not, the owner may **formally defer** it past the cutover — this
+   must be an explicit owner decision recorded in the ledger.
+3. If mandatory: the owner runs (while logged in, with the secret from the
+   Vercel env, never pasting it into chat):
+   `/api/draft?secret=<PREVIEW_SECRET>&id=3d2d625f-8ee8-4b5a-8ace-c456a258b99d`
+   (the `privacy-policy` draft) and confirms the draft renders with `?preview=…`,
+   then `/api/draft/disable`. Send one screenshot: `manual-draft-preview.png`.
+4. Positive test alternatively: one-time authorized agent run **only** if the
+   owner explicitly enables it (the agent will not extract the secret).
+
+### 13.6 Browser Network (Directus) — evidence levels and adjudication item
+
+| Level | Evidence | Result |
+|---|---|---|
+| Browser Network panel | **NOT AVAILABLE** to the agent (automation surface exposes console logs only; browser tooling later rejected — not retried) | **NOT VERIFIED** (browser level) |
+| HTTP/DOM scans (this run + Stage 7.1) | served HTML of `/`, `/about`, `/catalog-carmat`, 12 PDPs and live DOM scans: **0** refs to Directus hosts and **0** `/api/directus-assets/` | PASS (HTTP/DOM level) |
+| Code-level fetch-spy (Stage 7.x) | `CONTENT_STORE=supabase` → 0 Directus reads for switched domains (`tests/supabase-editorial-integration`) | PASS (code level) |
+| Intentional exception | `CUSTOMER_STORE=directus` (customers/loyalty) and `notifyNewCarMatQuote` (`lib/order-notifications.ts:368`) — documented legacy, not an editorial regression | accounted for |
+
+**Owner adjudication item:** either (a) accept the evidence bundle above as
+equivalent to a Network-panel pass, or (b) run one DevTools Network pass on
+the five control URLs with filter `directus` and attach the result
+(`manual-network-filter.png`). Until then the criterion stays NOT VERIFIED at
+browser level.
+
+### 13.7 Functional verification (from retained Stage 7.1 evidence + §12.5)
+
+| Area | Status | Evidence |
+|---|---|---|
+| PDP 12/12 + price/extras contract | PASS | V2 matrix, E-05…E-07; HTTP price scan of 12 pages |
+| Modals (6 benefit + logo + fixation + placement) | PASS, unchanged after deletion | V3 matrix, E-08…E-10; post-fix re-check §12.5 |
+| Cart + checkout (no submission) | PASS | V7 matrix, E-13, E-14 |
+| Car mats (D-1 clean state, quote form not submitted) | PASS | V6 matrix, E-15…E-17 |
+| CMS pages | PASS | `/` `/about` 200; `/home` 308→`/` by design; drafts 404 |
+| R2 media | PASS | 103/103 URLs HTTP 200 |
+| `/delivery-and-payment` | **HTTP 404** (alias `lwa9oj5gn` and `o3n5sdi08`) | §12.5 + this pass |
+| Sitemap exclusion | 0 occurrences | this pass |
+| Directus content reads | none in switched domains (HTTP/DOM + fetch-spy) | §13.6 |
+
+### 13.8 Deletion regression — final confirmation (this pass)
+
+| Check | Result |
+|---|---|
+| Supabase `pages` | 3 rows: `home, privacy-policy, public-offer`; `delivery-and-payment` = **0** |
+| Preview | `/delivery-and-payment` → `HTTP/2 404` |
+| Sitemap | 0 occurrences |
+| Modals «Доставка»/«Оплата» | no regressions (§12.5 verified; not re-opened in this browser-free pass) |
+| Other CMS pages | `/` `/about` 200, drafts 404 (unchanged) |
+| Directus mirror | record `47f9bcb0-fde2-44d7-9c09-a5af1498dae7` in `carzo_pages` — **kept**, listed for controlled deletion in later stages (§12.4) |
+
+### 13.9 SEO / Footer pre-production checklist
+
+Final QA only — no SEO refactor performed.
+
+| # | Issue | Status | Code location | Priority | Timing |
+|---|---|---|---|---|---|
+| 1 | Legacy canonical host `carzo-eight.vercel.app` | **CONFIRMED** (robots.txt `Host`/`Sitemap`, llms.txt ×14, sitemap `<loc>`s) | `lib/seo.ts:7` `FALLBACK_SITE_URL` + `siteOrigin()` (uses `SITE_URL` env, unset on Preview); `app/layout.tsx:24` hardcoded `openGraph.url` | P2 (known P2-2) | fix **before Stage 9**: set `SITE_URL` per environment + remove hardcode; sitemap/robots/llms inherit the fix automatically |
+| 2 | Old URLs in sitemap.xml | same root cause | `app/sitemap.ts` via `absoluteSiteUrl` | P2 | same as #1 |
+| 3 | Old URLs in robots.txt | same root cause | `app/robots.ts:23` | P2 | same as #1 |
+| 4 | Old URLs in llms.txt | same root cause | `app/llms.txt/route.ts` | P2 | same as #1 |
+| 5 | Non-branded `og:image` (`/case.jpg`) | **CONFIRMED** | `app/layout.tsx:30,41`; `lib/pages/metadata.ts` `DEFAULT_OG_IMAGE` | P2 | before Stage 9 preferred; acceptable right after cutover |
+| 6 | Footer links 404 fallbacks (`/delivery`, `/payment`, `/returns`, `/corporate-orders`, `/wholesale`, `/loyalty-program`, `/bundle-deals`) + draft legal links (`/privacy-policy`, `/public-offer`) | **CONFIRMED** (known P2-1 family); UI opens modals via `preventDefault` — no UX break | `components/Footer.tsx:11-34` | P2 | before Stage 9 (small data/href cleanup) |
+| 7 | Title duplication `\| CARZO \| CARZO` | **CONFIRMED** on CMS pages whose `seo_title` already ends with `\| CARZO` (template appends again) | `app/layout.tsx:18` `template: '%s \| CARZO'` + `pages.seo_title` data; `lib/pages/metadata.ts` | P2 cosmetic | after cutover acceptable |
+
+### 13.10 Pre-production risks (status only — out of Stage 7.1 scope)
+
+| # | Risk | Status |
+|---|---|---|
+| 1 | `CUSTOMER_STORE=directus` — customer delta migration needed | OPEN — Stage 8/9 scope |
+| 2 | Historical `orders`/`order_items` parity reconciliation | OPEN — Stage 9 scope (Stage 6 checkpoint: 10/17 rows) |
+| 3 | Supabase Free-plan pause risk for Production | OPEN — operational owner decision before cutover |
+| 4 | Rollback after Supabase orders — no naive `ORDER_STORE` flip | documented constraint; rollback plan required before cutover |
+| 5 | Telegram full payload of a real order | Stage 6 acceptance evidence exists; full production payload still to be confirmed at cutover |
+| 6 | Car-mat quote notifier writes to Directus (`notifyNewCarMatQuote`, `lib/order-notifications.ts:368`) | OPEN — intentional legacy, Stage 11 retirement |
+| 7 | Stage 6 migration filename mismatch (2 files) | OPEN — release-discipline reconciliation |
+
+### 13.11 OUTSTANDING ITEMS (all of them)
+
+1. Owner manual visual QA at 1440×900 and 390×844 (checklist §13.4).
+2. Draft preview: owner decision (§13.5 Q1–Q4) — mandatory positive test vs formal deferral.
+3. Browser-network adjudication (§13.6): accept alternative evidence or attach DevTools Network screenshot.
+4. SEO items #1–#7 (§13.9) — pre-production checklist, not Stage 7.1 blockers except as owner adjudication of timing.
+
+### 13.12 PRODUCTION CUTOVER READINESS
+
+| Gate | Status |
+|---|---|
+| Stage 7 completion | **NOT YET** — blocked on §13.11 items 1–3 (owner evidence/adjudication). No P0/P1 code defects open. |
+| Stage 8 readiness | **CONDITIONAL** — technically ready to plan; master plan requires Stage 7 PASS first. Start only on explicit owner instruction after items 1–3 close. |
+| Stage 9 blockers | customer delta (#13.10-1), order parity (#13.10-2), rollback plan (#13.10-4), Free-plan decision (#13.10-3), migration filename reconciliation (#13.10-7), SEO canonical fix (§13.9 #1–#4). |
+
+### 13.13 DATA SAFETY (this final pass)
+
+| Mutation class | Count |
+|---|---|
+| Supabase / Directus / R2 writes | **0** (SELECT-only) |
+| Orders / customers / Telegram / Nova Poshta | **0** |
+| Env / protection changes | **0** |
+| Production / `main` | **0** |
+| Code changes | **0** (docs-only) |
+| Browser tooling after security rejection | **0** (no retries, no bypass) |
+
+Historical (already recorded): 1 Supabase `pages` DELETE + cache-fix commits `3edbacf`/`1413ec8` (§12.6) — unchanged.
+
+**Final verdict line: `STAGE 7.1 VISUAL = PARTIAL` · `STAGE 7 = PARTIAL/BLOCKED` · `Stage 8 = not started`.**
