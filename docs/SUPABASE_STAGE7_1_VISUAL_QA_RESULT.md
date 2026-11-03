@@ -767,3 +767,60 @@ Final QA only — no SEO refactor performed.
 Historical (already recorded): 1 Supabase `pages` DELETE + cache-fix commits `3edbacf`/`1413ec8` (§12.6) — unchanged.
 
 **Final verdict line: `STAGE 7.1 VISUAL = PARTIAL` · `STAGE 7 = PARTIAL/BLOCKED` · `Stage 8 = not started`.**
+
+---
+
+## 14. FINAL OWNER SIGN-OFF — STAGE 7 (2026-11-04)
+
+Supersedes the §13.1 status only. All historical evidence and limitations
+above (including NOT-VERIFIED exact viewports and the browser-tooling
+rejection) are preserved as QA history.
+
+### Visual
+**`OWNER VISUAL ACCEPTANCE — APPROVED`** — the owner accepts the visual state
+(no re-audit required). Historical limitation kept: automated exact-viewport
+passes at 1440×900 and 390×844 were **NOT VERIFIED** (browser tooling rejected
+as high-risk, never retried; interaction matrix ran at 675×782). Owner
+acceptance does not retroactively mark those tests as performed. The last
+defect (mobile case card height) was fixed in `81fe242`.
+
+### Network
+**`OWNER NETWORK EVIDENCE ACCEPTANCE — APPROVED`** — HTTP/DOM/fetch-spy
+evidence accepted instead of a DevTools Network-panel pass. A full
+browser-network verification was **never performed**; the alternative bundle
+(§13.6) is accepted by owner decision. Known intentional Directus
+dependencies stay scheduled for later stages: `CUSTOMER_STORE=directus`
+(Stage 8/9), car-mat quote notifier `notifyNewCarMatQuote` (Stage 11).
+
+### Draft Preview
+**`POSITIVE DRAFT PREVIEW — PASS (owner-confirmed)`** — the owner ran the
+scenario in their own authorized session (secret never shared with the agent):
+draft «Політика конфіденційності» opened, yellow preview banner appeared,
+«Вийти» restored the public 404. Agent-side read-only verification (adapter
+draft reads, banner code, 401/404 negatives) preceded it in §13.5.
+
+### Defects
+- **D-1 — CLOSED** (removed per owner decision)
+- **D-2 — CLOSED** (content facade)
+- **P2-a — CLOSED** (unused CMS page removed, Preview 404)
+- Remaining P2 / SEO items → pre-production backlog (§13.9, §13.10)
+
+### Overall Stage 7
+**`STAGE 7 = PASS`** — all mandatory criteria closed by evidence or explicit
+owner decisions/confirmations; no open P0/P1. Historical NOT-VERIFIED
+limitations remain recorded above.
+
+### Stage 8 — итоговый перечень задач (подготовка; НЕ начат)
+
+1. Дельта клиентов Directus → Supabase (`CUSTOMER_STORE=directus`).
+2. Сверка исторических заказов и order_items (checkpoint 10/17).
+3. Сверка скидок и лояльности (tiers, loyalty-флаги).
+4. Проверка актуальности каталога и контента после дельты.
+5. План заморозки записей Directus (freeze window).
+6. Предотвращение конфликтов и дублей заказов (`checkout_attempt_id` + fingerprint).
+7. План безопасного rollback после появления заказов в Supabase (без наивного `ORDER_STORE` flip).
+8. Сверка версий Supabase migrations (P2-5, 2 filename mismatch).
+9. SEO canonical и Footer — до Stage 9 (`lib/seo.ts:7`, `app/layout.tsx:24`).
+10. Решение по Supabase Free и доступности Production (owner).
+
+**`Stage 8 = NOT STARTED`** — начинается только по явной команде владельца.

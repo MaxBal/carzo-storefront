@@ -742,3 +742,137 @@ Supersedes verdicts only; historical findings above are preserved.
 | Draft preview | Negative checks PASS; positive test **NOT VERIFIED** — owner decision requested (§13.5). |
 | Browser network zero-Directus | HTTP/DOM + fetch-spy evidence PASS; Network-panel level **NOT VERIFIED** — owner adjudication requested (§13.6). |
 | Overall Stage 7 (updated) | **PARTIAL / BLOCKED** — no open P0/P1; closes when §13.11 items 1–3 are satisfied by owner evidence or explicit adjudication. Stage 8 not started. |
+
+---
+
+## FINAL OWNER SIGN-OFF — STAGE 7 (2026-11-04)
+
+Closing section. Historical findings above are preserved; this section records
+owner decisions and the final Stage 7 status.
+
+### Visual
+
+**`OWNER VISUAL ACCEPTANCE — APPROVED`**
+
+The Carzo owner accepts the visual state of the site (homepage, product cards,
+mobile, desktop, modals, cart, car-mat page, galleries). The last defect —
+low mobile case card height — was fixed in `81fe242` (16:9 → 4:3,
+`object-position: 50% 63%`, verified by computed styles at 495×782 and exact
+crop simulation).
+
+Recorded limitations (kept in QA history, not erased by this decision):
+
+- Automated exact-viewport passes at **1440×900** and **390×844** were and
+  remain **NOT VERIFIED** (browser tooling was rejected as high-risk; the
+  rejected request was never retried). The prior interaction matrix was
+  executed at the nearest reproducible viewport (675×782).
+- Owner acceptance does **not** mean the agent performed those missing
+  viewport tests. It is an explicit owner decision to accept the visual state
+  in their place.
+- No new browser audit was run for this sign-off.
+
+### Network
+
+**`OWNER NETWORK EVIDENCE ACCEPTANCE — APPROVED`**
+
+The owner accepts the alternative evidence bundle for "no Directus in switched
+content routes" instead of a DevTools Network-panel pass:
+
+- HTTP scans of `/`, `/about`, `/catalog-carmat` and 12 PDP routes (0 Directus
+  host refs, 0 `/api/directus-assets/`),
+- live DOM scans of the same surfaces,
+- fetch-spy integration tests (0 Directus reads for switched domains),
+- `test:supabase-editorial` integration suite (Supabase-only reads).
+
+Recorded explicitly: a full browser-network panel verification was **never
+performed**; the evidence above is accepted in its place by owner decision.
+
+Known intentional Directus dependencies (not unexpected D-2 regressions;
+scheduled for later migration stages):
+
+- `CUSTOMER_STORE=directus` — customers / loyalty (Stage 8/9 delta).
+- Car-mat quote notification (`notifyNewCarMatQuote`,
+  `lib/order-notifications.ts:368`) — Stage 11 retirement.
+
+### Draft Preview
+
+**`POSITIVE DRAFT PREVIEW — PASS (owner-confirmed, 2026-11-04)`**
+
+The positive scenario was performed by the owner in their own authorized
+session (the agent never received or extracted `PREVIEW_SECRET`). Owner result:
+
+- draft «Політика конфіденційності» opened via `/api/draft` successfully;
+- the yellow preview banner appeared;
+- after clicking «Вийти» the public `/privacy-policy` returns 404 again.
+
+Agent-side verification below was completed read-only beforehand (no secret
+used or extracted):
+
+| Check | Result |
+|---|---|
+| `/api/draft` validates secret + id, 401 otherwise | PASS (code + live: 401 without secret, 401 with bogus secret) |
+| `draftMode().enable()` → 307 redirect to `/{slug}?preview={id}` | PASS (code: `app/api/draft/route.ts`) |
+| Draft reads via Supabase (`PAGE_STORE=supabase`), no Directus | PASS (runtime: adapter `getPreviewPage` returns both drafts; `getPublishedPage('privacy-policy')` → null) |
+| Preview banner «Режим попереднього перегляду…» + «Вийти» | PASS (code: `components/cms/PageRenderer.tsx:208-212`) |
+| `/api/draft/disable` exits draft mode | PASS (code) |
+| Public `/privacy-policy` / `/public-offer` | PASS (404) |
+
+**Reference runbook for future re-tests** (already executed by the owner
+2026-11-04; own authorized session only — never paste the secret into
+chat/reports, it lands in URL history; use a private window):
+
+1. Vercel dashboard → project `carzo-storefront` → Settings → Environment
+   Variables → copy `PREVIEW_SECRET` (Preview scope).
+2. Open: `https://carzo-storefront-git-dev-yevgens-projects.vercel.app/api/draft?secret=<PREVIEW_SECRET>&id=3d2d625f-8ee8-4b5a-8ace-c456a258b99d`.
+3. Expect: 307 → `/privacy-policy?preview=3d2d625f-…`, amber preview banner
+   with «Вийти», unpublished page visible to you only.
+4. Click «Вийти» (or open `/api/draft/disable`).
+5. Re-open `/privacy-policy` → must be 404 again.
+6. Optional repeat with `id=f6510315-0199-4840-9816-27b07e5404f3` (public-offer).
+
+Owner result (2026-11-04): draft opened, banner shown, «Вийти» restored the
+public 404 — **positive scenario confirmed**. Note: secret-in-URL is the
+existing mechanism; history/request-log exposure is a known accepted risk.
+
+### Defects
+
+| ID | State |
+|---|---|
+| D-1 | **CLOSED** (removed per owner decision) |
+| D-2 | **CLOSED** (content facade) |
+| P2-a | **CLOSED** (unused CMS page removed; Preview 404) |
+| P2-1…P2-10 + SEO checklist items | remain in **pre-production backlog** (canonical host, footer hrefs, og:image, title duplication, notification outbox, migration filename mismatch, Free-plan risk) |
+| New P0/P1 | **none** |
+
+### Overall Stage 7
+
+**`STAGE 7 = PASS`** (2026-11-04) — all mandatory criteria are closed by
+evidence or explicit owner decisions/confirmations:
+
+- Visual: `OWNER VISUAL ACCEPTANCE — APPROVED` (limitations of the automated
+  viewport checks preserved in this report's history).
+- Network: `OWNER NETWORK EVIDENCE ACCEPTANCE — APPROVED` (HTTP/DOM/fetch-spy
+  accepted in place of a Network-panel pass; a panel pass was never performed).
+- Draft Preview: `POSITIVE DRAFT PREVIEW — PASS (owner-confirmed)`.
+- Defects: D-1 / D-2 / P2-a CLOSED; no open P0/P1.
+- Regression sweep on the sign-off deployment: 16/16 routes (12 PDPs, `/`,
+  `/about`, `/catalog-carmat`, `/delivery-and-payment`→404), sitemap clean.
+
+Remaining P2/pre-production items are backlog (see below) and do not block
+Stage 7 per the master-plan gate. **Stage 8 not started** — begins only on
+explicit owner instruction.
+
+### STAGE 8 READINESS CHECKLIST (preparation only — not started)
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Directus → Supabase customer delta | READY TO PLAN — source `carzo_customers`-side delta needed (`CUSTOMER_STORE=directus`) |
+| 2 | Historical orders / order_items reconciliation | READY TO PLAN — checkpoint 10/17 rows in Supabase vs Directus ledger |
+| 3 | Discounts & loyalty reconciliation | READY TO PLAN — tiers + loyalty flags compare |
+| 4 | Catalog & content freshness check | READY TO PLAN — count/parity rerun after delta |
+| 5 | Directus write freeze plan | REQUIRED — announce + freeze window before delta |
+| 6 | Order conflict / duplication prevention | REQUIRED — `checkout_attempt_id` + fingerprint rules already in place; extend to delta window |
+| 7 | Rollback plan after Supabase orders | REQUIRED — no naive `ORDER_STORE` flip; documented restore path |
+| 8 | Supabase migration version reconciliation | REQUIRED — 2 Stage 6 filename mismatches (P2-5) |
+| 9 | SEO canonical + Footer fixes | BEFORE STAGE 9 — `SITE_URL`/`carzo-eight` root cause in `lib/seo.ts:7` + `app/layout.tsx:24` |
+| 10 | Supabase Free / Production availability decision | REQUIRED owner decision before cutover |
