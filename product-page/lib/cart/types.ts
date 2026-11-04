@@ -124,6 +124,6 @@ export type CheckoutResult =
   | CheckoutChangedResult
   | {
     ok: false;
-    code: 'INVALID' | 'UNAVAILABLE' | 'FAILED' | 'LOYALTY_UNAVAILABLE' | 'ATTEMPT_REUSED';
+    code: 'INVALID' | 'UNAVAILABLE' | 'FAILED' | 'LOYALTY_UNAVAILABLE' | 'ATTEMPT_REUSED' | 'MAINTENANCE';
     message: string;
   };

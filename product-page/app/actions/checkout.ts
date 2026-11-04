@@ -2,6 +2,7 @@
 
 import { headers } from 'next/headers';
 import { checkoutSchema } from '@/lib/cart/validation';
+import { CHECKOUT_MAINTENANCE_MESSAGE, isCheckoutMaintenance } from '@/lib/checkout-maintenance';
 import { CartQuoteError, quoteCartItems } from '@/lib/cart/server';
 import {
   resolveNovaPoshtaCity,
@@ -201,6 +202,16 @@ function buildOrderSnapshot(input: {
 }
 
 export async function createOrder(input: CheckoutInput): Promise<CheckoutResult> {
+  // Server-side maintenance gate: blocks before any validation, write or
+  // notification. Hiding the submit button alone is not sufficient.
+  if (isCheckoutMaintenance()) {
+    return {
+      ok: false,
+      code: 'MAINTENANCE',
+      message: CHECKOUT_MAINTENANCE_MESSAGE,
+    };
+  }
+
   if (rateLimited(await clientIp())) {
     return {
       ok: false,

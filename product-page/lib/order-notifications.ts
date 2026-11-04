@@ -6,7 +6,12 @@ import {
 } from '@/lib/cart/order-items-summary';
 import { formatOrderDiscountsSummary } from '@/lib/cart/order-discounts-summary';
 import { resolveOrderStoreBackend } from '@/lib/data/config';
-import { getNotificationSettingsRepository } from '@/lib/data/notifications';
+import {
+  getNotificationSettingsRepository,
+  resolveNotificationSettingsBackend,
+  type NotificationSettings as RepositoryNotificationSettings,
+  type TelegramCredentials,
+} from '@/lib/data/notifications';
 import { resolveTelegramRecipients } from '@/lib/data/notifications/recipients';
 
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
@@ -365,12 +370,14 @@ async function notifyNewOrderSupabase(order: NewOrderNotification) {
   }
 }
 
-export async function notifyNewCarMatQuote(request: NewCarMatQuoteNotification) {
-  const settings = await readSettings();
-  if (settings.channel === 'off') return false;
+const CARMAT_QUOTE_SUBJECT = 'Новий запит на прорахунок автокилимків';
 
-  const subject = 'Новий запит на прорахунок автокилимків';
-  const message = [
+/**
+ * Quote message format is shared by the Directus and Supabase delivery paths
+ * and must stay stable — managers parse these lines.
+ */
+function carMatQuoteMessage(request: NewCarMatQuoteNotification): string {
+  return [
     `Покупець: ${request.customerName}`,
     `Телефон: ${request.customerPhone}`,
     `Авто: ${request.carModel}`,
@@ -380,6 +387,107 @@ export async function notifyNewCarMatQuote(request: NewCarMatQuoteNotification) 
     `Спосіб звʼязку: ${request.contactMethod}`,
     request.comment ? `Коментар: ${request.comment}` : '',
   ].filter(Boolean).join('\n').slice(0, 3_500);
+}
+
+export interface CarMatQuoteDeliveryDeps {
+  settings: RepositoryNotificationSettings;
+  credentials: TelegramCredentials;
+  /** Env subset: TELEGRAM_BOT_TOKEN / VERCEL_ENV / TELEGRAM_TEST_CHAT_IDS. */
+  env: Record<string, string | undefined>;
+  sendTelegramText: (token: string, chatIds: string[], text: string) => Promise<void>;
+}
+
+/**
+ * Delivery core for the Supabase notification path. Settings from Supabase,
+ * bot token from server env only, recipients guarded by resolveTelegramRecipients
+ * (non-production sends only to TELEGRAM_TEST_CHAT_IDS). No Directus access.
+ * Returns true only when a Telegram message was handed to the sender without
+ * throwing; every failure path returns false and never leaks the token.
+ */
+export async function deliverCarMatQuoteViaTelegram(
+  request: NewCarMatQuoteNotification,
+  deps: CarMatQuoteDeliveryDeps,
+): Promise<boolean> {
+  const { settings, credentials, env, sendTelegramText } = deps;
+  if (settings.channel === 'off') return false;
+
+  if (settings.channel === 'email' || settings.channel === 'both') {
+    console.error('Car mat quote notification email channel unsupported on Supabase path', {
+      channel: settings.channel,
+    });
+  }
+  if (settings.channel === 'email') return false;
+
+  const token = env.TELEGRAM_BOT_TOKEN?.trim() || credentials.token;
+  const recipients = resolveTelegramRecipients({
+    vercelEnv: env.VERCEL_ENV,
+    testChatIdsRaw: env.TELEGRAM_TEST_CHAT_IDS,
+    settingsChatIds: settings.telegramChatIds,
+    credentialsChatIds: credentials.chatIds,
+  });
+  if (!token) {
+    console.error('Car mat quote notification telegram token missing on Supabase path');
+    return false;
+  }
+  if (!recipients.ok) {
+    console.error('Car mat quote notification telegram recipients blocked on Supabase path', {
+      reason: recipients.reason,
+    });
+    return false;
+  }
+
+  const text = `${CARMAT_QUOTE_SUBJECT}\n\n${carMatQuoteMessage(request)}`.slice(0, 4_000);
+  try {
+    await sendTelegramText(token, recipients.chatIds, text);
+    return true;
+  } catch (error) {
+    console.error('Car mat quote notification delivery failed', {
+      channel: 'telegram',
+      error: safeErrorMessage(error, [token]),
+    });
+    return false;
+  }
+}
+
+/**
+ * Supabase-car-mat-quote notification path (NOTIFICATION_SETTINGS_STORE=supabase).
+ * Settings/templates/chat IDs from the Supabase notification reader; bot token
+ * only from server-side TELEGRAM_BOT_TOKEN. Zero Directus requests.
+ */
+async function notifyNewCarMatQuoteSupabase(
+  request: NewCarMatQuoteNotification,
+): Promise<boolean> {
+  try {
+    const repository = getNotificationSettingsRepository();
+    const [settings, credentials] = await Promise.all([
+      repository.readSettings(),
+      repository.readTelegramCredentials(),
+    ]);
+    return await deliverCarMatQuoteViaTelegram(request, {
+      settings,
+      credentials,
+      env: process.env,
+      sendTelegramText: sendTelegramToChatIds,
+    });
+  } catch (error) {
+    console.error('Car mat quote notification setup failed', {
+      error: safeErrorMessage(error),
+    });
+    return false;
+  }
+}
+
+export async function notifyNewCarMatQuote(request: NewCarMatQuoteNotification) {
+  if (resolveNotificationSettingsBackend() === 'supabase') {
+    return notifyNewCarMatQuoteSupabase(request);
+  }
+
+  // Legacy Directus path — Production until the Stage 9 cutover.
+  const settings = await readSettings();
+  if (settings.channel === 'off') return false;
+
+  const subject = CARMAT_QUOTE_SUBJECT;
+  const message = carMatQuoteMessage(request);
 
   const deliveries: Array<{ channel: 'email' | 'telegram'; task: Promise<void> }> = [];
   if (settings.channel === 'email' || settings.channel === 'both') {

@@ -7,7 +7,9 @@ same operational window as the Stage 9 Production cutover.
 
 - Prepared: 2026-11-03 (UTC); **revised 2026-11-03** after owner review of Stage 8A
   (v2: corrected control counts, historical-order import method, Stage 8B→9 sequence,
-  stop conditions, rollback scope)
+  stop conditions, rollback scope); **v2.1** after owner review of Stage 8B v2
+  (equality-first collision handling, rollback split 9A/9B, `CHECKOUT_MAINTENANCE`
+  freeze mechanism)
 - Input delta (8A provisional snapshot, 2026-11-03): 1 Directus order + 3 items;
   3 registry customers; 0 catalog/content drift; 1 approved divergence (`delivery-and-payment`)
 - Hard rule: **no write, flag change, or freeze may happen without gates G0–G6 below.**
@@ -75,9 +77,12 @@ Writes paused from freeze start until order intake is restored after cutover:
 
 **User-facing checkout behavior during freeze (owner picks one):**
 
-- Option A (preferred): maintenance banner on checkout + disabled submit, homepage
-  and catalog stay up; message: «Оформлення тимчасово недоступне — повертаємось за
-  кілька хвилин». Zero order-loss risk.
+- Option A (preferred; **implemented in `dev` as `CHECKOUT_MAINTENANCE=1`**):
+  server-side block at the `createOrder` / `submitCarMatQuote` actions (before
+  any validation, write or notification), maintenance banner message on submit,
+  homepage and catalog stay up. Zero order-loss risk: nothing is written, so
+  nothing can be lost or duplicated. Re-enable = unset the variable.
+  Message: «Оформлення замовлень тимчасово недоступне — ми оновлюємо систему…».
 - Option B: keep checkout open and queue orders client-side — **rejected**
   (loss/corruption risk on flush).
 
@@ -155,17 +160,26 @@ Historical rows must keep their original identity and money values byte-for-byte
 
 1. **Plain transactional INSERT — insert-only.** No `upsert` on business fields,
    no RPC, no `ON CONFLICT DO UPDATE`.
-2. **Idempotent safe replay** (re-running must never duplicate):
-   - order: skip-and-report if `order_number` already exists (UNIQUE);
-     additionally `INSERT … ON CONFLICT (id) DO NOTHING` as a second guard;
-   - item: skip-and-report if `(order_id, item_key)` already present (checked
-     before insert; `item_key` is populated on 20/20 source rows);
-     `ON CONFLICT (id) DO NOTHING` as second guard.
-   - apply log records: attempted / inserted / skipped-already-present per row id.
-3. **Transaction scope:** one transaction per order (order row + its items) or one
-   batch transaction with per-order savepoints; either way a failure rolls back the
-   incomplete unit only. Customer inserts run in their own transaction **before**
-   orders (so `customer_id` links exist), per §5.
+2. **Idempotent safe replay — equality-first collision handling** (re-running must
+   never duplicate and never silently diverge):
+   - identity collision = source `order_number` already in target, **or** source
+     `id` already in target, **or** item `(order_id, item_key)` already present;
+   - on collision the importer must compare the **full historical payload**
+     (id, order_number, created_at, status, customer fields, delivery snapshot,
+     prices/discounts/totals, loyalty_*, `checkout_attempt_id`,
+     `request_fingerprint`, and for items: all snapshot fields including
+     unit_price/quantity/line_total);
+     - equal → `skipped-already-present` (logged);
+     - **different → STOP the window (abort criteria §8). Never a silent skip,
+       never an overwrite.** A same-key-different-data row is a consistency
+       incident, not a merge candidate.
+   - `order_items` uniqueness inside one order is mandatory: duplicate
+     `item_key` within the same source order → STOP before any insert;
+   - apply log records: attempted / inserted / skipped-identical / stopped rows.
+3. **Atomicity:** one transaction per order (order row + its items) with the
+   customer inserts in their own earlier transaction; a failure rolls back the
+   incomplete unit only. Repeatability: re-running the same import after a
+   successful apply must produce `inserted=0, skipped-identical=N, stopped=0`.
 4. **No side effects on import:** no Telegram messages, no Nova Poshta calls, no
    cache purges, no `updated_at` rewriting of untouched rows. Notification sending
    is a property of live checkout (G5 verification), not of this import.
@@ -295,38 +309,48 @@ source/target consistency is re-verified against the T0 baseline.
 
 ---
 
-## 9. Rollback plan
+## 9. Rollback plan — two distinct cases
 
-**Scope: delete/restore only what THIS run created.**
+The dividing line is **the first real Supabase order** (a production checkout
+written by the live RPC path after the Stage 9 switch — not a Stage 8B
+historical import row).
+
+### 9A. Before the first real Supabase order
+
+Controlled return to Directus is allowed, only after a consistency check:
 
 1. Record in the apply log every inserted id (customers, orders, items) and every
    skipped row. Nothing outside that log is touched.
-2. **Orders/items**: `DELETE FROM orders WHERE id = (…inserted ids…)` —
-   `order_items` cascade with their order (`ON DELETE CASCADE`). Allowed only if
-   no row created after the import references them (orders are self-contained;
-   items reference only their order). If G5 already created live Supabase orders,
-   they are different rows and are untouched.
-3. **Customers**: delete an inserted customer only if **no** later row references
-   it (`orders.customer_id`, any future FK). Otherwise leave it and report —
-   a customer row is harmless; a dangling FK is not.
-4. Restore pre-images if any field of a pre-existing row was ever modified
-   (it must not happen; if it does → §8 abort + owner escalation).
-5. Re-run the §6 checklist against the T0 baseline; unfreeze Directus; keep all
-   `*_STORE` flags exactly as before the window.
-6. File the delta report (`BLOCKED` if root cause unknown) and re-plan.
+2. Delete/restore **only what this run created**: `DELETE FROM orders WHERE id IN
+   (…inserted ids…)` — `order_items` cascade with their order; an inserted
+   customer is deleted only if no row references it, otherwise kept + reported.
+3. Restore pre-images if any field of a pre-existing row was modified (must not
+   happen; if it does → §8 abort + owner escalation).
+4. **Consistency check before unfreeze:** re-run the §6 checklist against the T0
+   baseline and re-compare Directus ↔ Supabase counts for orders/customers;
+   only then restore `*_STORE` flags to their pre-window values and unfreeze.
+5. File the delta report (`BLOCKED` if root cause unknown) and re-plan.
 
-**Order single-writer policy:** after the first real Supabase order (G5), a naive
-`ORDER_STORE=directus` flip is **forbidden** — the ledger would split. Recovery
-then = forward-fix on Supabase, or a scripted reconciliation that exports
-Supabase-only orders back into Directus **before** any flag revert. This policy
-is decided now, not mid-incident.
+### 9B. After the first real Supabase order
 
-Forbidden "fixes": live manual edits to make counts match; re-running
-`migrate-directus-to-supabase.ts --apply` (resurrects `delivery-and-payment`,
-raw-upserts history); deleting customers to "clean up"; any migration apply
-during rollback.
+- **Forbidden:** any naive `*_STORE` → `directus` flag flip.
+- **Forbidden:** automatically unfreezing Directus and resuming the old order
+  write path — that splits the ledger (Supabase-only orders vanish from a
+  Directus-backed storefront).
+- **Preferred:** forward-fix on Supabase (fix the defect in place, keep
+  Supabase as the single writer).
+- **Alternative rollback** (only if forward-fix is impossible): a **full
+  reconciliation** first — export every Supabase-only order + items into Directus
+  as exact snapshots (ids/numbers/dates/money preserved), verify counts and keys
+  on both sides, and only then — with owner approval at a fresh G2 — flip flags
+  back. Anything less than full reconciliation is not a rollback; it is data loss.
 
 Resumption after abort: root cause documented + owner re-approves G2/G3.
+
+Forbidden "fixes" in both cases: live manual edits to make counts match;
+re-running `migrate-directus-to-supabase.ts --apply` (resurrects
+`delivery-and-payment`, raw-upserts history); deleting customers to "clean up";
+any migration apply during rollback.
 
 ---
 

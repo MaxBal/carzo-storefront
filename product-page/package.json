@@ -12,6 +12,8 @@
     "test:loyalty": "tsx --test tests/loyalty-math.test.ts tests/checkout-pricing.test.ts tests/checkout-side-effects.test.ts",
     "test:checkout-reliability": "tsx --test tests/checkout-reliability.test.ts",
     "test:order-notifications": "tsx --test tests/order-items-summary.test.ts tests/order-discounts-summary.test.ts tests/telegram-recipients.test.ts",
+    "test:stage9-prep": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/carmat-quote-notifications.test.ts tests/checkout-maintenance.test.ts",
+    "test:carmat-supabase": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/carmat-quote-supabase-integration.test.ts",
     "directus:setup": "node --env-file=.env.local scripts/setup-directus.mjs",
     "directus:import-carzo4": "node --env-file=.env.local scripts/import-carzo-4-media.mjs",
     "directus:validate": "node scripts/validate-directus-access.mjs",
