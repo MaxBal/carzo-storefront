@@ -312,6 +312,12 @@ export interface ProductCatalog {
 
 export interface ContentSource extends ProductCatalog {
   origin: 'fallback' | 'directus';
+  /**
+   * True when the editorial payload is DEFAULT_CONTENT_SOURCE because the
+   * configured editorial backend failed. Staging audits must never score a
+   * fallback load as PASS (Stage 7.x).
+   */
+  editorialFallbackUsed?: boolean;
   variants: ProductVariant[];
   galleryImages: GalleryImage[];
   contentSets: ContentSet[];

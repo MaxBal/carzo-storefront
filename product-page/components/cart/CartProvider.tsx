@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { clearGuestCart, guestCartItemKey, readGuestCart, writeGuestCart } from '@/lib/cart/guest-cart';
 import type { CartInputItem, CartQuote } from '@/lib/cart/types';
@@ -16,6 +16,7 @@ export default function CartProvider({ children }: { children: React.ReactNode }
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
+  const checkoutAttemptIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const sync = () => setItems(readGuestCart());
@@ -100,12 +101,38 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     updateItems(current => current.filter(item => guestCartItemKey(item) !== key));
   }, [updateItems]);
 
+  // One logical checkout attempt = one cart contents. A new purchase intent
+  // (cart changed) or a confirmed order invalidates the attempt id; contact
+  // and delivery corrections keep it stable so retries cannot double-order.
+  const itemsSignature = items
+    .map(item => guestCartItemKey(item))
+    .sort()
+    .join('|');
+  const lastItemsSignatureRef = useRef(itemsSignature);
+  useEffect(() => {
+    if (lastItemsSignatureRef.current !== itemsSignature) {
+      lastItemsSignatureRef.current = itemsSignature;
+      checkoutAttemptIdRef.current = null;
+    }
+  }, [itemsSignature]);
+
+  const getCheckoutAttemptId = useCallback(() => {
+    if (!checkoutAttemptIdRef.current) {
+      checkoutAttemptIdRef.current = crypto.randomUUID();
+    }
+    return checkoutAttemptIdRef.current;
+  }, []);
+  const resetCheckoutAttemptId = useCallback(() => {
+    checkoutAttemptIdRef.current = null;
+  }, []);
+
   const completeOrder = useCallback((result: OrderConfirmation) => {
     clearGuestCart();
     setItems([]);
     setQuote(null);
     setIsOpen(false);
     setConfirmation(result);
+    checkoutAttemptIdRef.current = null;
   }, []);
   const openCart = useCallback(() => setIsOpen(true), []);
   const closeCart = useCallback(() => setIsOpen(false), []);
@@ -133,10 +160,13 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     replaceQuote: setQuote,
     completeOrder,
     closeConfirmation,
+    getCheckoutAttemptId,
+    resetCheckoutAttemptId,
   }), [
     items, itemsQuantity, isOpen, hydrated, quote, quoteLoading, quoteError,
     confirmation, addItem, setQuantity, removeItem, completeOrder,
     openCart, closeCart, closeConfirmation,
+    getCheckoutAttemptId, resetCheckoutAttemptId,
   ]);
 
   return (

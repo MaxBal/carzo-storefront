@@ -73,12 +73,12 @@ export function createSupabaseCatalogRepository(): CatalogRepository {
             selectAll('designs', 'slug,version,label,selector_image_url,sort,status', { publishedOnly: true }),
             selectAll(
               'sizes',
-              'code,slug,label,width_cm,height_cm,depth_cm,content_group,shipping_length_cm,shipping_width_cm,shipping_height_cm,shipping_weight_kg,sort,status',
+              'id,code,slug,label,width_cm,height_cm,depth_cm,content_group,shipping_length_cm,shipping_width_cm,shipping_height_cm,shipping_weight_kg,sort,status',
               { publishedOnly: true },
             ),
             selectAll('brands', 'slug,name,flag,logo_extra,logo_image_url,sort,status', { publishedOnly: true }),
-            selectAll('fixations', 'key,label,extra,sort,status', { publishedOnly: true }),
-            selectAll('fixation_size_extras', 'fixation_id,size_id,extra,fixation:key,sizes:code'),
+            selectAll('fixations', 'id,key,label,extra,sort,status', { publishedOnly: true }),
+            selectAll('fixation_size_extras', 'fixation_id,size_id,extra'),
             selectAll(
               'variants',
               'key,price,old_price,in_stock,quantity_discount_eligible,status,designs:design_id(slug),sizes:size_id(code)',
@@ -100,12 +100,15 @@ export function createSupabaseCatalogRepository(): CatalogRepository {
 
         const extraByFixation = new Map<string, Partial<Record<SizeId, number>>>();
         for (const row of fixationExtras) {
-          const fixationKey = fixationKeyById.get(text(row.fixation_id))
-            || text((row.fixation as SupabaseRow | undefined)?.key);
-          const sizeCode = sizeCodeById.get(text(row.size_id))
-            || text((row.sizes as SupabaseRow | undefined)?.code)
-            || text((row.size as SupabaseRow | undefined)?.code);
-          if (!fixationKey || !sizeCode) continue;
+          const fixationId = text(row.fixation_id);
+          const sizeId = text(row.size_id);
+          const fixationKey = fixationKeyById.get(fixationId);
+          const sizeCode = sizeCodeById.get(sizeId);
+          if (!fixationKey || !sizeCode) {
+            throw new CatalogUnavailableError(
+              `Supabase fixation_size_extras row has unmapped ids: fixation_id=${fixationId || '<empty>'} size_id=${sizeId || '<empty>'}`,
+            );
+          }
           const map = extraByFixation.get(fixationKey) ?? {};
           const n = int(row.extra);
           map[sizeCode as SizeId] = n;

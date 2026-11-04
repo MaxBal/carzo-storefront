@@ -14,19 +14,21 @@ const catalogLinks = [
 
 const customerLinks = [
   { label: 'Про нас', href: '/about', action: 'link' as const },
-  { label: 'Доставка', href: '/delivery', action: 'delivery' as const },
-  { label: 'Оплата', href: '/payment', action: 'payment' as const },
-  { label: 'Обмін та повернення', href: '/returns', action: 'returns' as const },
+  // Modal openers — href '#' avoids crawler-visible 404 routes (P2-1); the
+  // onClick handler keeps opening the same benefit modals as before.
+  { label: 'Доставка', href: '#', action: 'delivery' as const },
+  { label: 'Оплата', href: '#', action: 'payment' as const },
+  { label: 'Обмін та повернення', href: '#', action: 'returns' as const },
 ];
 
 const b2bLinks = [
-  { label: 'Корпоративні замовлення', href: '/corporate-orders', action: 'b2b' as const },
-  { label: 'Гурт для партнерів', href: '/wholesale', action: 'b2b' as const },
+  { label: 'Корпоративні замовлення', href: '#', action: 'b2b' as const },
+  { label: 'Гурт для партнерів', href: '#', action: 'b2b' as const },
 ];
 
 const bonusLinks = [
-  { label: 'Клієнтська програма', href: '/loyalty-program', action: 'loyalty' as const },
-  { label: 'Разом дешевше', href: '/bundle-deals', action: 'bundle' as const },
+  { label: 'Клієнтська програма', href: '#', action: 'loyalty' as const },
+  { label: 'Разом дешевше', href: '#', action: 'bundle' as const },
 ];
 
 const legalLinks = [

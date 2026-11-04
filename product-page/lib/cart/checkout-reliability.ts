@@ -45,3 +45,19 @@ export async function runPostOrderSideEffects(
     );
   }
 }
+
+/**
+ * Follow-ups belong to a newly committed order only.
+ *
+ * A replayed attempt reports `created:false` and must not notify again or
+ * re-upsert the customer — otherwise a retry would double-message the
+ * recipients. Gating here instead of at the call site keeps that rule
+ * structural.
+ */
+export async function runPostOrderSideEffectsOnCreate(
+  created: boolean,
+  input: PostOrderSideEffectsInput,
+): Promise<void> {
+  if (!created) return;
+  await runPostOrderSideEffects(input);
+}

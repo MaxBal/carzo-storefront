@@ -16,11 +16,9 @@ export interface DesignVariantsModalProps {
   isOpen: boolean;
   onClose: () => void;
   variants: DesignVariant[];
-  placeholderImage: string;
 }
 
 type ImageStatus = 'loading' | 'loaded' | 'error';
-const EMERGENCY_PLACEHOLDER = '/media/landscape-placeholder.svg';
 
 /* ─── Component ─────────────────────────────────────────────────── */
 
@@ -28,13 +26,11 @@ export default function DesignVariantsModal({
   isOpen,
   onClose,
   variants,
-  placeholderImage,
 }: DesignVariantsModalProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [imageStatus, setImageStatus] = useState<ImageStatus>(() => (
     variants[0]?.modalImage?.trim() ? 'loading' : 'error'
   ));
-  const [placeholderFailed, setPlaceholderFailed] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -126,16 +122,13 @@ export default function DesignVariantsModal({
     setImageStatus(variants[0]?.modalImage?.trim() ? 'loading' : 'error');
   }, [variants]);
 
-  useEffect(() => {
-    setPlaceholderFailed(false);
-  }, [placeholderImage]);
-
   if (!isOpen || variants.length === 0) return null;
 
   const active = variants[activeIndex] ?? variants[0];
   const hasActiveImage = Boolean(active.modalImage?.trim());
-  const managedPlaceholder = placeholderImage.trim() || EMERGENCY_PLACEHOLDER;
-  const resolvedPlaceholder = placeholderFailed ? EMERGENCY_PLACEHOLDER : managedPlaceholder;
+  // No fake image: the image block renders only while a real image is available
+  // and has not failed (Stage 7.x D-1 owner decision).
+  const showImageBlock = hasActiveImage && imageStatus !== 'error';
 
   const handleVariantChange = (index: number) => {
     if (index === activeIndex) return;
@@ -210,17 +203,6 @@ export default function DesignVariantsModal({
           width: 100%;
           height: 100%;
           object-fit: cover;
-        }
-
-        /* ── Image fallback (error state) ── */
-        .dvm-img-fallback {
-          position: absolute;
-          inset: 0;
-          background: #e8e8e8;
-        }
-
-        .dvm-image-wrap .dvm-img-placeholder {
-          object-fit: contain;
         }
 
         /* ── Close button (overlaid on image mobile / white panel desktop) ── */
@@ -356,22 +338,9 @@ export default function DesignVariantsModal({
       >
         {/* Panel */}
         <div ref={panelRef} className="dvm-panel" onClick={(e) => e.stopPropagation()}>
-          {/* Image */}
-          <div className="dvm-image-wrap" aria-busy={imageStatus === 'loading'}>
-            <div className="dvm-img-fallback" aria-hidden="true">
-              <Image
-                src={resolvedPlaceholder}
-                alt=""
-                fill
-                sizes="(max-width: 899px) 100vw, 550px"
-                className="dvm-img-placeholder"
-                unoptimized
-                onError={() => {
-                  if (resolvedPlaceholder !== EMERGENCY_PLACEHOLDER) setPlaceholderFailed(true);
-                }}
-              />
-            </div>
-            {hasActiveImage ? (
+          {/* Image — only for designs that have a real photo */}
+          {showImageBlock ? (
+            <div className="dvm-image-wrap" aria-busy={imageStatus === 'loading'}>
               <Image
                 key={active.code}
                 src={active.modalImage}
@@ -383,8 +352,8 @@ export default function DesignVariantsModal({
                 onLoad={() => setImageStatus('loaded')}
                 onError={() => setImageStatus('error')}
               />
-            ) : null}
-          </div>
+            </div>
+          ) : null}
 
           {/* Content */}
           <div className="dvm-content">

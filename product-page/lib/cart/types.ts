@@ -93,6 +93,12 @@ export interface CheckoutInput {
   customerComment?: string;
   contactMethod: ContactMethod;
   delivery: CheckoutDelivery;
+  /**
+   * Client-generated UUID for one logical checkout attempt. Stable across
+   * retries/double-clicks; required when ORDER_STORE=supabase, ignored on the
+   * legacy Directus path.
+   */
+  checkoutAttemptId?: string;
 }
 
 export interface CheckoutLoyaltyState {
@@ -114,10 +120,10 @@ export type CheckoutChangedResult = {
 };
 
 export type CheckoutResult =
-  | { ok: true; orderNumber: string; total: number }
+  | { ok: true; orderNumber: string; total: number; replayed?: boolean }
   | CheckoutChangedResult
   | {
     ok: false;
-    code: 'INVALID' | 'UNAVAILABLE' | 'FAILED' | 'LOYALTY_UNAVAILABLE';
+    code: 'INVALID' | 'UNAVAILABLE' | 'FAILED' | 'LOYALTY_UNAVAILABLE' | 'ATTEMPT_REUSED' | 'MAINTENANCE';
     message: string;
   };
