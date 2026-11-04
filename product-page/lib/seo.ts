@@ -4,7 +4,7 @@ import { buildMetaDescription, buildProductTitle, buildProductUrl } from '@/lib/
 import { getProductCatalog } from '@/lib/content/resolver';
 import type { ContentSource, ProductParams } from '@/lib/content/types';
 
-const FALLBACK_SITE_URL = 'https://carzo-eight.vercel.app';
+const FALLBACK_SITE_URL = 'https://carzo-storefront.vercel.app';
 
 export interface PublicProductLink {
   path: string;

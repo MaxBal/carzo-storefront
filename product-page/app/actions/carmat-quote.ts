@@ -3,6 +3,7 @@
 import { contactMethodLabel } from '@/lib/cart/contact-method';
 import { CARMAT_INTEREST_OPTIONS } from '@/lib/carmat-quote/types';
 import { carMatQuoteSchema } from '@/lib/carmat-quote/validation';
+import { QUOTE_MAINTENANCE_MESSAGE, isCheckoutMaintenance } from '@/lib/checkout-maintenance';
 import { notifyNewCarMatQuote } from '@/lib/order-notifications';
 import type { CarMatQuoteInput, CarMatQuoteResult } from '@/lib/carmat-quote/types';
 
@@ -14,6 +15,11 @@ function normalizePhone(value: string) {
 }
 
 export async function submitCarMatQuote(input: CarMatQuoteInput): Promise<CarMatQuoteResult> {
+  // Same maintenance window as checkout (Stage 8B freeze pauses quote intake).
+  if (isCheckoutMaintenance()) {
+    return { ok: false, message: QUOTE_MAINTENANCE_MESSAGE };
+  }
+
   const parsed = carMatQuoteSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, message: 'Перевірте, чи правильно заповнені всі обовʼязкові поля.' };

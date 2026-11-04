@@ -11,7 +11,9 @@
     "test:customer-store": "tsx --test tests/customer-store.test.ts",
     "test:loyalty": "tsx --test tests/loyalty-math.test.ts tests/checkout-pricing.test.ts tests/checkout-side-effects.test.ts",
     "test:checkout-reliability": "tsx --test tests/checkout-reliability.test.ts",
-    "test:order-notifications": "tsx --test tests/order-items-summary.test.ts tests/order-discounts-summary.test.ts",
+    "test:order-notifications": "tsx --test tests/order-items-summary.test.ts tests/order-discounts-summary.test.ts tests/telegram-recipients.test.ts",
+    "test:stage9-prep": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/carmat-quote-notifications.test.ts tests/checkout-maintenance.test.ts",
+    "test:carmat-supabase": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/carmat-quote-supabase-integration.test.ts",
     "directus:setup": "node --env-file=.env.local scripts/setup-directus.mjs",
     "directus:import-carzo4": "node --env-file=.env.local scripts/import-carzo-4-media.mjs",
     "directus:validate": "node scripts/validate-directus-access.mjs",
@@ -19,7 +21,13 @@
     "directus:verify-media": "node --env-file=.env.local scripts/verify-product-media.mjs",
     "media:stage2a": "tsx scripts/complete-directus-media-to-r2.ts",
     "test:stage2a": "tsx --test tests/complete-directus-media-to-r2.test.ts",
-    "test:stage4": "tsx --test tests/stage4-config.test.ts tests/stage4-orders.test.ts tests/stage4-quote.test.ts tests/stage4-content.test.ts"
+    "test:stage4": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/stage4-config.test.ts tests/stage4-orders.test.ts tests/stage4-quote.test.ts tests/stage4-content.test.ts",
+    "test:stage6": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/stage4-orders.test.ts tests/checkout-attempt.test.ts tests/checkout-input-contract.test.ts",
+    "test:supabase-catalog": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-catalog-integration.test.ts",
+    "test:supabase-editorial": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-editorial-integration.test.ts",
+    "test:editorial-fallback": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/editorial-fallback-detection.test.ts",
+    "test:stage8b-import": "tsx --test tests/stage8b-historical-import.test.ts tests/stage8b-import-paginate-verify.test.ts",
+    "stage8b:import": "tsx scripts/stage8b-historical-import/index.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.758.0",

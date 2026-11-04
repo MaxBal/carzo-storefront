@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   runPostOrderSideEffects,
+  runPostOrderSideEffectsOnCreate,
   safeErrorDetail,
 } from '../lib/cart/checkout-reliability';
 
@@ -131,6 +132,44 @@ describe('post-order side effects (transaction boundary)', () => {
     }
 
     assert.deepEqual(result, { ok: true, orderNumber: 'CZ-TEST' });
+  });
+});
+
+describe('replayed orders never notify again', () => {
+  function spies() {
+    const calls = { notify: 0, upsert: 0 };
+    return {
+      calls,
+      input: {
+        notify: async () => {
+          calls.notify += 1;
+        },
+        upsertCustomer: async () => {
+          calls.upsert += 1;
+        },
+        logError: () => {},
+      },
+    };
+  }
+
+  it('sends exactly one notification for a newly created order', async () => {
+    const s = spies();
+    await runPostOrderSideEffectsOnCreate(true, s.input);
+    assert.deepEqual(s.calls, { notify: 1, upsert: 1 });
+  });
+
+  it('does not notify or upsert when the order was replayed (created:false)', async () => {
+    const s = spies();
+    await runPostOrderSideEffectsOnCreate(false, s.input);
+    assert.deepEqual(s.calls, { notify: 0, upsert: 0 });
+  });
+
+  it('a second replay of the same order keeps the count at zero', async () => {
+    const s = spies();
+    await runPostOrderSideEffectsOnCreate(true, s.input);
+    await runPostOrderSideEffectsOnCreate(false, s.input);
+    await runPostOrderSideEffectsOnCreate(false, s.input);
+    assert.deepEqual(s.calls, { notify: 1, upsert: 1 });
   });
 });
 

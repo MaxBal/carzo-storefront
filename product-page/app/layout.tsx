@@ -5,7 +5,7 @@ import { Inter } from 'next/font/google';
 import CartProvider from '@/components/cart/CartProvider';
 import ModalProvider from '@/components/ModalProvider';
 import Footer from '@/components/Footer';
-import { siteOrigin } from '@/lib/seo';
+import { absoluteSiteUrl, siteOrigin } from '@/lib/seo';
 import { getBenefitModals } from '@/lib/content/global-modals';
 import { getSiteFlag } from '@/lib/content/site-flag';
 
@@ -21,13 +21,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'CARZO — преміальні органайзери для автомобіля',
     description: 'Автокейси CARZO допомагають підтримувати порядок у багажнику та доповнюють інтер\'єр автомобіля.',
-    url: 'https://carzo-eight.vercel.app',
+    url: absoluteSiteUrl('/'),
     siteName: 'CARZO',
     locale: 'uk_UA',
     type: 'website',
     images: [
       {
-        url: '/case.jpg',
+        url: '/og-cover.png',
         width: 1200,
         height: 630,
         alt: 'CARZO — автомобільні органайзери',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'CARZO — преміальні органайзери для автомобіля',
     description: 'Автокейси CARZO допомагають підтримувати порядок у багажнику та доповнюють інтер\'єр автомобіля.',
-    images: ['/case.jpg'],
+    images: ['/og-cover.png'],
   },
 };
 
@@ -46,8 +46,8 @@ const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'CARZO',
-  url: 'https://carzo-eight.vercel.app',
-  logo: 'https://carzo-eight.vercel.app/carzo-logo-tight.svg',
+  url: absoluteSiteUrl('/'),
+  logo: absoluteSiteUrl('/carzo-logo-tight.svg'),
   contactPoint: {
     '@type': 'ContactPoint',
     telephone: '+380661031094',

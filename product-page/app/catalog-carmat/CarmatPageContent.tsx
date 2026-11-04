@@ -44,14 +44,12 @@ const InfoIcon = () => (
 
 interface CarmatPageContentProps {
   designs: CarMatDesign[];
-  placeholderImage: string;
   promoVideoUrl?: string;
   promoCoverUrl?: string;
 }
 
 export default function CarmatPageContent({
   designs,
-  placeholderImage,
   promoVideoUrl = '/carmat-video.mov',
   promoCoverUrl = '/carmat-desktop.jpeg',
 }: CarmatPageContentProps) {
@@ -168,7 +166,6 @@ export default function CarmatPageContent({
         isOpen={designModalOpen}
         onClose={() => setDesignModalOpen(false)}
         variants={designVariants}
-        placeholderImage={placeholderImage}
       />
 
       <CarMatQuoteModal

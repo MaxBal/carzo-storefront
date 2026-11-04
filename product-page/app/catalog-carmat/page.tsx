@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Header from '@/components/Header';
 import CarmatPageContent from './CarmatPageContent';
-import { getCarMatDesigns, getCarMatMediaPlaceholder, getCarMatPromoMedia } from '@/lib/content/car-mat-designs';
+import { getCarMatDesigns, getCarMatPromoMedia } from '@/lib/content/car-mat-designs';
 import { getSiteFlag } from '@/lib/content/site-flag';
 
 export const metadata: Metadata = {
@@ -10,9 +10,8 @@ export const metadata: Metadata = {
 };
 
 export default async function CarmatPage() {
-  const [designs, placeholderImage, siteFlag, promoMedia] = await Promise.all([
+  const [designs, siteFlag, promoMedia] = await Promise.all([
     getCarMatDesigns(),
-    getCarMatMediaPlaceholder(),
     getSiteFlag(),
     getCarMatPromoMedia(),
   ]);
@@ -22,7 +21,6 @@ export default async function CarmatPage() {
       <Header siteFlag={siteFlag} />
       <CarmatPageContent
         designs={designs}
-        placeholderImage={placeholderImage}
         promoVideoUrl={promoMedia.videoUrl}
         promoCoverUrl={promoMedia.coverUrl}
       />
