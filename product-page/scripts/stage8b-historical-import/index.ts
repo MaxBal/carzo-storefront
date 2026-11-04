@@ -39,7 +39,14 @@ import {
   type HistoricalOrderRow,
   type RegistryCustomer,
 } from './core';
+import { fetchAllPaginated, type PageFetcher } from './paginate';
 import { buildImportScript, buildPerOrderScript } from './sql';
+import {
+  checkItemArithmetic,
+  checkOrderConsistency,
+  checkUniqueness,
+  type VerifyOrderRow,
+} from './verify';
 import {
   asBool,
   asInt,
@@ -137,27 +144,50 @@ function supabase(): SupabaseClient {
   });
 }
 
-async function fetchTarget(db: SupabaseClient) {
-  const { data: customers, error: cErr } = await db
-    .from('customers')
-    .select('phone, full_name, source, imported, legacy_orders_count, legacy_products_count, legacy_city, legacy_delivery');
-  if (cErr) throw new Error(`customers SELECT: ${cErr.message}`);
+const CUSTOMER_COLUMNS =
+  'phone, full_name, source, imported, legacy_orders_count, legacy_products_count, legacy_city, legacy_delivery';
 
-  const { data: orders, error: oErr } = await db
-    .from('orders')
-    .select('*');
-  if (oErr) throw new Error(`orders SELECT: ${oErr.message}`);
-
-  const { data: items, error: iErr } = await db
-    .from('order_items')
-    .select('*');
-  if (iErr) throw new Error(`order_items SELECT: ${iErr.message}`);
-
-  return {
-    customers: (customers ?? []) as CustomerRow[],
-    orders: (orders ?? []) as HistoricalOrderRow[],
-    items: (items ?? []) as HistoricalItemRow[],
+/**
+ * Range-paged SELECT. `count: 'exact'` gives the authoritative total so
+ * `fetchAllPaginated` can prove the read is complete — a single uncapped
+ * PostgREST call would silently return at most 1000 of the 5,994 customers
+ * and the import would then plan against a truncated registry.
+ *
+ * Row typing is asserted on the way out: PostgREST hands back untyped JSON,
+ * and these column lists are the contract with the schema.
+ */
+function pagedSelect<T>(
+  db: SupabaseClient,
+  table: string,
+  columns: string,
+): PageFetcher<T> {
+  return async (from, to) => {
+    const { data, error, count } = await db
+      .from(table)
+      .select(columns, { count: 'exact' })
+      .range(from, to);
+    return {
+      rows: ((data ?? []) as unknown) as T[],
+      error: error ? error.message : null,
+      total: typeof count === 'number' ? count : null,
+    };
   };
+}
+
+async function fetchTarget(db: SupabaseClient) {
+  const customers = await fetchAllPaginated<CustomerRow>(
+    'customers',
+    pagedSelect<CustomerRow>(db, 'customers', CUSTOMER_COLUMNS),
+  );
+  const orders = await fetchAllPaginated<HistoricalOrderRow>(
+    'orders',
+    pagedSelect<HistoricalOrderRow>(db, 'orders', '*'),
+  );
+  const items = await fetchAllPaginated<HistoricalItemRow>(
+    'order_items',
+    pagedSelect<HistoricalItemRow>(db, 'order_items', '*'),
+  );
+  return { customers, orders, items };
 }
 
 // ---------------------------------------------------------------------------
@@ -271,14 +301,17 @@ async function runVerify(db: SupabaseClient) {
   const linkedOrders = target.orders.filter((o) => o.customer_id !== null);
   const badLinks = linkedOrders.filter((o) => o.customer_id && !customerIds.has(o.customer_id));
 
-  // Legacy rows must have NULL checkout_attempt_id / request_fingerprint.
-  const legacyLeak = target.orders.filter(
-    (o) => o.checkout_attempt_id !== null || (o as unknown as { request_fingerprint?: string | null }).request_fingerprint !== null,
-  );
+  // Fix 2: historical and live orders have *different* valid shapes. A live
+  // Supabase order created by the RPC correctly carries both binding fields —
+  // that is not a violation. Only a half-populated or duplicate-attempt row is.
+  const consistency = checkOrderConsistency(target.orders as unknown as VerifyOrderRow[]);
 
-  // A historical import must never recalculate money: a sanity invariant is
-  // line_total === unit_price * quantity on every item.
-  const badArithmetic = target.items.filter((i) => i.line_total !== i.unit_price * i.quantity);
+  const badArithmetic = checkItemArithmetic(target.items);
+
+  const dupAttemptIds = checkUniqueness(
+    target.orders.map((o) => o.checkout_attempt_id),
+    'checkout_attempt_id',
+  );
 
   const report = {
     counts: {
@@ -286,12 +319,15 @@ async function runVerify(db: SupabaseClient) {
       orders: target.orders.length,
       order_items: target.items.length,
     },
+    order_classes: consistency.counts,
     duplicate_order_numbers: dupOrderNumbers.length,
     duplicate_phones: dupPhones.length,
     duplicate_item_keys: dupItemKeys.length,
+    duplicate_checkout_attempt_ids: dupAttemptIds.duplicates.length,
     orphan_items: orphanItems.length,
     bad_customer_links: badLinks.length,
-    legacy_null_violations: legacyLeak.length,
+    order_consistency_violations: consistency.violations.length,
+    order_consistency_detail: consistency.violations.map((v) => `${v.order_number}: ${v.kind}`),
     item_arithmetic_violations: badArithmetic.length,
     pages_expected: 3,
   };
@@ -302,9 +338,10 @@ async function runVerify(db: SupabaseClient) {
   if (dupOrderNumbers.length) failures.push('duplicate order_number');
   if (dupPhones.length) failures.push('duplicate phone');
   if (dupItemKeys.length) failures.push('duplicate (order_id,item_key)');
+  if (dupAttemptIds.duplicates.length) failures.push('duplicate checkout_attempt_id');
   if (orphanItems.length) failures.push('orphan order_items');
   if (badLinks.length) failures.push('bad customer_id links');
-  if (legacyLeak.length) failures.push('legacy rows carry checkout_attempt_id/request_fingerprint');
+  if (consistency.violations.length) failures.push('order consistency violations (see order_consistency_detail)');
   if (badArithmetic.length) failures.push('item arithmetic mismatch');
 
   if (failures.length) {
@@ -312,7 +349,10 @@ async function runVerify(db: SupabaseClient) {
     process.exitCode = 1;
     return;
   }
-  log('VERIFY PASS');
+  log(
+    `VERIFY PASS — ${consistency.counts.historical} historical order(s), ` +
+    `${consistency.counts.live} live Supabase order(s)`,
+  );
 }
 
 // ---------------------------------------------------------------------------

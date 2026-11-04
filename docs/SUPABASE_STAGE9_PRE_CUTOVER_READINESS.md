@@ -145,6 +145,87 @@ Verified in `dev` via `tsc`, `eslint`, `next build` (all green; `/llms.txt`,
 
 ---
 
+## 5A. Release-blocker review fixes (2026-11-04)
+
+An external review found four defects that had to be closed before cutover.
+All four are fixed in `dev` and verified; none of them touched Production.
+
+### 5A.1 Customer pagination — a truncated registry would have corrupted the plan
+
+**Defect.** `fetchTarget()` issued one uncapped PostgREST SELECT per table.
+`public.customers` holds 5,994 rows and PostgREST caps a response at 1000, so
+the planner would have seen 1,000 customers and treated the other 4,994 phones
+as "new" — inserting duplicates and corrupting the merge plan.
+
+**Fix.** `scripts/stage8b-historical-import/paginate.ts` implements
+`fetchAllPaginated`: range-paged reads with `count: 'exact'` as the
+authoritative total, plus hard refusals for every way a read can be short —
+collected ≠ total, total changing mid-read, a page error, and a boundary-sized
+result with no reported total. An incomplete read is an error, never a quiet
+subset.
+
+**Evidence.** 11 fixture tests including a 5,994-row registry loading across 6
+pages. Read-only check against the live Supabase: **5,994 rows / 5,994 unique
+phones loaded in 6 page calls, `complete: true`.**
+
+### 5A.2 Order verification — live Supabase orders were wrongly flagged
+
+**Defect.** `runVerify()` treated *any* non-null `checkout_attempt_id` /
+`request_fingerprint` as a violation. After Stage 9 those fields are exactly
+what a correctly created live order carries, so every post-cutover order would
+have failed `--verify`.
+
+**Fix.** `scripts/stage8b-historical-import/verify.ts` classifies rows:
+historical = both fields NULL; live = both present and non-empty; anything
+else (`half-populated`, `live-without-fingerprint`, `live-without-attempt-id`)
+is a real defect. `duplicate-attempt-id` is checked separately because the RPC
+is idempotent on `checkout_attempt_id`. `--verify` now reports
+`historical = N, live = M, inconsistent = K` and only fails on `K > 0` or on
+genuine uniqueness/FK/arithmetic problems.
+
+**Evidence.** 13 fixture tests covering the mixed base (historical + live),
+repeated checkout attempts (idempotent single row vs. duplicate rows) and
+whitespace-only ids. Live read-only check: the current 10 orders classify as
+`historical=10, live=0, inconsistent=0`.
+
+### 5A.3 Maintenance-mode contradiction in the runbook
+
+**Defect.** the runbook asked for a control order *while*
+`CHECKOUT_MAINTENANCE=1`, but `createOrder` blocks submits at the server-action
+boundary in that state — the step was unachievable, and "grant permission for
+one test order" would have been a hidden bypass of the freeze.
+
+**Fix.** runbook §4.2–§4.7 resequenced: steps 1–10 are read-only and
+write-nothing while frozen; step 11 is an explicit go/no-go; step 12 lifts
+maintenance by the ordinary mechanism (unset + **redeploy**); only step 13
+places the one authorized control order; step 14 re-freezes on failure.
+Explicitly documented: there is **no bypass** (no test hook, no admin override,
+no direct RPC), and a failure must **not** flip the STORE flags back — that is
+rollback case 9B. Order loss is prevented by construction (the gate runs before
+any persistence; there is no client queue).
+
+### 5A.4 Git release strategy — `main` and `dev` share no ancestor
+
+**Defect.** `git merge-base main dev` exits `1`; GitHub reports *"No common
+ancestor between main and dev"*. A PR `dev → main` cannot exist.
+
+**Fix.** runbook §3.3 documents the validated procedure: cut
+`release/stage9` **from `main`**, bring over `product-page` `docs` `supabase`
+via `git checkout dev -- <paths>`, review the full diff, exclude
+secrets/local/QA artifacts, verify build + tests + STORE flags, then open a
+**normal PR `release/stage9 → main`**. `main` history is never rewritten,
+never force-pushed. Merge is owner-gated.
+
+**Evidence.** dry-run executed in a local worktree (created, verified, then
+deleted; nothing pushed): 71 files (38 added, 33 modified, **0 file
+deletions**); secret scan found only two fake test-fixture values; `tsc`,
+`next build`, `test:stage8b-import` 66/66, `test:customer-store` 32/32,
+`test:stage9-prep` 13/13, `test:checkout-reliability` 12/12, `test:stage4`
+19/19 all green; STORE flags unset → all six `directus` (Stage A changes no
+data path), all `supabase` → `supabase`, invalid → fail-closed.
+
+---
+
 ## 6. Supabase migrations (P2-5) — reconciled, file-only
 
 Remote `supabase.schema_migrations` (9 rows) vs local `supabase/migrations/` (9 files).
@@ -205,7 +286,7 @@ functions must not be re-applied). Leaving it as-is — acceptable short-term
 | 1 | Six STORE flags | **ready** | Preview already 5×supabase + customers=directus; Stage 9 sets all six to `supabase` on Production in one step. Flag semantics + fail-fast validated by tests |
 | 2 | Production secrets | **owner check required** | Needed on Production env at cutover: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TELEGRAM_BOT_TOKEN`, `NOVA_POSHTA_API_KEY`, `DIRECTUS_URL`+`DIRECTUS_READ_TOKEN` (rollback only), `SITE_URL`. Values were never read into this work |
 | 3 | Supabase customer store | **ready** | `customer-store/supabase.ts` exists (Stage 4/6); delta plan + merge precedence in 8B §5; current registry delta = 3 rows |
-| 4 | Historical order import | **ready (tooling shipped)** | equality-first collisions, STOP rule, atomicity, replay proof — §3. Tooling: `scripts/stage8b-historical-import/` (`--audit`/`--dry-run`/`--verify`/`--apply`), 40/40 fixture tests + live ROLLBACK drill proven. Real `--apply` intentionally not run |
+| 4 | Historical order import | **ready (tooling shipped)** | equality-first collisions, STOP rule, atomicity, replay proof — §3. Tooling: `scripts/stage8b-historical-import/` (`--audit`/`--dry-run`/`--verify`/`--apply`). Complete paged customer reads (5,994 proven), historical-vs-live order verification (§5A). 66/66 fixture tests + live ROLLBACK drill proven. Real `--apply` intentionally not run |
 | 5 | Telegram: orders + car-mat quotes | **ready** | both flows have Supabase settings + env-token paths; failure behavior tested; live smoke belongs to G5 (needs separate permission — no test messages sent here) |
 | 6 | Nova Poshta | **owner check required** | code path unchanged; confirm `NOVA_POSHTA_API_KEY` present on Production env before G2 |
 | 7 | Maintenance mode | **ready (dev)** | `CHECKOUT_MAINTENANCE=1` mechanism implemented + tested; not enabled anywhere |
@@ -292,10 +373,10 @@ in §8.1.
 | Telegram Orders | PASS | PASS — Supabase settings + env-token path |
 | Telegram Car-mat Quotes | PASS | PASS — 3/3 integration, zero Directus requests |
 | Nova Poshta | PASS | PASS — code path unchanged; key present-check at cutover |
-| Checkout Maintenance | PASS | PASS — 13/13, implemented in `dev`, enabled nowhere |
-| Historical Import Tooling | PASS | PASS — 40/40 fixtures + live ROLLBACK drill, `--apply` gated and not run |
-| Production Release Plan | READY | READY — `docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md` |
-| Rollback Plan | READY | READY — 9A/9B split in runbook §7 |
+| Checkout Maintenance | PASS | PASS — 13/13, implemented in `dev`, enabled nowhere. Window sequencing fixed §5A.3: no control order while frozen, no bypass |
+| Historical Import Tooling | PASS | PASS — 66/66 fixtures + live ROLLBACK drill. Complete paged reads (5,994 proven) + historical/live order verify (§5A.1–5A.2). `--apply` gated and not run |
+| Production Release Plan | READY | READY — `docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md`, incl. release-branch procedure §3.3 (`main`/`dev` unrelated histories) |
+| Rollback Plan | READY | READY — 9A/9B split in runbook §7; re-freeze-not-flag-revert rule §4.5 |
 | SEO / Sitemap / Canonical | PASS | PASS — §5 |
 | Cloudflare R2 | PASS | PASS — media URLs stable, no Directus UUID refs |
 | Supabase Free Decision | DEFERRED — owner review before cutover | **OWNER DECISION DEFERRED** — §8.1; separate confirmation required at cutover |

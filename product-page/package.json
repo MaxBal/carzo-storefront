@@ -26,7 +26,7 @@
     "test:supabase-catalog": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-catalog-integration.test.ts",
     "test:supabase-editorial": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-editorial-integration.test.ts",
     "test:editorial-fallback": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/editorial-fallback-detection.test.ts",
-    "test:stage8b-import": "tsx --test tests/stage8b-historical-import.test.ts",
+    "test:stage8b-import": "tsx --test tests/stage8b-historical-import.test.ts tests/stage8b-import-paginate-verify.test.ts",
     "stage8b:import": "tsx scripts/stage8b-historical-import/index.ts"
   },
   "dependencies": {

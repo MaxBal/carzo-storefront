@@ -245,6 +245,8 @@ Checks — all must pass before the Production switch (G4→G5):
 | product_media | 17/17 canonical slots; 0 Directus UUID refs |
 | R2 | required URLs HEAD 200; no `landscape-placeholder` |
 | customer parity | registry ⊆ customers after merge; §5 rules respected |
+| **complete customer read** | the registry load is provably complete: collected rows = reported total. A truncated (≤1000-row) read is a STOP — see §6.1 |
+| **order classification** | historical rows have NULL/NULL; live Supabase rows have both binding fields non-empty; `inconsistent = 0`; `checkout_attempt_id` unique |
 | PII | reports/logs contain no raw PII |
 | notification config | recipients unchanged; no token in DB |
 | drafts | `privacy-policy`, `public-offer` still unpublished |
@@ -261,10 +263,37 @@ requires `--confirm-apply STAGE8B-HISTORICAL-IMPORT`, `--ack-write
 I-UNDERSTAND-THIS-WRITES-HISTORY` and `STAGE8B_ALLOW_APPLY=1`, and even then
 only emits a transactional SQL script for the trusted admin channel — it never
 writes silently. A matching `.drill.sql` (identical statements, `ROLLBACK`
-terminal) is emitted for the atomicity drill. Evidence: 40/40 fixture tests
+terminal) is emitted for the atomicity drill. Evidence: 66/66 fixture tests
 (`pnpm run test:stage8b-import`) and one live ROLLBACK drill against Supabase
 (fixture customer + order + item; counts `5994/10/17` identical before and
 after; 0 rows persisted). **No real `--apply` has been run.**
+
+### 6.1 Complete reads and order classification (review fixes)
+
+**Pagination is mandatory.** `public.customers` holds 5,994 rows and PostgREST
+caps a single response at 1000, so every target read goes through
+`fetchAllPaginated` (`scripts/stage8b-historical-import/paginate.ts`):
+range-paged, `count: 'exact'` as the authoritative total, and a hard refusal
+when collected ≠ total, when the total moves mid-read, on a page error, or on
+a boundary-sized result with no reported total. **An import must not be planned
+against a partial customer registry** — the missing phones would look new and
+be inserted as duplicates. Verified read-only against the live project:
+5,994 rows / 5,994 unique phones / 6 page calls.
+
+**Order verification distinguishes the two legitimate row shapes**
+(`scripts/stage8b-historical-import/verify.ts`):
+
+| kind | `checkout_attempt_id` | `request_fingerprint` | verdict |
+|---|---|---|---|
+| historical (import) | `NULL` | `NULL` | valid |
+| live (RPC, post-cutover) | non-empty | non-empty | **valid — not an error** |
+| half-populated | one side only | one side only | **violation** |
+| live with empty fingerprint | non-empty | `NULL`/blank | **violation** |
+| duplicate attempt id | repeated | — | **violation** (the RPC is idempotent; a replay resolves to one order) |
+
+`--verify` reports `historical = N, live = M, inconsistent = K` and fails only
+on `K > 0` or on genuine uniqueness / FK / arithmetic problems. Correctly
+created live orders are never reported as errors.
 
 ---
 
