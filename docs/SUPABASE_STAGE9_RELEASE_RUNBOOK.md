@@ -96,7 +96,9 @@ Tool: `product-page/scripts/stage8b-historical-import/`
 | real `--apply` executed | **NOT DONE — forbidden in preparation** |
 
 Evidence:
-- 40/40 fixture tests (`pnpm run test:stage8b-import`).
+- 66/66 fixture tests (`pnpm run test:stage8b-import`), including paged
+  customer reads (5,994 rows proven complete) and historical-vs-live order
+  classification.
 - ROLLBACK drill executed against live Supabase: the generated script inserted
   a fixture customer + order + item inside `BEGIN … ROLLBACK`; counts
   `customers=5994, orders=10, order_items=17` were identical before and after,
@@ -278,29 +280,40 @@ Exclusions — assert none of these appear in the diff:
 | `product-page/node_modules/`, `.next/`, `tsconfig.tsbuildinfo` | build output |
 | anything under `~/.config`, SSH keys, tokens | never in the tree |
 
-Validated dry-run of this exact procedure (2026-11-04, local worktree, no
-push, no merge):
+Executed for real as the Stage A release candidate (2026-11-04, branch
+`release/stage9` @ `b7e4fc4` → PR #3, `main` untouched):
 
 | check | result |
 |---|---|
-| files changed vs `main` | 71 (38 added, 33 modified, **0 file deletions**) |
-| diff size | 11,580 insertions / 773 deletions (line-level inside modified files) |
+| pre-commit evidence | `git diff --cached --stat/--name-status/--check/--name-only` — **not** `git diff main HEAD` (that is empty before the commit) |
+| files changed vs `main` | 72 (38 added, 34 modified, **0 file deletions**) |
+| `git diff --check` | clean (3 trailing-whitespace defects found on first run and fixed before commit) |
+| stale-file guard (`comm -23`, transferred paths) | empty — `main` is a strict subset of `dev` |
+| stale-file guard (whole tree) | empty |
 | secret scan of the full diff | 2 hits, both fake values inside test fixtures (`'integration-test-token'`, `'stage7x-fallback-test-placeholder'`) — **no real secret** |
-| `.env*` in the diff | none |
-| QA artifacts in the diff | none |
+| `.env*` / `node_modules` / `.DS_Store` / QA artifacts in the diff | none (two `.DS_Store` files were caught by `git add -A` and removed before the commit; `.gitignore` now covers them) |
 | `tsc --noEmit` | green |
-| `next build` | green (13/13 routes; `llms.txt` + `sitemap.xml` need env at build time — they fail only in an env-less tree) |
+| `lint` | 0 errors |
+| `next build` | green (13/13 routes) |
 | `test:stage8b-import` | 66/66 |
 | `test:customer-store` | 32/32 |
+| `test:loyalty` | 37/37 |
 | `test:stage9-prep` | 13/13 |
 | `test:checkout-reliability` | 12/12 |
+| `test:order-notifications` | 22/22 |
+| `test:stage2a` | 11/11 |
 | `test:stage4` | 19/19 |
+| `test:stage6` | 24/24 |
+| `test:editorial-fallback` | 3/3 |
+| `test:supabase-editorial` / `catalog` / `carmat` (live) | 7/7 · 8/8 · 3/3 |
+| **total tests** | **257/257** |
 | STORE flags, unset | all six → `directus` (Stage A changes no data path) |
 | STORE flags, all `supabase` | all six → `supabase` |
 | STORE flags, invalid value | throws — fail-closed |
+| `CHECKOUT_MAINTENANCE` | unset — checkout works normally |
 
-The dry-run worktree was discarded afterwards; no branch was pushed and `main`
-is unchanged.
+`main` is unchanged throughout (`df8f353`). The PR is open and awaiting owner
+review; it has not been merged.
 
 #### 3.3.3 Why this is safe
 
@@ -448,13 +461,16 @@ sequence exists to protect.
 
 | area | test | result |
 |---|---|---|
-| historical import core | `test:stage8b-import` | 40/40 |
+| historical import core | `test:stage8b-import` | 66/66 (incl. pagination + order classification) |
 | import atomicity | ROLLBACK drill on live Supabase | counts unchanged, 0 rows |
+| customer read completeness | live Supabase read-only | 5,994 rows / 5,994 unique phones / 6 pages |
 | editorial → Supabase | `test:supabase-editorial` | 7/7, zero Directus reads |
 | catalog → Supabase | `test:supabase-catalog` | 8/8, no Directus fallback |
 | car-mat quote → Supabase | `test:carmat-supabase` | 3/3, zero Directus requests |
 | checkout maintenance | `test:stage9-prep` | 13/13 |
 | customer store / loyalty | `test:customer-store`, `test:loyalty` | 32/32, 37/37 |
+| order reliability / notifications | `test:checkout-reliability`, `test:order-notifications` | 12/12, 22/22 |
+| stage 4 / 6 contracts | `test:stage4`, `test:stage6` | 19/19, 24/24 |
 | typecheck / lint / build | `tsc --noEmit`, `lint`, `build` | green |
 
 ---
