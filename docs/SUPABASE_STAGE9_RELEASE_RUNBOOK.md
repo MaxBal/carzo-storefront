@@ -193,17 +193,34 @@ git fetch origin
 git switch dev
 
 # 1. cut the release branch FROM MAIN (not from dev)
-git switch -c release/stage9 main
+git switch -c release/stage9 origin/main
 
 # 2. bring over the verified state of the required paths from dev
 git checkout dev -- product-page docs supabase
 
-# 3. review the FULL diff against main
-git diff --stat main...HEAD        # note: plain `main HEAD` once histories are unrelated
-git diff --name-status main HEAD
+# 3. review the STAGED diff. Before the commit, HEAD still points at main, so
+#    `git diff main HEAD` shows NOTHING and is NOT evidence of anything.
+#    The change set lives in the index — inspect it there:
+git diff --cached --stat
+git diff --cached --name-status
+git diff --cached --check        # whitespace/conflict markers; must be silent
+git diff --cached --name-only
 
-# 4. exclusions — assert these are ABSENT from the diff (see 3.3.2)
-git diff --name-only main HEAD | grep -iE '\.env|secret|credential|token|\.pem|\.key|id_rsa'
+# 4. exclusions — assert these are ABSENT from the staged set (see 3.3.2)
+git diff --cached --name-only | grep -iE '\.env|secret|credential|token|\.pem|\.key|id_rsa'
+
+# 4b. stale-file guard — no file may survive from main-only under the
+#     transferred paths. `git checkout dev -- <path>` overwrites files that
+#     exist in dev but does NOT delete files that only exist in main, so a
+#     main-only file would silently stay behind and could conflict with the
+#     dev code just brought in. This must print nothing:
+comm -23 \
+  <(git ls-tree -r --name-only main -- product-page docs supabase | sort) \
+  <(git ls-tree -r --name-only dev  -- product-page docs supabase | sort)
+
+# 4c. tree-shape guard (informational) — the same check over the whole tree.
+#     main must be a subset of dev, so this must also print nothing:
+comm -23 <(git ls-tree -r --name-only main | sort) <(git ls-tree -r --name-only dev | sort)
 
 # 5. verify the release state (must be run with env present)
 cd product-page
@@ -216,6 +233,11 @@ pnpm run test:stage8b-import && pnpm run test:customer-store \
 # 6. commit on the release branch
 git add -A && git commit -m "release: stage 9 pre-release (Stage A) from dev"
 
+# 6b. only AFTER the commit does `git diff main HEAD` mean anything — use it
+#     as a second, independent confirmation of the same change set:
+git diff --stat main HEAD
+git diff --name-status main HEAD
+
 # 7. push the release branch (no force, no main writes)
 git push -u origin release/stage9
 
@@ -224,6 +246,14 @@ gh pr create --base main --head release/stage9 \
   --title "release: Stage 9 pre-release (Stage A)" \
   --body "See docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md §3. No STORE flag change. Maintenance mode NOT enabled."
 ```
+
+**Which diff is evidence of what.**
+
+| when | command | meaning |
+|---|---|---|
+| before the commit | `git diff --cached --*` | **the** authoritative change set (index vs `main`) |
+| before the commit | `git diff main HEAD` | **NOT evidence** — `HEAD` is still `main`, so it is empty by construction |
+| after the commit | `git diff main HEAD` | independent second confirmation of the same change set |
 
 **Merge is owner-gated.** Do not merge the PR without explicit owner approval.
 After merge, delete the release branch. Never `git push --force` to `main`, never
