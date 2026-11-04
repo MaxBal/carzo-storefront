@@ -145,41 +145,56 @@ Verified in `dev` via `tsc`, `eslint`, `next build` (all green; `/llms.txt`,
 
 ---
 
-## 6. Supabase migrations (P2-5) — audit only, nothing changed
+## 6. Supabase migrations (P2-5) — reconciled, file-only
 
-Remote `supabase.schema_migrations` (9 rows) vs local `supabase/migrations/` (9 files):
+Remote `supabase.schema_migrations` (9 rows) vs local `supabase/migrations/` (9 files).
+Before reconciliation two rows mismatched on the version/filename pair only:
 
-| remote version / name | local file | state |
+| remote version / name | local file (before) | local file (after) |
 |---|---|---|
-| 20261001203704 `rls_auto_enable` | same | match |
-| 20261001211849 `create_customers` | same | match |
-| 20261001213417 `tighten_customers_service_role_grants` | same | match |
-| 20261007101747 `directus_exit_schema_foundation` | same | match |
-| 20261007114221 `add_missing_fk_indexes` | same | match |
-| **20261031164057** `create_order_with_items_rpc` | **20261101120000_create_order_with_items_rpc.sql** | **mismatch** |
-| **20261031180954** `require_order_request_fingerprint` | **20261101200000_require_order_request_fingerprint.sql** | **mismatch** |
-| 20261101172930 `stage7x_add_editorial_media_urls` | same | match |
-| 20261103125918 `stage7x_drop_car_mat_placeholder_url` | same | match |
+| 20261001203704 `rls_auto_enable` | same | same |
+| 20261001211849 `create_customers` | same | same |
+| 20261001213417 `tighten_customers_service_role_grants` | same | same |
+| 20261007101747 `directus_exit_schema_foundation` | same | same |
+| 20261007114221 `add_missing_fk_indexes` | same | same |
+| 20261031164057 `create_order_with_items_rpc` | `20261101120000_…` | **`20261031164057_…`** (renamed) |
+| 20261031180954 `require_order_request_fingerprint` | `20261101200000_…` | **`20261031180954_…`** (renamed) |
+| 20261101172930 `stage7x_add_editorial_media_urls` | same | same |
+| 20261103125918 `stage7x_drop_car_mat_placeholder_url` | same | same |
 
-Both mismatched migrations are **applied and effective** on the remote side
-(`create_order_with_items` RPC exists and was exercised; fingerprint rules
-enforced at RPC level). Only the recorded version/filename pair differs.
+**Result: Git filenames match the remote history 9/9.**
 
-**Proposed non-destructive sync (NOT executed — needs separate owner approval):**
+### 6.1 Verification performed before the rename
 
-1. `git mv` the two local files onto the remote versions:
-   `20261101120000_create_order_with_items_rpc.sql` → `20261031164057_create_order_with_items_rpc.sql`,
-   `20261101200000_require_order_request_fingerprint.sql` → `20261031180954_require_order_request_fingerprint.sql`.
-   SQL content unchanged; no DB operation of any kind.
-2. Commit to `dev` with a note referencing this audit.
-3. Result: Git filenames match remote history 9/9; `supabase migration list`
-   becomes consistent for every developer machine.
+1. **Content re-compared.** `diff` of the two local files shows exactly the
+   documented two-stage relationship: `20261031164057` creates the RPC and
+   adds `request_fingerprint`; `20261031180954` tightens the fingerprint
+   binding (adds `INVALID_FINGERPRINT`, turns the lenient mismatch check into
+   an unconditional one). The live remote function body contains the
+   fingerprint-stage markers (`v_existing_fingerprint`,
+   `ATTEMPT_FINGERPRINT_MISMATCH`, `INVALID_FINGERPRINT`) — i.e. the remote
+   effective state equals the **final** local file, as expected for two
+   sequentially applied migrations. `orders.request_fingerprint` and
+   `orders.checkout_attempt_id` exist and are nullable (verified via
+   `information_schema.columns`), matching what the historical import needs.
+2. **Change is exclusively file-level.** `git diff --cached --numstat` reports
+   `0 0` for both renames — zero lines added or removed. No SQL byte changed.
+3. **No re-apply risk.** `supabase db push` skips any version already present
+   in `supabase_migrations.schema_migrations`. After the rename all 9 local
+   versions are registered remotely → **zero** migrations would be applied.
+   Before the rename the two unmatched local versions would have been treated
+   as new and re-applied (re-creating the function and re-running the
+   `ADD COLUMN IF NOT EXISTS`) — so the rename *removes* the re-apply risk
+   rather than creating one.
+4. **No remote operation of any kind.** No `apply_migration`, no `db push`, no
+   registry insert, no history rewrite.
 
-Explicitly rejected for now (and why): inserting registry rows to rewrite
-history — mutates recorded history without approval; re-running `supabase db
-push`/re-apply — forbidden (existing SQL functions must not be re-applied);
-leaving it as-is forever — acceptable short-term (zero runtime impact) but keeps
-P2-5 open.
+### 6.2 Explicitly rejected alternatives (unchanged)
+
+Inserting registry rows to rewrite history — mutates recorded history without
+approval. Re-running `supabase db push` / re-apply — forbidden (existing SQL
+functions must not be re-applied). Leaving it as-is — acceptable short-term
+(zero runtime impact) but keeps P2-5 open.
 
 ---
 
@@ -190,15 +205,15 @@ P2-5 open.
 | 1 | Six STORE flags | **ready** | Preview already 5×supabase + customers=directus; Stage 9 sets all six to `supabase` on Production in one step. Flag semantics + fail-fast validated by tests |
 | 2 | Production secrets | **owner check required** | Needed on Production env at cutover: `SUPABASE_URL`, `SUPABASE_SECRET_KEY`, `TELEGRAM_BOT_TOKEN`, `NOVA_POSHTA_API_KEY`, `DIRECTUS_URL`+`DIRECTUS_READ_TOKEN` (rollback only), `SITE_URL`. Values were never read into this work |
 | 3 | Supabase customer store | **ready** | `customer-store/supabase.ts` exists (Stage 4/6); delta plan + merge precedence in 8B §5; current registry delta = 3 rows |
-| 4 | Historical order import | **ready (plan v2.1)** | equality-first collisions, STOP rule, atomicity, replay proof — §3; tooling to be written at G1 prep inside the window |
+| 4 | Historical order import | **ready (tooling shipped)** | equality-first collisions, STOP rule, atomicity, replay proof — §3. Tooling: `scripts/stage8b-historical-import/` (`--audit`/`--dry-run`/`--verify`/`--apply`), 40/40 fixture tests + live ROLLBACK drill proven. Real `--apply` intentionally not run |
 | 5 | Telegram: orders + car-mat quotes | **ready** | both flows have Supabase settings + env-token paths; failure behavior tested; live smoke belongs to G5 (needs separate permission — no test messages sent here) |
 | 6 | Nova Poshta | **owner check required** | code path unchanged; confirm `NOVA_POSHTA_API_KEY` present on Production env before G2 |
 | 7 | Maintenance mode | **ready (dev)** | `CHECKOUT_MAINTENANCE=1` mechanism implemented + tested; not enabled anywhere |
 | 8 | SEO / canonical / og / footer | **ready (dev)** | §5; remaining content decision: `privacy-policy` / `public-offer` are still **drafts** → those footer links 404 until published (owner content call) |
 | 9 | Rollback | **ready (policy)** | 9A/9B split signed into the runbook (§4); applies at G4/G5 |
 | 10 | Monitoring | **plan only** | Vercel logs (zero Directus host requests post-switch), checkout success, Telegram delivery, 24–72h burn-in; alerts/contacts to confirm at G2 |
-| 11 | Supabase Free-plan decision | **BLOCKER — owner** | Production-on-Supabase availability/limits decision (Stage 7 backlog #10) is a hard prerequisite |
-| 12 | Joint window Stage 8B → Stage 9 | **BLOCKER — owner** | one combined ≤90 min window (8B §7); G2 must declare Stage 9 executable before any freeze |
+| 11 | Supabase Free-plan decision | **OWNER DECISION DEFERRED** | Owner decision recorded §8.1: remain on Free for development/preparation. Free plan does **not** block Stage 8B/9 preparation. Separate explicit owner acceptance of the Free risks is required **immediately before cutover**; cutover is not automatically authorized |
+| 12 | Joint window Stage 8B → Stage 9 | **BLOCKER — owner** | one combined ≤90 min window (8B §7); G2 must declare Stage 9 executable before any freeze. Runbook: `docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md` |
 
 Supporting re-checks (all green on `dev` at 2026-11-03):
 `pnpm exec tsc --noEmit` · `pnpm run lint` (pre-existing warnings only) ·
@@ -208,42 +223,119 @@ Supporting re-checks (all green on `dev` at 2026-11-03):
 
 ## 8. What remains a blocker
 
-1. **Supabase Free-plan / production-availability decision** (owner) — hard blocker.
-2. **Joint window scheduling + Stage 9 readiness declaration** (owner, G2).
-3. **Production env secrets verification** (owner/ops) — checklist §7-2/§7-6.
-4. **P2-5 migration filename sync** (owner approval of the §6 proposal) — non-runtime blocker, must not be left silent.
-5. **Draft legal pages** (`privacy-policy`, `public-offer`) — footer links 404 until the owner publishes them or re-points the links; publishing is a content decision (Stage 8B keeps drafts unpublished by design).
-6. **Optional brand og:image** — current og-cover is a real product-photo crop; a designed 1200×630 brand banner can replace it later (image generation was unavailable: 403 membership).
+1. **Joint window scheduling + Stage 9 readiness declaration** (owner, G2).
+2. **Production env secrets verification** (owner/ops) — checklist §7-2/§7-6.
+3. **Draft legal pages** (`privacy-policy`, `public-offer`) — footer links 404 until the owner publishes them or re-points the links; publishing is a content decision (Stage 8B keeps drafts unpublished by design).
+4. **Optional brand og:image** — current og-cover is a real product-photo crop; a designed 1200×630 brand banner can replace it later (image generation was unavailable: 403 membership).
+
+### 8.1 Supabase Free — recorded owner decision
+
+**Decision (owner, 2026-11-03): remain on Supabase Free.**
+
+Until development and technical preparation of the site are fully complete,
+the following are **not required**: a Supabase Pro upgrade, paid monitoring
+services, a separate monitoring infrastructure, Telegram availability alerts,
+or a purchased backup service. The owner will reconsider the paid plan,
+monitoring and backups **after** technical readiness.
+
+Consequences for this document and for the runbook:
+
+- The Free-plan status changes from a hard blocker to
+  **`OWNER DECISION DEFERRED`**.
+- Free plan does **not** block development, testing, or Stage 8B/9
+  preparation. No Pro upgrade is a prerequisite for any of those.
+- This decision does **not** mean the Free-plan risks are absent. They are
+  carried in the separate pre-production checklist below (§8.2), not deleted.
+- Immediately before the actual Production cutover the owner must give a
+  **separate, explicit confirmation** that running Production on Free is
+  acceptable given those risks, together with the agreed minimal data
+  protection / recovery baseline.
+- Production cutover is **not** automatically authorized by this document or
+  by the decision to stay on Free.
+
+No Supabase plan setting or project setting was changed.
+
+### 8.2 Pre-production checklist — Free-plan risks (carried, not closed)
+
+These are **not** development blockers. They must be acknowledged and given a
+minimal mitigation before the cutover step, as part of the owner confirmation
+in §8.1.
+
+| # | risk | why it matters at cutover | minimal mitigation (owner to confirm) |
+|---|---|---|---|
+| 1 | Free-tier availability / resource limits | Production traffic shares the free pool; sustained load can degrade or pause the project | confirm current usage headroom before the window; agree a 24–72h burn-in watch on checkout success |
+| 2 | No managed point-in-time recovery | an operator mistake or bad deploy cannot be rewound to an arbitrary minute | keep the T0 canonical export (8B §1) for the whole window + 7 days; treat it as the recovery floor |
+| 3 | No uptime SLA / no alerting | an outage is discovered by customers, not by a monitor | agree who is on-call for the window and for burn-in; manual check cadence (owner to name the contact) |
+| 4 | Backup retention on Free | automated backups are limited; long-term history lives only in this project | T0 export retained outside the project; Stage 10 must not destroy Directus until a Supabase-side export is verified |
+| 5 | Single-project blast radius | no separate infra for monitoring or restore | all restore steps documented in the release runbook §7; rehearsed via the ROLLBACK drill |
 
 ## 9. Owner decisions requested
 
 1. Approve (or amend) the maintenance-mode UX as the freeze mechanism (8B §2 Option A).
 2. Approve Stage 8B plan **v2.1** (equality-first collisions + rollback 9A/9B).
-3. Approve the §6 migration filename sync proposal (git rename only) — or accept P2-5 as documented-open.
+3. Approve the Stage A Production pre-release (merge `dev → main` + deploy, flags unchanged) — `docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md` §3.
 4. Confirm the public canonical domain (`carzo-storefront.vercel.app` vs a custom domain → `SITE_URL` value).
 5. Decide on publishing `privacy-policy` / `public-offer` drafts before cutover.
-6. Supabase Free-plan decision.
+6. **Immediately before cutover:** separate explicit confirmation of running Production on Supabase Free with the §8.2 risks, plus the minimal protection/recovery baseline. (The decision to *stay* on Free is already recorded §8.1.)
 7. Propose/confirm the joint Stage 8B→9 window (date, ≤90 min, on-call).
 8. Permission for one live Telegram smoke at G5 (until then: no real messages).
+9. Secure export location + retention for the T0 snapshot (8B §1).
+
+## 9.1 Stage 9 readiness matrix (final)
+
+| Проверка | Требование | State |
+|---|---|---|
+| Supabase Content | PASS | PASS — 7/7 integration, zero Directus reads |
+| Supabase Catalog | PASS | PASS — 8/8 integration, no Directus fallback |
+| Supabase Orders | PASS | PASS — RPC + fingerprint rules effective |
+| Supabase Customers | PASS | PASS — schema + merge rules + 5,994 rows preserved |
+| Telegram Orders | PASS | PASS — Supabase settings + env-token path |
+| Telegram Car-mat Quotes | PASS | PASS — 3/3 integration, zero Directus requests |
+| Nova Poshta | PASS | PASS — code path unchanged; key present-check at cutover |
+| Checkout Maintenance | PASS | PASS — 13/13, implemented in `dev`, enabled nowhere |
+| Historical Import Tooling | PASS | PASS — 40/40 fixtures + live ROLLBACK drill, `--apply` gated and not run |
+| Production Release Plan | READY | READY — `docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md` |
+| Rollback Plan | READY | READY — 9A/9B split in runbook §7 |
+| SEO / Sitemap / Canonical | PASS | PASS — §5 |
+| Cloudflare R2 | PASS | PASS — media URLs stable, no Directus UUID refs |
+| Supabase Free Decision | DEFERRED — owner review before cutover | **OWNER DECISION DEFERRED** — §8.1; separate confirmation required at cutover |
+| Combined 8B/9 Window | NOT SCHEDULED | **NOT SCHEDULED** — owner, G2 |
+
+**Verdict on the matrix:** all technical checks are PASS and both plans are
+READY. The two remaining rows are owner-scheduling and owner-acceptance items,
+not engineering gaps.
 
 ## 10. Verdict
 
-**NOT READY** — per the rule «не объявлять READY при незакрытой критической
-зависимости», blockers §8-1…§8-3 are open. Engineering preparation is complete:
-the quote-notification Directus dependency is removed and proven, maintenance
-mode exists, the import/rollback rules are corrected, SEO config is fixed, and
-the readiness matrix is filled. READY can be declared once the owner closes
-§8-1…§8-3 and G2 confirms the window.
+**TECHNICAL PREPARATION — COMPLETE. PRODUCTION CUTOVER — NOT AUTHORIZED.**
+
+Per the rule «не объявлять READY при незакрытой критической зависимости», the
+overall readiness state stays **`PREPARED — NOT READY`** while §8-1 (window +
+G2 declaration) and §8-2 (Production secrets verification) are open, and while
+the §8.1 pre-cutover owner confirmation on the Free plan has not been given.
+
+Engineering preparation is complete: the quote-notification Directus
+dependency is removed and proven, maintenance mode exists, the import/rollback
+rules are corrected and tooled, SEO config is fixed, the migration filenames
+are reconciled, the two-stage release plan is written, and the readiness
+matrix is filled. READY can be declared once the owner closes §8-1…§8-2, gives
+the §8.1 confirmation, and G2 confirms the window.
 
 ## 11. Safety ledger (this stage)
 
 | action | count |
 |---|---:|
-| Supabase / Directus / R2 writes | 0 |
-| Stage 8B apply | 0 |
+| Supabase / Directus / R2 writes (real data) | 0 |
+| Stage 8B apply (real) | 0 |
+| ROLLBACK drills (no persistence) | 1 — counts unchanged, 0 rows |
 | Real Telegram / notification sends | 0 |
+| Nova Poshta shipments | 0 |
 | Freeze / maintenance enabled anywhere | 0 |
 | Vercel env or Production changes | 0 |
+| Supabase plan / project setting changes | 0 |
 | Stage 9 started | 0 |
-| Migration history changes | 0 (proposal only) |
+| Stage 10 started | 0 |
+| Migration history changes (remote) | 0 |
+| Local migration files renamed (content unchanged) | 2 |
 | `main` commits | 0 |
+

@@ -253,7 +253,18 @@ Checks — all must pass before the Production switch (G4→G5):
 
 Modes in tooling: `--dry-run` (default), `--apply` (typed confirmation phrase),
 `--verify`, `--audit` (read-only). A human confirmation gate sits immediately
-before: any write, any flag change, any maintenance-mode toggle.
+before: any write, any flag change, any maintenance-mode-toggle.
+
+**Tooling shipped (`dev`):** `product-page/scripts/stage8b-historical-import/`
+implements all four modes against the rules above. `--apply` additionally
+requires `--confirm-apply STAGE8B-HISTORICAL-IMPORT`, `--ack-write
+I-UNDERSTAND-THIS-WRITES-HISTORY` and `STAGE8B_ALLOW_APPLY=1`, and even then
+only emits a transactional SQL script for the trusted admin channel — it never
+writes silently. A matching `.drill.sql` (identical statements, `ROLLBACK`
+terminal) is emitted for the atomicity drill. Evidence: 40/40 fixture tests
+(`pnpm run test:stage8b-import`) and one live ROLLBACK drill against Supabase
+(fixture customer + order + item; counts `5994/10/17` identical before and
+after; 0 rows persisted). **No real `--apply` has been run.**
 
 ---
 
@@ -362,9 +373,16 @@ any migration apply during rollback.
 4. **Single combined window** for Stage 8B + Stage 9 (G2): date/time, ≤90 min budget,
    on-call contact — and confirmation that Stage 9 will be ready to execute in it.
 5. Secure export location & retention (§1).
-6. Supabase Free-plan / production-availability decision (Stage 7 backlog #10).
-7. P2-5 migration filename reconciliation method (rename local files vs re-register;
-   documented in 8A §5.1 — still unrepaired by design).
+6. **Immediately before cutover:** explicit acceptance of running Production on
+   Supabase Free with its availability/backup risks (the decision to *remain*
+   on Free for preparation is already recorded in
+   `docs/SUPABASE_STAGE9_PRE_CUTOVER_READINESS.md` §8.1; the risk checklist is
+   §8.2 there).
+7. P2-5 migration filename reconciliation — **DONE** (file-only `git mv` onto
+   the registered remote versions, content byte-identical, 9/9 aligned;
+   verification recorded in readiness §6). No owner decision outstanding.
+8. Stage A Production pre-release approval (merge `dev → main` + deploy with
+   flags unchanged) — `docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md` §3.
 
 ---
 
