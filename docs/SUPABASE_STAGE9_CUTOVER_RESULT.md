@@ -1,169 +1,164 @@
-# SUPABASE STAGE 9 — CUTOVER RESULT
+# SUPABASE STAGE 9 — CUTOVER RESULT (attempt 2)
 
-**STATUS: `BLOCKED` — stopped at PHASE 1 (PREFLIGHT), before any Production
-write.**
+**STATUS: `BLOCKED` — token could not be transferred programmatically;
+manual owner action required.**
 
-A mandatory Production secret is missing. Per the operation rules — *"Если
-критический Production secret отсутствует, не пытайся компенсировать это
-несанкционированной заменой — STOP"* and *"Если обязательная техническая
-проверка не проходит — STOP, даже если владелец разрешил миграцию"* — the
-migration window was **not** opened.
+The blocker from attempt 1 is **not a missing token** — the token exists in the
+Vercel Preview scope. The blocker is that **Vercel does not return Secret-type
+values** through the CLI or API, so the Preview → Production transfer cannot be
+performed safely by automation. Per the operation instruction (*"Если
+невозможно безопасно перенести существующее значение из Preview в Production —
+остановиться и сообщить владельцу, какое действие нужно выполнить вручную"*)
+the migration window was **not** opened.
 
 - Date: 2026-11-04 (UTC)
-- Phase reached: **PHASE 1 — PREFLIGHT** (item 6 failed)
+- Phase reached: **PHASE 1 / token transfer** — stopped before any Production write
 - Freeze enabled: **no** · Stage 8B apply: **not run** · Cutover: **not run**
 
 ---
 
-## 1. THE BLOCKER
-
-### `TELEGRAM_BOT_TOKEN` is absent from Vercel **Production**
-
-Phase 1 item 6 requires these Production secrets to be present before any
-Production write. Five of six are present; one is not:
-
-| required secret | Production | status |
-|---|---|---|
-| `SUPABASE_URL` | present | OK |
-| `SUPABASE_SECRET_KEY` | present | OK |
-| **`TELEGRAM_BOT_TOKEN`** | **absent** | **BLOCKER** |
-| `NOVA_POSHTA_API_KEY` | present | OK |
-| `DIRECTUS_URL` | present | OK |
-| `DIRECTUS_READ_TOKEN` | present | OK |
-
-The variable exists only in the **Preview (dev)** scope of the project — it was
-never added to Production. (Value not printed.)
-
-### Why this is fatal after the cutover
-
-The bot token source changes with the `NOTIFICATION_SETTINGS_STORE` flag:
-
-| flag state | notification settings | bot token source | Telegram works? |
-|---|---|---|---|
-| `directus` (Production **today**) | Directus `carzo_notification_settings` | Directus `carzo_telegram_bot_settings.bot_token` | **yes** |
-| `supabase` (Stage 9 **target**) | Supabase `notification_settings` | **`TELEGRAM_BOT_TOKEN` env only** | **no — token missing** |
-
-The Supabase path deliberately never reads a token from the database
-(`notification_settings` has **no** `bot_token` column — verified in
-`information_schema`; tokens are kept out of the DB by design). Its only source
-is the env var:
-
-```ts
-// lib/data/notifications/supabase.ts
-token: process.env.TELEGRAM_BOT_TOKEN?.trim() || '',
-
-// lib/order-notifications.ts — notifyNewOrderSupabase
-const token = process.env.TELEGRAM_BOT_TOKEN?.trim() || credentials.token; // credentials.token is '' here
-if (!token) {
-  console.error('Order notification telegram token missing on Supabase path', …);
-  return;   // ← silently skips the send
-}
-```
-
-Consequences if the cutover had proceeded:
-
-1. **Order Telegram notifications would silently stop** — the stated main goal
-   *"Telegram продолжал уведомлять о заказах"* would be violated.
-2. **PHASE 6** — the one authorized test-order Telegram notification would not
-   be delivered, so the live smoke would fail.
-3. **PHASE 7 check 8** — *"Telegram работает"* would fail.
-4. No user-visible error: the order is still created; only the notification is
-   dropped, with a server log line.
-
-This is exactly the regression the preflight exists to catch.
-
-### Why it was not compensated
-
-- The operation scope for environment changes is *"Изменить все шесть
-  Production STORE-флагов … Не менять посторонние переменные окружения"* —
-  adding `TELEGRAM_BOT_TOKEN` is outside that scope.
-- The instructions explicitly forbid compensating a missing critical secret
-  with an unauthorized replacement.
-- Setting `NOTIFICATION_SETTINGS_STORE=directus` for the cutover would
-  contradict the cutover definition and still leave the six-flag target
-  unmet.
-
-### Minimal fix (requires owner action or explicit owner authorization)
-
-1. Copy the existing `TELEGRAM_BOT_TOKEN` value from the **Preview (dev)**
-   scope into the **Production** scope of the Vercel project
-   `yevgens-projects/carzo-storefront` (dashboard → Settings → Environment
-   Variables, or `vercel env add TELEGRAM_BOT_TOKEN production`).
-2. Confirm it appears in `vercel env ls production`.
-3. Re-authorize the window — the rest of preflight is green and ready.
-
-No code change is required.
-
----
-
-## 2. PRODUCTION
+## 1. TELEGRAM_BOT_TOKEN — Production: **BLOCKED (manual action required)**
 
 | item | value |
 |---|---|
-| Git SHA (`main`) | `6ec7d61` |
-| Git SHA (`dev`) | `733b420` |
+| Variable in Preview scope | **present** (Secret type) |
+| Variable in Production scope | **absent** |
+| Local `.env.local` copy | **absent** |
+| Value printed anywhere | **no** |
+| Value written to disk / git / logs | **no** |
+
+### What was attempted
+
+| method | result |
+|---|---|
+| `vercel env pull --environment preview /dev/stdout` | **impossible** — the CLI refuses to write a Secret value: *"1 Secret value cannot be pulled from the `preview` Environment"*; `/dev/stdout` is also rejected (`EACCES`) |
+| `vercel env run -e preview -- node …` (token injected into a child process) | **impossible** — the same restriction: Secret values are not injected |
+| local `.env.local` as a source | **no copy present** |
+| Vercel REST/CLI read-back of a Secret | **not supported by design** (Secrets are write-only) |
+
+Vercel's Secret-type variables are write-only by platform design. No
+programmatic path exists to read the Preview value back. This is not a
+permissions problem and cannot be worked around by another API.
+
+### Manual action required from the owner (2 minutes)
+
+Pick **one**:
+
+**A — Vercel dashboard (simplest)**
+1. Open <https://vercel.com/yevgens-projects/carzo-storefront/settings/environment-variables>
+2. Find `TELEGRAM_BOT_TOKEN` in the **Preview** scope → **copy the value**.
+3. **Add** a new variable `TELEGRAM_BOT_TOKEN`, scope **Production**, type
+   **Secret**, and paste the value.
+4. Save. Tell me when it is done.
+
+**B — terminal**
+```bash
+cd product-page && npx vercel env add TELEGRAM_BOT_TOKEN --environment production --sensitive
+# paste the value at the prompt (it is not echoed to the shell history)
+```
+
+**C — alternative source, needs explicit owner authorization**
+The token that sends **work** notifications today lives in Directus
+(`carzo_telegram_bot_settings.bot_token`) and is therefore proven to belong to
+the correct bot and to reach the work recipients. If the owner explicitly
+authorizes that source in place of the Preview value, I can move it with the
+same no-leak method (stdin only, no files, no output) and verify the bot
+identity via `getMe` before using it. **I will not do this without that
+explicit authorization**, since the instruction named Preview as the source.
+
+### Verification that will run once the variable exists
+
+- `vercel env ls production` shows `TELEGRAM_BOT_TOKEN` (name only).
+- `getMe` against the bot → bot username/id only (no token, no chat content),
+  confirming it is a bot and identifying which one.
+- `notification_settings` recipients already verified: `channel='telegram'`,
+  `telegram_chat_ids` populated (work recipients).
+- Then the full migration window proceeds as authorized.
+
+---
+
+## 2. INCIDENT — accidental Vercel project, created and removed
+
+While testing a stdin-based transfer, one CLI invocation ran without the
+project link and **Vercel created a new empty project
+`telegram-token-move2`** (named after the helper script) and made an initial
+deployment to it.
+
+**Containment performed immediately:**
+
+| action | result |
+|---|---|
+| `vercel project rm telegram-token-move2` | **✓ Deleted** |
+| project list re-checked | only `carzo-storefront` remains |
+| helper scripts in `/tmp` | **removed** |
+| `carzo-storefront` Production env | **unchanged** (11 vars, no new ones) |
+| `carzo-storefront` Production deployment | **unchanged** — `dpl_FrgBnmhaoTdUEspRpW1NYMXxHRJx`, ● Ready |
+| data in Directus / Supabase | **untouched** |
+
+No storefront code, domain, secret, or customer/order data was involved in the
+stray project. Nothing from it can affect `carzo-storefront`.
+
+---
+
+## 3. PRODUCTION
+
+| item | value |
+|---|---|
+| Git SHA (`main`) | `6ec7d61` (unchanged) |
+| Git SHA (`dev`) | `b91589b` |
 | Vercel deployment ID | `dpl_FrgBnmhaoTdUEspRpW1NYMXxHRJx` |
 | Deployment status | ● Ready |
 | URL | `https://carzo-storefront.vercel.app` → HTTP 200 |
 | Active backend | **Directus** (all six STORE flags absent → `directus`) |
 | Maintenance status | **off** (`CHECKOUT_MAINTENANCE` absent) |
 
-Stage A code confirmed live: 7 × `href="#"` in the footer and 0 × the old
-`/delivery` / `/payment` 404 hrefs.
-
 ---
 
-## 3. PREFLIGHT — full result
+## 4. PREFLIGHT — all green except the token
 
 | # | check | result |
 |---|---|---|
-| 1 | Runbook docs read (`SUPABASE_STAGE9_RELEASE_RUNBOOK`, `SUPABASE_STAGE8B_EXECUTION_PLAN`, `SUPABASE_STAGE9_PRE_CUTOVER_READINESS`, `SUPABASE_STAGE9_STAGE_A_RESULT`) | OK |
-| 2 | Current Production deployment | `dpl_FrgBnmhaoTdUEspRpW1NYMXxHRJx`, ● Ready |
-| 3 | Stage A code present in Production | OK (footer marker) |
-| 4 | Six STORE flags → Directus | OK — all **absent** → resolve `directus` (verified against the real env shape) |
-| 5 | Directus works | OK — `GET /items/carzo_site_settings` → **200**, customer registry readable |
-| 5 | Supabase works | OK — connected; counts readable |
-| 6 | Production secrets | **FAIL** — `TELEGRAM_BOT_TOKEN` absent (see §1) |
-| 7 | Supabase RPC for orders | OK — `create_order_with_items` present with the full expected signature (30 args incl. `p_items jsonb`) |
-| 8 | `notification_settings` + Telegram recipients | OK — `channel='telegram'`, `telegram_chat_ids` populated, subject/message templates present |
-| 9 | Maintenance gate | OK — `CHECKOUT_MAINTENANCE` absent → `isCheckoutMaintenance() === false`; gate code verified at the `createOrder` / `submitCarMatQuote` boundary |
-| 10 | Fast rollback available | OK — Vercel instant redeploy of `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9`, or `git revert -m 1 6ec7d61`; Stage A is code-only, no data restore needed |
+| 1 | Runbook docs read | OK |
+| 2 | Production deployment | `dpl_FrgBnmhaoTdUEspRpW1NYMXxHRJx`, ● Ready |
+| 3 | Stage A code present | OK (footer marker) |
+| 4 | Six STORE flags → Directus | OK — all absent → `directus` |
+| 5 | Directus works | OK — GET 200, registry readable |
+| 5 | Supabase works | OK |
+| 6 | Production secrets | 5/6 present — **`TELEGRAM_BOT_TOKEN` pending owner action** |
+| 7 | Supabase RPC `create_order_with_items` | OK — full 30-arg signature present |
+| 8 | `notification_settings` + Telegram recipients | OK — `channel='telegram'`, chat_ids populated |
+| 9 | Maintenance gate | OK — `CHECKOUT_MAINTENANCE` absent → off |
+| 10 | Fast rollback | OK — instant redeploy of `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9` or `git revert -m 1 6ec7d61` |
 
-No secret values and no customer PII were printed at any point.
+No secret value and no customer PII was printed at any point.
 
 ---
 
-## 4. STAGE 8B — not run
+## 5. STAGE 8B — NOT RUN
 
 | item | value |
 |---|---|
-| Directus customers before | not read (window not opened) |
-| Supabase customers before | **5,994** |
-| Supabase orders before | **10** |
-| Supabase order_items before | **17** |
+| Supabase customers before / after | 5,994 / 5,994 |
+| Supabase orders before / after | 10 / 10 |
+| Supabase order_items before / after | 17 / 17 |
 | Customers inserted / skipped | 0 / 0 |
 | Orders inserted / skipped | 0 / 0 |
-| Order items before / after | 17 / 17 |
 | Conflicts | 0 |
-| Final verification | not applicable — no apply performed |
 
-The counters match the control values exactly (5,994 / 10 / 17) and are
-unchanged from before this session.
+Control values re-verified after the stop — exactly 5,994 / 10 / 17.
 
----
+## 6. STAGE 9 — NOT RUN
 
-## 5. STAGE 9 — not run
-
-All six STORE flags remain **unset** on Production. No redeploy was triggered
-beyond the standing Stage A deployment. No domain switched to Supabase.
+All six STORE flags remain **unset**. No domain switched to Supabase. No
+Production redeploy was triggered.
 
 ---
 
-## 6. DATA SAFETY
+## 7. DATA SAFETY
 
 | action | count |
 |---|---:|
-| T0 backup created | **0** — blocked before Phase 2 by the preflight failure |
+| T0 backup created | 0 — window not opened |
 | Stage 8B SQL executed | 0 |
 | Supabase writes | 0 |
 | Directus writes | 0 |
@@ -171,54 +166,42 @@ beyond the standing Stage A deployment. No domain switched to Supabase.
 | Customers changed | 0 |
 | Telegram sends | 0 |
 | Nova Poshta shipments | 0 |
-| Vercel env changes | 0 |
+| `carzo-storefront` env changes | 0 |
 | STORE flag changes | 0 |
 | `CHECKOUT_MAINTENANCE` toggles | 0 |
-| Production deploys | 0 |
+| `carzo-storefront` deploys | 0 |
 | `main` commits | 0 |
-
-Verified after the stop: `customers=5994, orders=10, order_items=17` —
-identical to the pre-operation control values. Production env still lists
-exactly the 11 pre-existing variables.
-
-Historical data integrity: untouched (nothing was written).
+| Stray Vercel projects created | 1 (immediately deleted, §2) |
 
 ---
 
-## 7. LIVE SMOKE
+## 8. LIVE SMOKE — not applicable
 
-Not applicable — the window was never opened. No test order was created and no
-Telegram notification was sent.
-
----
-
-## 8. ROLLBACK
-
-Not required — nothing was changed.
-
-Standing plan unchanged: Stage A is code-only, so recovery is an instant Vercel
-redeploy of `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9` or `git revert -m 1 6ec7d61`.
-Post-cutover 9A/9B policy remains in `docs/SUPABASE_STAGE9_RELEASE_RUNBOOK.md`
-§7 for when the window actually runs.
+No test order was created and no Telegram notification was sent.
 
 ---
 
-## 9. NEXT
+## 9. ROLLBACK — not required
 
-**Blocking (must be closed before the window can be re-opened):**
+Nothing on `carzo-storefront` changed. Standing plan unchanged.
 
-1. Owner: add `TELEGRAM_BOT_TOKEN` to the Vercel **Production** scope (copy the
-   existing Preview value), confirm it appears in `vercel env ls production`.
-2. Owner: re-authorize the combined Stage 8B → Stage 9 window.
+---
 
-**Everything else in preflight is green.** After the token is in place the
-window can run end-to-end: T0 export → freeze → delta rescan → historical
-import → flag switch + redeploy → read-only smoke → unfreeze → one test order
-→ post-cutover verification → Directus retention.
+## 10. NEXT
 
-**Still deferred by owner decision (not migration blockers):** `privacy-policy`
-/ `public-offer` publication, cosmetic design work, extra SEO, Supabase Pro,
-paid monitoring, optional features.
+**One owner action unblocks everything:**
 
-**Not started:** Stage 10, Directus removal, Railway teardown, legacy-code
-removal. Directus remains live and is still the active backend.
+1. Owner: put `TELEGRAM_BOT_TOKEN` into the Vercel **Production** scope
+   (dashboard or `vercel env add`, see §1). — **or** explicitly authorize the
+   Directus-sourced alternative (§1C).
+2. Then re-authorize; I will run the full sequence: T0 backup → freeze →
+   delta rescan → historical import → flag switch + redeploy → read-only smoke
+   → unfreeze → one test order + one Telegram notification → post-cutover
+   verification → Directus retention.
+
+**Still deferred by owner decision (not migration blockers):**
+`privacy-policy` / `public-offer` publication, cosmetic design, extra SEO,
+Supabase Pro, paid monitoring.
+
+**Not started:** Stage 10, Directus removal, Railway teardown. Directus remains
+live and is still the active backend.
