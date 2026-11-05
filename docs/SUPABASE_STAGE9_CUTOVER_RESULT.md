@@ -1,207 +1,221 @@
-# SUPABASE STAGE 9 — CUTOVER RESULT (attempt 2)
+# SUPABASE STAGE 9 — CUTOVER RESULT (final)
 
-**STATUS: `BLOCKED` — token could not be transferred programmatically;
-manual owner action required.**
+**STATUS: `PASS`** — Carzo Production is now running on Supabase.
 
-The blocker from attempt 1 is **not a missing token** — the token exists in the
-Vercel Preview scope. The blocker is that **Vercel does not return Secret-type
-values** through the CLI or API, so the Preview → Production transfer cannot be
-performed safely by automation. Per the operation instruction (*"Если
-невозможно безопасно перенести существующее значение из Preview в Production —
-остановиться и сообщить владельцу, какое действие нужно выполнить вручную"*)
-the migration window was **not** opened.
-
-- Date: 2026-11-04 (UTC)
-- Phase reached: **PHASE 1 / token transfer** — stopped before any Production write
-- Freeze enabled: **no** · Stage 8B apply: **not run** · Cutover: **not run**
+- Date: 2026-11-05 (UTC) · Window: 00:15:14Z → ~00:50Z (~35 min of the 90 min budget)
+- Directus → Supabase cutover complete. Directus retained, live and readable.
+- Stage 10 **not** started.
 
 ---
 
-## 1. TELEGRAM_BOT_TOKEN — Production: **BLOCKED (manual action required)**
+## PRODUCTION
 
 | item | value |
 |---|---|
-| Variable in Preview scope | **present** (Secret type) |
-| Variable in Production scope | **absent** |
-| Local `.env.local` copy | **absent** |
-| Value printed anywhere | **no** |
-| Value written to disk / git / logs | **no** |
-
-### What was attempted
-
-| method | result |
-|---|---|
-| `vercel env pull --environment preview /dev/stdout` | **impossible** — the CLI refuses to write a Secret value: *"1 Secret value cannot be pulled from the `preview` Environment"*; `/dev/stdout` is also rejected (`EACCES`) |
-| `vercel env run -e preview -- node …` (token injected into a child process) | **impossible** — the same restriction: Secret values are not injected |
-| local `.env.local` as a source | **no copy present** |
-| Vercel REST/CLI read-back of a Secret | **not supported by design** (Secrets are write-only) |
-
-Vercel's Secret-type variables are write-only by platform design. No
-programmatic path exists to read the Preview value back. This is not a
-permissions problem and cannot be worked around by another API.
-
-### Manual action required from the owner (2 minutes)
-
-Pick **one**:
-
-**A — Vercel dashboard (simplest)**
-1. Open <https://vercel.com/yevgens-projects/carzo-storefront/settings/environment-variables>
-2. Find `TELEGRAM_BOT_TOKEN` in the **Preview** scope → **copy the value**.
-3. **Add** a new variable `TELEGRAM_BOT_TOKEN`, scope **Production**, type
-   **Secret**, and paste the value.
-4. Save. Tell me when it is done.
-
-**B — terminal**
-```bash
-cd product-page && npx vercel env add TELEGRAM_BOT_TOKEN --environment production --sensitive
-# paste the value at the prompt (it is not echoed to the shell history)
-```
-
-**C — alternative source, needs explicit owner authorization**
-The token that sends **work** notifications today lives in Directus
-(`carzo_telegram_bot_settings.bot_token`) and is therefore proven to belong to
-the correct bot and to reach the work recipients. If the owner explicitly
-authorizes that source in place of the Preview value, I can move it with the
-same no-leak method (stdin only, no files, no output) and verify the bot
-identity via `getMe` before using it. **I will not do this without that
-explicit authorization**, since the instruction named Preview as the source.
-
-### Verification that will run once the variable exists
-
-- `vercel env ls production` shows `TELEGRAM_BOT_TOKEN` (name only).
-- `getMe` against the bot → bot username/id only (no token, no chat content),
-  confirming it is a bot and identifying which one.
-- `notification_settings` recipients already verified: `channel='telegram'`,
-  `telegram_chat_ids` populated (work recipients).
-- Then the full migration window proceeds as authorized.
-
----
-
-## 2. INCIDENT — accidental Vercel project, created and removed
-
-While testing a stdin-based transfer, one CLI invocation ran without the
-project link and **Vercel created a new empty project
-`telegram-token-move2`** (named after the helper script) and made an initial
-deployment to it.
-
-**Containment performed immediately:**
-
-| action | result |
-|---|---|
-| `vercel project rm telegram-token-move2` | **✓ Deleted** |
-| project list re-checked | only `carzo-storefront` remains |
-| helper scripts in `/tmp` | **removed** |
-| `carzo-storefront` Production env | **unchanged** (11 vars, no new ones) |
-| `carzo-storefront` Production deployment | **unchanged** — `dpl_FrgBnmhaoTdUEspRpW1NYMXxHRJx`, ● Ready |
-| data in Directus / Supabase | **untouched** |
-
-No storefront code, domain, secret, or customer/order data was involved in the
-stray project. Nothing from it can affect `carzo-storefront`.
-
----
-
-## 3. PRODUCTION
-
-| item | value |
-|---|---|
-| Git SHA (`main`) | `6ec7d61` (unchanged) |
-| Git SHA (`dev`) | `b91589b` |
-| Vercel deployment ID | `dpl_FrgBnmhaoTdUEspRpW1NYMXxHRJx` |
+| Git SHA (`main`) | `6ec7d61` (unchanged — no `main` commit was required) |
+| Git SHA (`dev`) | `e232328` → this report |
+| Vercel deployment ID | **`dpl_2mAHP11kBusVcdhc62Noo5eHu1Ge`** |
 | Deployment status | ● Ready |
 | URL | `https://carzo-storefront.vercel.app` → HTTP 200 |
-| Active backend | **Directus** (all six STORE flags absent → `directus`) |
-| Maintenance status | **off** (`CHECKOUT_MAINTENANCE` absent) |
+| **Active backend** | **Supabase** (all six STORE flags = `supabase`) |
+| Maintenance status | **off** (`CHECKOUT_MAINTENANCE` removed) |
 
 ---
 
-## 4. PREFLIGHT — all green except the token
+## STAGE 8B — historical import
 
-| # | check | result |
+| item | before | after | delta |
+|---|---:|---:|---:|
+| Supabase `customers` | 5,994 | **5,997** | **+3 inserted**, 3 skipped-identical |
+| Supabase `orders` | 10 | **11** | **+1 inserted**, 10 skipped-identical |
+| Supabase `order_items` | 17 | **20** | **+3 inserted** |
+| Conflicts | 0 | 0 | — |
+| Directus customers (registry) | 6 | 6 | unchanged |
+| Directus orders | 11 | 11 | unchanged |
+| Directus order_items | 20 | 20 | unchanged |
+
+Imported order: **`CZ-20261013-BD3D52`** (the order the owner classified as real
+and ordered preserved) — original UUID `8cb62897-aea6-44bd-a88d-ecd2258883fc`,
+original `created_at` `2026-10-13T19:43:37.705Z`, `checkout_attempt_id = NULL`,
+`request_fingerprint = NULL`, money preserved byte-for-byte:
+
+| field | value |
+|---|---:|
+| items_quantity | 4 |
+| subtotal | 10,518 |
+| quantity_discount | 500 |
+| total | **10,018** |
+| items line_total sum | 10,518 (= subtotal ✓) |
+| items quantity sum | 4 (= items_quantity ✓) |
+
+3 items: `M:4-0:kia:both` 2×2619=5238 · `L:4-0:none:wall` 1×2590 · `L:4-0:none:both` 1×2690.
+No price was recalculated; no order number was generated; no notification was
+sent by the import.
+
+### Imported customers (3 new)
+
+`+380661031094`, `+380666251561`, `+380924240243` — normalized, no duplicates,
+`ON CONFLICT (phone) DO NOTHING`, existing 5,994 rows untouched. Two of the
+three carry test-style names (`Тестовий клієнт`, `Тест`); they are genuine
+registry rows and were transferred as-is (no `--test-phone` denylist was
+configured by the owner).
+
+### Final verification
+
+`--verify` → **PASS**:
+
+| check | result |
+|---|---|
+| counts | 5,997 / 12 / 21 |
+| order classification | **11 historical + 1 live** (after the control order) |
+| duplicate order_number / phone / item_key / checkout_attempt_id | 0 / 0 / 0 / 0 |
+| orphan items | 0 |
+| bad customer links | 0 |
+| order consistency violations | 0 |
+| item arithmetic violations | 0 |
+
+**Idempotency proven:** a post-apply `--dry-run` reports
+`to_insert=0, skipped_identical=6/11, stopped=0` — a replay changes nothing.
+
+---
+
+## STAGE 9 — cutover
+
+All six STORE flags set to `supabase` on Vercel Production, then redeployed:
+
+| flag | value |
+|---|---|
+| `CATALOG_STORE` | `supabase` |
+| `CONTENT_STORE` | `supabase` |
+| `PAGE_STORE` | `supabase` |
+| `ORDER_STORE` | `supabase` |
+| `CUSTOMER_STORE` | `supabase` |
+| `NOTIFICATION_SETTINGS_STORE` | `supabase` |
+
+| domain | verified | evidence |
 |---|---|---|
-| 1 | Runbook docs read | OK |
-| 2 | Production deployment | `dpl_FrgBnmhaoTdUEspRpW1NYMXxHRJx`, ● Ready |
-| 3 | Stage A code present | OK (footer marker) |
-| 4 | Six STORE flags → Directus | OK — all absent → `directus` |
-| 5 | Directus works | OK — GET 200, registry readable |
-| 5 | Supabase works | OK |
-| 6 | Production secrets | 5/6 present — **`TELEGRAM_BOT_TOKEN` pending owner action** |
-| 7 | Supabase RPC `create_order_with_items` | OK — full 30-arg signature present |
-| 8 | `notification_settings` + Telegram recipients | OK — `channel='telegram'`, chat_ids populated |
-| 9 | Maintenance gate | OK — `CHECKOUT_MAINTENANCE` absent → off |
-| 10 | Fast rollback | OK — instant redeploy of `dpl_Br5LtGjBeKtiKUeAiexjyUXE7rQ9` or `git revert -m 1 6ec7d61` |
+| Catalog | **Supabase** | prices S/M/L/XL = 1790/2249/2590/2990 exactly as T0; logo +290; 2 items −200 |
+| Content | **Supabase** | homepage hero/products/stats render |
+| CMS | **Supabase** | `/about` 200, sitemap/robots/llms.txt 200 |
+| Checkout | **Supabase** | control order created via `create_order_with_items` RPC |
+| Loyalty | **Supabase** | imported customer `+380666251561` → `{eligible:true, discount_percent:5}` |
+| Telegram | **works** | control-order notification delivered to both recipients |
+| Nova Poshta | **works** | city search returns Київ / Київець |
+| Cloudflare R2 | **works** | `case.webp`, `logo-video.mp4` → 200, independent of Directus |
 
-No secret value and no customer PII was printed at any point.
+No ordinary user scenario requires Directus. The Directus adapters,
+`*/directus.ts` and `/api/directus-assets/[id]` remain in the codebase as the
+rollback path and are inert while the flags read `supabase`.
 
 ---
 
-## 5. STAGE 8B — NOT RUN
+## DATA SAFETY
 
 | item | value |
 |---|---|
-| Supabase customers before / after | 5,994 / 5,994 |
-| Supabase orders before / after | 10 / 10 |
-| Supabase order_items before / after | 17 / 17 |
-| Customers inserted / skipped | 0 / 0 |
-| Orders inserted / skipped | 0 / 0 |
-| Conflicts | 0 |
+| **T0 backup location** | `~/.carzo-t0-backup/` (mode `700`, files `600`, **outside the repo**, not in Git) |
+| T0 timestamp | `2026-11-05T00:13:47.919Z` |
+| **T0 set SHA-256** | `2c615c481d950cd18e6a4e0500cae4947a3553195405020503a9fed8f1289c21` |
+| T0 artifacts | 8 files, each SHA-256'd, **all round-trip verified** |
+| T0 contents | Directus registry + customers collection + orders + order_items; Supabase customers + orders + order_items; manifest |
+| T0 counts recorded | Directus 6/0/11/20 · Supabase 5,994/10/17 |
+| T0 retention | available for the window and ≥7 days after |
+| Stage 8B SQL | generated by `scripts/stage8b-historical-import`, reviewed statement-by-statement (3 INSERTs, 0 DELETE/UPDATE/DROP, single `BEGIN…COMMIT`), executed via the trusted admin channel |
+| Historical data integrity | verified — pre-existing rows untouched, hashes/money preserved |
+| Directus new writes after freeze | **0** — order count stayed 11 throughout the window |
+| Duplicate orders | **0** |
+| Customer conflicts | **0** |
 
-Control values re-verified after the stop — exactly 5,994 / 10 / 17.
-
-## 6. STAGE 9 — NOT RUN
-
-All six STORE flags remain **unset**. No domain switched to Supabase. No
-Production redeploy was triggered.
+Secrets and customer PII were never printed to chat, never written to Git or
+public artifacts.
 
 ---
 
-## 7. DATA SAFETY
+## LIVE SMOKE — control order
+
+| item | value |
+|---|---|
+| **Test order number** | **`CZ-20261105-5F385D`** |
+| Order id | `aef103c7-32c9-49b2-8534-3bbf0ca65807` |
+| Supabase persistence | **yes** — `public.orders` + `public.order_items` rows created |
+| `checkout_attempt_id` | **filled** (non-null) |
+| `request_fingerprint` | **filled** — `stage9-control-fingerprint-20261105` |
+| Amounts | subtotal 2,249 · quantity_discount 0 · total **2,249** ✓ |
+| Item | `M:2-0:none:none`, 1×2249=2249 ✓ |
+| Status | `new` |
+| Delivery | Одеса, відділення №2 |
+| **Directus order count during smoke** | **11 — unchanged**; the test order is absent from Directus ✓ |
+| **Telegram delivery** | **DELIVERED** to both authorized recipients (`366325088`, `327894183`) |
+| Message | rendered from the live `notification_settings` template, subject `Нове замовлення CZ-20261105-5F385D` |
+| Nova Poshta shipment | **not created** (as required) |
+| Order deletion | **not done** — order is kept and recorded here |
+
+### Honest note on how the control order and notification were executed
+
+The in-app browser in this session has no rendering layer (`screenshot` →
+*empty compositor frame*, clicks are *not actionable*), so the checkout UI could
+not be operated. The Next.js server action (`createOrder`) could not be invoked
+over HTTP either — the request is not recognised as an action call.
+
+Therefore:
+
+- the order was created through the **same Supabase RPC the Production checkout
+  uses** (`create_order_with_items`) with a real `checkout_attempt_id` and
+  `request_fingerprint`, so the persistence path, the idempotency key, the
+  fingerprint binding and the arithmetic validation are all exercised;
+- the Telegram notification was sent **by the migration operator**, using the
+  work bot token and the exact `notification_settings` subject/message
+  templates and the same two authorized recipients, because the app's
+  automatic `notifyNewOrderSupabase` trigger sits behind that same
+  unreachable server action.
+
+What this does **not** prove: the wiring from the checkout form → server action
+→ RPC → automatic notification. That link is unchanged code that is covered by
+the 257-test suite and is the same code that shipped in Stage A, but it was not
+exercised end-to-end in a real browser during this window. **Recommendation:**
+have someone place one real order through the storefront UI within the next
+24–72 h and confirm the notification arrives automatically.
+
+---
+
+## ROLLBACK
+
+**Not required** — no critical regression appeared.
+
+| state | policy |
+|---|---|
+| After the first real Supabase order | **9B applies.** A naive `*_STORE → directus` flag flip is **forbidden**. Preferred: forward-fix on Supabase. Alternative: full reconciliation of the Supabase-only order into Directus plus a fresh owner gate. |
+| Recovery options remaining | Directus is live with the full pre-cutover dataset; T0 backup at `~/.carzo-t0-backup/` with SHA-256; the Directus adapters and `create_order_with_items` rollback path are in the codebase |
+
+---
+
+## NEXT
+
+- **Stage 10 NOT started.** Directus, Railway and legacy code are retained.
+- **Directus retained** and readable (11 orders, historical dataset intact).
+- **Legal pages deferred** by owner decision — `privacy-policy` / `public-offer`
+  remain unpublished drafts; footer links 404. Still an open item, not a
+  migration blocker.
+- **Supabase Pro decision deferred** (owner accepted Free-plan risks for launch).
+- **Monitoring decision deferred** — no paid monitoring, no separate monitoring
+  project. Manual 24–72 h watch recommended: checkout success, Telegram
+  delivery, zero Directus host requests in Vercel logs.
+- Recommend one real UI order during burn-in (see the note above).
+
+---
+
+## Appendix — safety ledger for this window
 
 | action | count |
 |---|---:|
-| T0 backup created | 0 — window not opened |
-| Stage 8B SQL executed | 0 |
-| Supabase writes | 0 |
-| Directus writes | 0 |
-| Orders created | 0 |
-| Customers changed | 0 |
-| Telegram sends | 0 |
+| T0 backups created | 1 (verified, SHA-256 recorded) |
+| Stage 8B rows inserted | 3 customers + 1 order + 3 items |
+| Rows overwritten / deleted | **0** |
+| Supabase RPC calls (control order) | 1 |
+| Telegram messages sent | 1 (delivered to 2 authorized recipients) |
 | Nova Poshta shipments | 0 |
-| `carzo-storefront` env changes | 0 |
-| STORE flag changes | 0 |
-| `CHECKOUT_MAINTENANCE` toggles | 0 |
-| `carzo-storefront` deploys | 0 |
+| Vercel env changes | 1 add (`TELEGRAM_BOT_TOKEN`, by owner) + 1 add (`CHECKOUT_MAINTENANCE`) + 6 flag adds + 1 flag removal |
+| Production redeployments | 3 (freeze, cutover, unfreeze) |
 | `main` commits | 0 |
-| Stray Vercel projects created | 1 (immediately deleted, §2) |
-
----
-
-## 8. LIVE SMOKE — not applicable
-
-No test order was created and no Telegram notification was sent.
-
----
-
-## 9. ROLLBACK — not required
-
-Nothing on `carzo-storefront` changed. Standing plan unchanged.
-
----
-
-## 10. NEXT
-
-**One owner action unblocks everything:**
-
-1. Owner: put `TELEGRAM_BOT_TOKEN` into the Vercel **Production** scope
-   (dashboard or `vercel env add`, see §1). — **or** explicitly authorize the
-   Directus-sourced alternative (§1C).
-2. Then re-authorize; I will run the full sequence: T0 backup → freeze →
-   delta rescan → historical import → flag switch + redeploy → read-only smoke
-   → unfreeze → one test order + one Telegram notification → post-cutover
-   verification → Directus retention.
-
-**Still deferred by owner decision (not migration blockers):**
-`privacy-policy` / `public-offer` publication, cosmetic design, extra SEO,
-Supabase Pro, paid monitoring.
-
-**Not started:** Stage 10, Directus removal, Railway teardown. Directus remains
-live and is still the active backend.
+| Directus writes | 0 |
+| Stage 10 steps | 0 |
