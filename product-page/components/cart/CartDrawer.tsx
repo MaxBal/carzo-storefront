@@ -10,6 +10,7 @@ import { calculateLoyaltyDiscount, checkLoyaltyDiscount } from '@/lib/cart/loyal
 import { buildFullPhone } from '@/lib/cart/phone';
 import { normalizeCustomerPhone } from '@/lib/cart/customer-phone';
 import type { CheckoutDelivery, CheckoutResult } from '@/lib/cart/types';
+import { checkPostomatPackage } from '@/lib/cart/shipping';
 import NovaPoshtaSelector from './NovaPoshtaSelector';
 import NovaPoshtaTrustRow from './NovaPoshtaTrustRow';
 import { useCart } from './cart-context';
@@ -167,6 +168,12 @@ export default function CartDrawer() {
       setSubmitError('Заповніть контактні дані та адресу доставки.');
       return;
     }
+    const shippingPackage = cart.quote.shippingPackage;
+    if (delivery.method === 'POSTOMAT' && shippingPackage
+      && checkPostomatPackage(shippingPackage).status !== 'fits') {
+      setSubmitError('Для цього замовлення недоступна доставка у поштомати. Оберіть інший спосіб або місце доставки.');
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
     const loyaltyPhoneDigits = loyaltyPhone.replace(/\D/g, '');
@@ -259,7 +266,7 @@ export default function CartDrawer() {
                     <h3 className="form-section-label">Адреса доставки</h3>
                     <div className="mt-3">
                       <NovaPoshtaSelector
-                        allowPostomat={Boolean(cart.quote?.allowPostomat)}
+                        shippingPackage={cart.quote?.shippingPackage ?? null}
                         value={delivery}
                         showErrors={submitAttempted}
                         onChange={setDelivery}

@@ -6,6 +6,7 @@ import type {
   NovaPoshtaPoint,
   NovaPoshtaStreet,
 } from './cart/types';
+import type { WarehouseLimits } from './cart/shipping';
 
 const ENDPOINT = 'https://api.novaposhta.ua/v2.0/json/';
 const POINT_RESULT_LIMIT = 20;
@@ -50,6 +51,35 @@ function text(record: NovaRecord, field: string) {
   return typeof value === 'string' ? value : '';
 }
 
+/** NP returns numeric fields as strings with a comma decimal separator. */
+function metricValue(value: unknown) {
+  if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? value : null;
+  if (typeof value !== 'string') return null;
+  const parsed = Number(value.replace(',', '.').trim());
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+/**
+ * Documented getWarehouses limitation fields:
+ * TotalMaxWeightAllowed, PlaceMaxWeightAllowed, SendingLimitationsOnDimensions,
+ * DenyToSelect. Absent or non-positive values stay null — never a zero limit.
+ */
+function warehouseLimits(record: NovaRecord): WarehouseLimits {
+  const dimensions = record.SendingLimitationsOnDimensions;
+  const dims = (dimensions && typeof dimensions === 'object' ? dimensions : null) as NovaRecord | null;
+  const lengthCm = dims ? metricValue(dims.Length) : null;
+  const widthCm = dims ? metricValue(dims.Width) : null;
+  const heightCm = dims ? metricValue(dims.Height) : null;
+  return {
+    totalMaxWeightKg: metricValue(record.TotalMaxWeightAllowed),
+    placeMaxWeightKg: metricValue(record.PlaceMaxWeightAllowed),
+    sendingMaxDimensionsCm: lengthCm && widthCm && heightCm
+      ? { lengthCm, widthCm, heightCm }
+      : null,
+    denyToSelect: text(record, 'DenyToSelect') === '1',
+  };
+}
+
 function pointType(record: NovaRecord): NovaPoshtaPoint['type'] | null {
   const category = text(record, 'CategoryOfWarehouse');
   if (category === 'Branch') return 'branch';
@@ -66,6 +96,7 @@ function toPoint(record: NovaRecord): NovaPoshtaPoint | null {
     name: text(record, 'Description'),
     address: text(record, 'ShortAddress') || text(record, 'Description'),
     type,
+    limits: warehouseLimits(record),
   };
 }
 

@@ -15,6 +15,7 @@ function makeQuote(overrides: Partial<CartQuote> = {}): CartQuote {
     total: 2249,
     itemsQuantity: 1,
     appliedTier: null,
+    shippingPackage: null,
     allowPostomat: true,
     canCheckout: true,
     checkoutPaymentDetails: '',

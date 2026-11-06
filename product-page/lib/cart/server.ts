@@ -4,9 +4,7 @@ import { calculateCartTotals } from './pricing';
 import type { CartInputItem, CartQuote, CartQuoteLine } from './types';
 import type { DiscountTier, FixationInfo, SizeId } from '@/lib/content/types';
 import { loadCatalogData, CatalogUnavailableError } from '@/lib/data/catalog';
-
-const POSTOMAT_MAX_WEIGHT_KG = 20;
-const POSTOMAT_MAX_DIMENSIONS_CM = [30, 40, 60] as const;
+import { calculateOrderPackage, checkPostomatPackage } from './shipping';
 
 export class CartQuoteError extends Error {
   constructor(message: string, public readonly code: 'INVALID' | 'UNAVAILABLE' = 'INVALID') {
@@ -32,16 +30,6 @@ function fixationExtraForSize(fixation: FixationInfo, size: string) {
     if (value !== undefined && value !== null) return number(value);
   }
   return number(fixation.extra);
-}
-
-function fitsPostomatDimensions(values: unknown[]) {
-  const dimensions = values.map(Number).sort((left, right) => left - right);
-  return dimensions.length === POSTOMAT_MAX_DIMENSIONS_CM.length
-    && dimensions.every((dimension, index) => (
-      Number.isFinite(dimension)
-      && dimension > 0
-      && dimension <= POSTOMAT_MAX_DIMENSIONS_CM[index]
-    ));
 }
 
 function itemKey(item: Omit<CartInputItem, 'quantity'>) {
@@ -135,15 +123,14 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     quantity: line.quantity,
     quantityDiscountEligible: line.quantityDiscountEligible,
   })), tiers);
-  const onlyLine = lines.length === 1 ? lines[0] : null;
-  const size = onlyLine ? sizeByCode.get(onlyLine.item.size as SizeId) : null;
-  const postomatDimensions = size
-    ? [size.shippingProfile?.lengthCm ?? size.widthCm, size.shippingProfile?.widthCm ?? size.heightCm, size.shippingProfile?.heightCm ?? size.depthCm]
-    : [];
-  const shippingWeight = size?.shippingProfile?.weightKg;
-  const postomatWeightAllowed = !size?.shippingProfile
-    || (Number(shippingWeight) > 0 && Number(shippingWeight) <= POSTOMAT_MAX_WEIGHT_KG);
-  const postomatParcelAllowed = fitsPostomatDimensions(postomatDimensions) && postomatWeightAllowed;
+  const shippingPackage = calculateOrderPackage(lines.map(line => ({
+    size: line.item.size,
+    quantity: line.quantity,
+    shippingProfile: sizeByCode.get(line.item.size as SizeId)?.shippingProfile ?? null,
+  })));
+  const postomatAllowed = shippingPackage
+    ? checkPostomatPackage(shippingPackage).status === 'fits'
+    : false;
 
   return {
     lines,
@@ -154,11 +141,8 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     appliedTier: totals.appliedTier
       ? { key: totals.appliedTier.key, minQuantity: totals.appliedTier.minQuantity, amount: totals.appliedTier.amount }
       : null,
-    allowPostomat: Boolean(
-      onlyLine
-      && onlyLine.quantity === 1
-      && postomatParcelAllowed,
-    ),
+    shippingPackage,
+    allowPostomat: postomatAllowed,
     canCheckout: lines.every(line => line.inStock),
     checkoutPaymentDetails: text(catalog.checkoutPaymentDetails).trim(),
     verifiedAt: new Date().toISOString(),
