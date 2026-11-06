@@ -27,7 +27,8 @@ export interface KeyCrmProductLine {
 
 export interface KeyCrmCustomField {
   uuid: string;
-  value: string[];
+  /** select fields take an array of option strings; number fields take a number. */
+  value: string[] | number;
 }
 
 export interface KeyCrmOrderPayload {
@@ -64,6 +65,8 @@ export interface KeyCrmOrderInput {
   customerPhone: string;
   customerEmail?: string | null;
   customerComment?: string | null;
+  /** Real manager note, if any. Never auto-generated discount text. */
+  managerNote?: string | null;
   contactMethod: string;
   deliveryMethod: 'BRANCH' | 'POSTOMAT' | 'COURIER';
   deliveryCityName?: string | null;
