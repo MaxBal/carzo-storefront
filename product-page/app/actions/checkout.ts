@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { checkoutSchema } from '@/lib/cart/validation';
 import { CHECKOUT_MAINTENANCE_MESSAGE, isCheckoutMaintenance } from '@/lib/checkout-maintenance';
 import { CartQuoteError, quoteCartItems } from '@/lib/cart/server';
+import { checkPostomatPackage, checkWarehousePackage } from '@/lib/cart/shipping';
 import {
   resolveNovaPoshtaCity,
   resolveNovaPoshtaPoint,
@@ -300,10 +301,29 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
       onReady: async (pricing) => {
         const authoritativeTotal = pricing.total;
 
-        if (parsed.data.delivery.method === 'POSTOMAT' && !quote.allowPostomat) {
-          return { ok: false, code: 'INVALID', message: 'Для цього кошика оберіть відділення замість поштомата.' };
-        }
         const delivery = await resolveDelivery(parsed.data.delivery);
+        // Same package rules as the checkout UI — block a delivery the parcel
+        // demonstrably cannot use; unknown API limits never block a sale.
+        if (delivery.method === 'POSTOMAT' && quote.shippingPackage) {
+          const check = checkPostomatPackage(quote.shippingPackage, delivery.point.limits ?? null);
+          if (check.status === 'exceeds') {
+            return {
+              ok: false,
+              code: 'UNAVAILABLE',
+              message: 'Для цього замовлення недоступна доставка у поштомати. Оберіть інший спосіб або місце доставки.',
+            };
+          }
+        }
+        if (delivery.method === 'BRANCH' && quote.shippingPackage) {
+          const check = checkWarehousePackage(quote.shippingPackage, delivery.point.limits ?? null);
+          if (check.status === 'exceeds') {
+            return {
+              ok: false,
+              code: 'UNAVAILABLE',
+              message: 'Для цього замовлення недоступна доставка у дане відділення. Оберіть інше відділення або інший спосіб доставки.',
+            };
+          }
+        }
         const destination = deliveryDestination(delivery);
 
         const snapshot = buildOrderSnapshot({

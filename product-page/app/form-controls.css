@@ -51,6 +51,13 @@
   opacity: 1;
 }
 
+/* Input with a leading icon (search): the shorthand padding above wins over
+   Tailwind pl-/pr- utilities at equal specificity, so reserve icon space here. */
+.form-field-input.form-field-input--search {
+  padding-left: 40px;
+  padding-right: 40px;
+}
+
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus,

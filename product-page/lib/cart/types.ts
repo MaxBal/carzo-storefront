@@ -1,5 +1,6 @@
 import type { ProductParams } from '@/lib/content/types';
 import type { ContactMethod } from './contact-method';
+import type { OrderPackage, WarehouseLimits } from './shipping';
 
 export interface CartInputItem extends ProductParams {
   fixation: string;
@@ -33,6 +34,8 @@ export interface CartQuote {
   total: number;
   itemsQuantity: number;
   appliedTier: { key: string; minQuantity: number; amount: number } | null;
+  /** Transport package for the whole order (single shared box). */
+  shippingPackage: OrderPackage | null;
   allowPostomat: boolean;
   canCheckout: boolean;
   checkoutPaymentDetails: string;
@@ -56,6 +59,8 @@ export interface NovaPoshtaPoint {
   name: string;
   address: string;
   type: 'branch' | 'postomat';
+  /** Documented API limitation fields; null values mean "not provided". */
+  limits?: WarehouseLimits;
 }
 
 export interface NovaPoshtaStreet {

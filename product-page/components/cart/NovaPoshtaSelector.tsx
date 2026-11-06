@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
-import { Check, ChevronDown, Loader2, Search } from 'lucide-react';
+import { Check, ChevronDown, CheckCircle2, Loader2, Search, XCircle } from 'lucide-react';
 import type {
   CheckoutDelivery,
   DeliveryMethod,
@@ -9,9 +9,16 @@ import type {
   NovaPoshtaPoint,
   NovaPoshtaStreet,
 } from '@/lib/cart/types';
+import {
+  checkPostomatPackage,
+  checkWarehousePackage,
+  packageLineParts,
+  type OrderPackage,
+  type PackageField,
+} from '@/lib/cart/shipping';
 
 interface NovaPoshtaSelectorProps {
-  allowPostomat: boolean;
+  shippingPackage: OrderPackage | null;
   value: CheckoutDelivery;
   showErrors: boolean;
   onChange: (delivery: CheckoutDelivery) => void;
@@ -59,7 +66,7 @@ function useActiveOptionVisibility(listboxId: string, optionId: string | null) {
 }
 
 export default function NovaPoshtaSelector({
-  allowPostomat,
+  shippingPackage,
   value,
   showErrors,
   onChange,
@@ -233,17 +240,7 @@ export default function NovaPoshtaSelector({
     };
   }, [streetQuery, value]);
 
-  useEffect(() => {
-    if (value.method === 'POSTOMAT' && !allowPostomat) {
-      setSelectedPoint(null);
-      setPointOpen(false);
-      setPointQuery('');
-      onChange(deliveryForMethod('BRANCH', value.cityRef));
-    }
-  }, [allowPostomat, onChange, value]);
-
   const changeMethod = (method: DeliveryMethod) => {
-    if (method === 'POSTOMAT' && !allowPostomat) return;
     setSelectedPoint(null);
     setPointOpen(false);
     setPointQuery('');
@@ -313,6 +310,51 @@ export default function NovaPoshtaSelector({
     ? 'Введіть номер або адресу поштомату'
     : 'Введіть номер або адресу відділення';
 
+  const pkg = shippingPackage;
+  let exceededFields: PackageField[] = [];
+  let status: { tone: string; text: string; positive: boolean } | null = null;
+  if (pkg && value.method === 'POSTOMAT') {
+    const basicCheck = checkPostomatPackage(pkg);
+    const check = selectedPoint ? checkPostomatPackage(pkg, selectedPoint.limits ?? null) : basicCheck;
+    if (check.status === 'exceeds') exceededFields = check.exceeded;
+    if (basicCheck.status === 'exceeds' || check.status === 'exceeds') {
+      status = {
+        tone: 'text-red-600',
+        positive: false,
+        text: 'Для цього замовлення недоступна доставка у поштомати.',
+      };
+    } else if (selectedPoint) {
+      status = {
+        tone: 'text-[#159e85]',
+        positive: true,
+        text: 'Для цього замовлення доступна доставка у даний поштомат.',
+      };
+    }
+  } else if (pkg && value.method === 'BRANCH' && selectedPoint) {
+    const check = checkWarehousePackage(pkg, selectedPoint.limits ?? null);
+    if (check.status === 'exceeds') {
+      exceededFields = check.exceeded;
+      status = {
+        tone: 'text-red-600',
+        positive: false,
+        text: 'Для цього замовлення недоступна доставка у дане відділення. Оберіть інше.',
+      };
+    } else if (check.status === 'fits') {
+      status = {
+        tone: 'text-[#159e85]',
+        positive: true,
+        text: 'Для цього замовлення доступна доставка у дане відділення.',
+      };
+    }
+  } else if (value.method === 'COURIER'
+    && value.cityRef && value.streetRef && value.streetName.trim() && value.house.trim()) {
+    status = {
+      tone: 'text-[#159e85]',
+      positive: true,
+      text: 'Для цього замовлення доступна доставка кур\'єром.',
+    };
+  }
+
   return (
     <div className="space-y-4">
       <fieldset>
@@ -320,22 +362,19 @@ export default function NovaPoshtaSelector({
         <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Спосіб доставки">
           {DELIVERY_METHODS.map(method => {
             const selected = value.method === method.value;
-            const disabled = method.value === 'POSTOMAT' && !allowPostomat;
             return (
               <button
                 key={method.value}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                disabled={disabled}
                 tabIndex={selected ? 0 : -1}
                 data-delivery-method={method.value}
-                title={disabled ? 'Для цього замовлення поштомат недоступний' : undefined}
                 onClick={() => changeMethod(method.value)}
                 onKeyDown={event => {
                   if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
                   event.preventDefault();
-                  const available = DELIVERY_METHODS.filter(option => option.value !== 'POSTOMAT' || allowPostomat);
+                  const available = DELIVERY_METHODS;
                   const currentIndex = available.findIndex(option => option.value === value.method);
                   const nextIndex = event.key === 'Home'
                     ? 0
@@ -358,8 +397,22 @@ export default function NovaPoshtaSelector({
             );
           })}
         </div>
-        {!allowPostomat && (
-          <p className="mt-2 text-xs leading-5 text-gray-500">Для цього замовлення доступна доставка у відповідне відділення або курʼєром.</p>
+        {pkg && (
+          <p className="mt-3 text-xs leading-5 text-gray-500">
+            {packageLineParts(pkg, exceededFields).map((part, index) => (
+              part.field
+                ? <span key={index} className="text-red-600">{part.text}</span>
+                : <span key={index}>{part.text}</span>
+            ))}
+          </p>
+        )}
+        {status && (
+          <p className={`mt-2 flex items-start gap-1.5 text-xs font-medium leading-5 ${status.tone}`}>
+            {status.positive
+              ? <CheckCircle2 aria-hidden="true" className="mt-px shrink-0" size={16} />
+              : <XCircle aria-hidden="true" className="mt-px shrink-0" size={16} />}
+            <span>{status.text}</span>
+          </p>
         )}
       </fieldset>
 
@@ -496,7 +549,7 @@ export default function NovaPoshtaSelector({
                   aria-expanded={true}
                   aria-controls={`${id}-point-listbox`}
                   aria-activedescendant={pointActiveIndex >= 0 ? `${id}-point-option-${pointActiveIndex}` : undefined}
-                  className="form-field-input pl-10 pr-10"
+                  className="form-field-input form-field-input--search"
                 />
                 {pointLoading && <Loader2 aria-label="Завантаження точок доставки" className="absolute right-3 top-3.5 animate-spin text-gray-400" size={17} />}
               </div>
