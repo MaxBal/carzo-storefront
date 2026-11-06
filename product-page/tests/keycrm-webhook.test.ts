@@ -216,6 +216,31 @@ describe('keyCRM completed-order webhook (loyalty statuses)', () => {
     assert.equal(spy.upserted[0].phone, '+380661112233');
   });
 
+  it('parses the real GET /order/{id}?include=buyer shape (extra buyer fields)', async () => {
+    // Shape verified against the live API on 2026-11-06 (order 1454): buyer is a
+    // full object with id/email/note/orders_count/... — only phone/full_name matter.
+    const spy = deps({
+      getOrder: async (orderId) => ({
+        id: orderId,
+        status_id: 21,
+        buyer: {
+          id: 1277,
+          phone: '+380931234567',
+          full_name: 'Приклад',
+          email: null,
+          note: null,
+          orders_count: 3,
+          orders_sum: 9000,
+          discount: 0,
+          has_duplicates: false,
+        },
+      }),
+    });
+    const result = await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: 21 }), 'wh-secret', spy);
+    assert.deepEqual(result, { status: 200, body: { ok: true } });
+    assert.equal(spy.upserted[0].phone, '+380931234567');
+  });
+
   it('returns 500 so keyCRM retries when upsert fails', async () => {
     const spy = deps({
       upsertCustomer: async () => {
