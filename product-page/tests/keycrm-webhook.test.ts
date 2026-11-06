@@ -251,4 +251,16 @@ describe('keyCRM completed-order webhook (loyalty statuses)', () => {
     assert.equal(result.status, 500);
     assert.equal(result.body.error, 'upsert_failed');
   });
+
+  it('does not add a customer when the keyCRM order fetch fails', async () => {
+    const spy = deps({
+      getOrder: async () => {
+        throw new Error('keycrm down');
+      },
+    });
+    const result = await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: 21 }), 'wh-secret', spy);
+    assert.equal(result.status, 500);
+    assert.equal(result.body.error, 'order_fetch_failed');
+    assert.equal(spy.upserted.length, 0);
+  });
 });
