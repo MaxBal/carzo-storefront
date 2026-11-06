@@ -14,10 +14,10 @@ import { contactMethodLabel } from '@/lib/cart/contact-method';
 import {
   findCustomerByPhone,
   normalizeCustomerPhone,
-  upsertCustomerByPhone,
 } from '@/lib/cart/customers';
 import { withCheckoutPricing } from '@/lib/cart/checkout-pricing';
 import { runPostOrderSideEffectsOnCreate, safeErrorDetail } from '@/lib/cart/checkout-reliability';
+import { syncKeyCrmOrder } from '@/lib/keycrm/sync';
 import { computeRequestFingerprint, isCheckoutAttemptId, isFingerprintBound } from '@/lib/cart/checkout-attempt';
 import { resolveOrderStoreBackend } from '@/lib/data/config';
 import {
@@ -318,8 +318,8 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         const result = await createOrderRecord(snapshot);
 
         // Order write succeeded — that is the success boundary.
-        // Notify + customer upsert are best-effort and must not flip this to FAILED.
-        // Replays never re-send notifications or re-upsert customers.
+        // Notify + keyCRM sync are best-effort and must not flip this to FAILED.
+        // Replays never re-send notifications or re-sync orders.
         await runPostOrderSideEffectsOnCreate(result.created, {
           notify: async () => {
             await notifyNewOrder({
@@ -345,12 +345,42 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
               })),
             });
           },
-          upsertCustomer: async () => {
-            await upsertCustomerByPhone({
-              phone,
-              fullName: parsed.data.customerName.trim(),
-              source: 'site',
-              imported: false,
+          pushToKeyCrm: async () => {
+            // No-op unless KEYCRM_SYNC_ENABLED and the config is complete.
+            await syncKeyCrmOrder({
+              orderNumber: result.orderNumber,
+              customerName: snapshot.customerName,
+              customerPhone: snapshot.customerPhone,
+              customerComment: snapshot.customerComment,
+              contactMethod: snapshot.contactMethod,
+              deliveryMethod: snapshot.deliveryMethod,
+              deliveryCityName: snapshot.deliveryCityName,
+              deliveryPointRef: snapshot.deliveryPointRef,
+              deliveryPointNumber: snapshot.deliveryPointNumber,
+              deliveryPointName: snapshot.deliveryPointName,
+              deliveryPointAddress: snapshot.deliveryPointAddress,
+              deliveryStreetName: snapshot.deliveryStreetName,
+              deliveryStreetType: snapshot.deliveryStreetType,
+              deliveryHouse: snapshot.deliveryHouse,
+              deliveryApartment: snapshot.deliveryApartment,
+              subtotal: snapshot.subtotal,
+              quantityDiscount: snapshot.quantityDiscount,
+              discountTierKey: snapshot.discountTierKey,
+              loyaltyDiscountAmount: snapshot.loyalty.discountAmount,
+              total: snapshot.total,
+              lines: quote.lines.map(line => ({
+                sizeCode: line.item.size,
+                designSlug: line.item.designSlug,
+                brandSlug: line.item.brandId,
+                brandName: line.brandName,
+                fixationKey: line.item.fixation,
+                fixationLabel: line.fixationLabel,
+                quantity: line.quantity,
+                unitPrice: line.unitPrice,
+                basePrice: line.basePrice,
+                logoExtra: line.logoExtra,
+                fixationExtra: line.fixationExtra,
+              })),
             });
           },
           logError: (message, detail) => {
