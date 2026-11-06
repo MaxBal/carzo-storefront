@@ -9,7 +9,10 @@
 
 export interface PostOrderSideEffectsInput {
   notify: () => Promise<void>;
-  upsertCustomer: () => Promise<void>;
+  /** Legacy hook kept for compatibility; live checkout no longer registers customers on submit. */
+  upsertCustomer?: () => Promise<void>;
+  /** Best-effort keyCRM push (no-op unless KEYCRM_SYNC_ENABLED). */
+  pushToKeyCrm?: () => Promise<void>;
   logError: (message: string, detail: string) => void;
 }
 
@@ -36,13 +39,26 @@ export async function runPostOrderSideEffects(
     );
   }
 
-  try {
-    await input.upsertCustomer();
-  } catch (error) {
-    input.logError(
-      'Customer upsert failed after successful order write',
-      safeErrorDetail(error),
-    );
+  if (input.upsertCustomer) {
+    try {
+      await input.upsertCustomer();
+    } catch (error) {
+      input.logError(
+        'Customer upsert failed after successful order write',
+        safeErrorDetail(error),
+      );
+    }
+  }
+
+  if (input.pushToKeyCrm) {
+    try {
+      await input.pushToKeyCrm();
+    } catch (error) {
+      input.logError(
+        'keyCRM sync failed after successful order write',
+        safeErrorDetail(error),
+      );
+    }
   }
 }
 

@@ -16,6 +16,10 @@ export interface CartQuoteLine {
   brandName: string;
   fixationLabel: string;
   unitPrice: number;
+  /** Price split backing unitPrice (= base + logo + fixation). Used by keyCRM sync. */
+  basePrice: number;
+  logoExtra: number;
+  fixationExtra: number;
   quantity: number;
   lineTotal: number;
   inStock: boolean;
