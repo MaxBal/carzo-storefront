@@ -16,8 +16,11 @@ export interface KeyCrmConfig {
   deliveryServiceId: number | null;
   /** Custom order field "Cпосіб зв'язку" (select). */
   contactMethodFieldUuid: string | null;
-  /** Order status meaning "buyer received the goods". Owner-defined. */
-  completedStatusId: number | null;
+  /**
+   * Order statuses that grant the loyalty discount (owner-approved).
+   * e.g. KEYCRM_LOYALTY_STATUS_IDS=21,12 ("Получено" + "Выполнен").
+   */
+  loyaltyStatusIds: number[];
   /** Static secret checked on the inbound webhook URL. */
   webhookSecret: string | null;
   /** Master switch for pushing site orders to keyCRM. Default off. */
@@ -31,13 +34,32 @@ function intOrNull(value: string | undefined): number | null {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+/**
+ * Parse "21,12" → [21, 12]. Comma/semicolon/space separated positive integers;
+ * invalid tokens are dropped, duplicates collapsed, order preserved.
+ */
+export function parseStatusIdList(raw: string | undefined): number[] {
+  if (!raw) return [];
+  const seen = new Set<number>();
+  const result: number[] = [];
+  for (const token of raw.split(/[,;\s]+/)) {
+    if (!token) continue;
+    const parsed = Number(token);
+    if (Number.isInteger(parsed) && parsed > 0 && !seen.has(parsed)) {
+      seen.add(parsed);
+      result.push(parsed);
+    }
+  }
+  return result;
+}
+
 export function readKeyCrmConfig(env: NodeJS.ProcessEnv = process.env): KeyCrmConfig {
   return {
     apiKey: trimmed(env.KEYCRM_API_KEY),
     sourceId: intOrNull(env.KEYCRM_SOURCE_ID),
     deliveryServiceId: intOrNull(env.KEYCRM_DELIVERY_SERVICE_ID),
     contactMethodFieldUuid: trimmed(env.KEYCRM_CUSTOM_FIELD_CONTACT_METHOD_UUID),
-    completedStatusId: intOrNull(env.KEYCRM_COMPLETED_STATUS_ID),
+    loyaltyStatusIds: parseStatusIdList(env.KEYCRM_LOYALTY_STATUS_IDS),
     webhookSecret: trimmed(env.KEYCRM_WEBHOOK_SECRET),
     syncEnabled: env.KEYCRM_SYNC_ENABLED?.trim().toLowerCase() === 'true',
   };

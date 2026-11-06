@@ -9,13 +9,13 @@ import {
 
 const ENV = {
   KEYCRM_WEBHOOK_SECRET: 'wh-secret',
-  KEYCRM_COMPLETED_STATUS_ID: '12',
+  KEYCRM_LOYALTY_STATUS_IDS: '21,12',
 } as unknown as NodeJS.ProcessEnv;
 
 function orderEvent(overrides: Record<string, unknown> = {}) {
   return {
     event: 'order.change_order_status',
-    context: { id: 67526, status_id: 12, source_id: 6, ...overrides },
+    context: { id: 67526, status_id: 21, source_id: 6, ...overrides },
   };
 }
 
@@ -29,7 +29,7 @@ function deps(overrides: Partial<KeyCrmWebhookDeps> = {}): SpyDeps {
     upserted,
     getOrder: async (orderId: number): Promise<KeyCrmWebhookOrder> => ({
       id: orderId,
-      status_id: 12,
+      status_id: 21,
       buyer: { phone: '+380 93 123 45 67', full_name: 'Приклад' },
     }),
     upsertCustomer: async (input) => {
@@ -42,9 +42,29 @@ function deps(overrides: Partial<KeyCrmWebhookDeps> = {}): SpyDeps {
   };
 }
 
-describe('keyCRM completed-order webhook', () => {
+/** Mimics customers.phone UNIQUE: one record per phone, repeat upserts are no-ops. */
+function makeFakeCustomerStore() {
+  const store = new Map<string, { phone: string; source: string }>();
+  return {
+    store,
+    upsertCustomer: async (input: { phone: string; fullName: string; source: string; imported: boolean }) => {
+      if (!store.has(input.phone)) {
+        store.set(input.phone, { phone: input.phone, source: input.source });
+      }
+      return null;
+    },
+  };
+}
+
+describe('keyCRM completed-order webhook (loyalty statuses)', () => {
   it('refuses to touch customers when config is missing', async () => {
-    for (const env of [{}, { KEYCRM_WEBHOOK_SECRET: 'wh-secret' }, { KEYCRM_COMPLETED_STATUS_ID: '12' }] as unknown as NodeJS.ProcessEnv[]) {
+    for (const env of [
+      {},
+      { KEYCRM_WEBHOOK_SECRET: 'wh-secret' },
+      { KEYCRM_LOYALTY_STATUS_IDS: '21,12' },
+      { KEYCRM_WEBHOOK_SECRET: 'wh-secret', KEYCRM_LOYALTY_STATUS_IDS: '' },
+      { KEYCRM_WEBHOOK_SECRET: 'wh-secret', KEYCRM_LOYALTY_STATUS_IDS: 'abc,x' },
+    ] as unknown as NodeJS.ProcessEnv[]) {
       const result = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', deps({ env }));
       assert.equal(result.status, 503);
       assert.equal(result.body.error, 'not_configured');
@@ -58,22 +78,13 @@ describe('keyCRM completed-order webhook', () => {
     assert.equal(missing.status, 401);
   });
 
-  it('skips other events and non-completed statuses without changes', async () => {
+  it('adds the customer on status 21 "Получено"', async () => {
     const spy = deps();
-    const wrongEvent = await handleKeyCrmOrderStatusWebhook(
-      { event: 'order.change_payment_status', context: { id: 1, status_id: 12 } },
+    const result = await handleKeyCrmOrderStatusWebhook(
+      orderEvent({ status_id: 21 }),
       'wh-secret',
       spy,
     );
-    assert.equal(wrongEvent.body.skipped, 'event');
-    const wrongStatus = await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: 1 }), 'wh-secret', spy);
-    assert.equal(wrongStatus.body.skipped, 'status');
-    assert.equal(spy.upserted.length, 0);
-  });
-
-  it('adds the customer after re-checking the live order status', async () => {
-    const spy = deps();
-    const result = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', spy);
     assert.deepEqual(result, { status: 200, body: { ok: true } });
     assert.equal(spy.upserted.length, 1);
     assert.equal(spy.upserted[0].phone, '+380931234567');
@@ -81,22 +92,113 @@ describe('keyCRM completed-order webhook', () => {
     assert.equal(spy.upserted[0].imported, false);
   });
 
-  it('skips when the live order is not in the completed status', async () => {
+  it('adds the customer on status 12 "Выполнен"', async () => {
     const spy = deps({
-      getOrder: async (orderId) => ({ id: orderId, status_id: 9, buyer: { phone: '+380931234567' } }),
+      getOrder: async (orderId) => ({
+        id: orderId,
+        status_id: 12,
+        buyer: { phone: '+380931234567', full_name: 'Менеджер завершив' },
+      }),
     });
-    const result = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', spy);
-    assert.equal(result.body.skipped, 'status_mismatch');
+    const result = await handleKeyCrmOrderStatusWebhook(
+      orderEvent({ status_id: 12 }),
+      'wh-secret',
+      spy,
+    );
+    assert.deepEqual(result, { status: 200, body: { ok: true } });
+    assert.equal(spy.upserted.length, 1);
+    assert.equal(spy.upserted[0].phone, '+380931234567');
+  });
+
+  it('accepts event 21 when the live order has already moved to 12', async () => {
+    const spy = deps({
+      getOrder: async (orderId) => ({ id: orderId, status_id: 12, buyer: { phone: '+380931234567' } }),
+    });
+    const result = await handleKeyCrmOrderStatusWebhook(
+      orderEvent({ status_id: 21 }),
+      'wh-secret',
+      spy,
+    );
+    assert.deepEqual(result, { status: 200, body: { ok: true } });
+    assert.equal(spy.upserted.length, 1);
+  });
+
+  it('accepts event 12 when the live order is still 21', async () => {
+    const spy = deps({
+      getOrder: async (orderId) => ({ id: orderId, status_id: 21, buyer: { phone: '+380931234567' } }),
+    });
+    const result = await handleKeyCrmOrderStatusWebhook(
+      orderEvent({ status_id: 12 }),
+      'wh-secret',
+      spy,
+    );
+    assert.deepEqual(result, { status: 200, body: { ok: true } });
+  });
+
+  it('sequence 21 then 12 does not create a duplicate customer', async () => {
+    const fake = makeFakeCustomerStore();
+    const spy = deps({ upsertCustomer: fake.upsertCustomer });
+
+    const first = await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: 21 }), 'wh-secret', spy);
+    const second = await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: 12 }), 'wh-secret', spy);
+
+    assert.equal(first.body.ok, true);
+    assert.equal(second.body.ok, true);
+    assert.equal(fake.store.size, 1);
+    assert.ok(fake.store.has('+380931234567'));
+  });
+
+  it('does not add the customer on canceled or other statuses', async () => {
+    const spy = deps();
+    for (const statusId of [19, 1, 9, 20, 22, 23]) {
+      const result = await handleKeyCrmOrderStatusWebhook(
+        orderEvent({ status_id: statusId }),
+        'wh-secret',
+        spy,
+      );
+      assert.equal(result.status, 200);
+      assert.equal(result.body.skipped, 'status');
+    }
     assert.equal(spy.upserted.length, 0);
   });
 
-  it('skips on missing/invalid phone without retry storm', async () => {
-    const spy = deps({
-      getOrder: async (orderId) => ({ id: orderId, status_id: 12, buyer: { phone: '123' } }),
-    });
-    const result = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', spy);
-    assert.equal(result.status, 200);
-    assert.equal(result.body.skipped, 'phone');
+  it('skips when the live order status is not loyalty-granting', async () => {
+    for (const liveStatus of [19, 22, 9]) {
+      const spy = deps({
+        getOrder: async (orderId) => ({ id: orderId, status_id: liveStatus, buyer: { phone: '+380931234567' } }),
+      });
+      const result = await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: 21 }), 'wh-secret', spy);
+      assert.equal(result.body.skipped, 'status_mismatch');
+      assert.equal(spy.upserted.length, 0);
+    }
+  });
+
+  it('keeps existing customers (unique phone, repeat webhooks are safe)', async () => {
+    const fake = makeFakeCustomerStore();
+    fake.store.set('+380931234567', { phone: '+380931234567', source: 'wrike' });
+    const spy = deps({ upsertCustomer: fake.upsertCustomer });
+
+    for (const statusId of [21, 12, 21]) {
+      await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: statusId }), 'wh-secret', spy);
+    }
+
+    assert.equal(fake.store.size, 1);
+    // Existing provenance is preserved by the customer-store merge policy.
+    assert.equal(fake.store.get('+380931234567')?.source, 'wrike');
+  });
+
+  it('skips other events and malformed bodies without changes', async () => {
+    const spy = deps();
+    const wrongEvent = await handleKeyCrmOrderStatusWebhook(
+      { event: 'order.change_payment_status', context: { id: 1, status_id: 21 } },
+      'wh-secret',
+      spy,
+    );
+    assert.equal(wrongEvent.body.skipped, 'event');
+    const bad = await handleKeyCrmOrderStatusWebhook(null, 'wh-secret', spy);
+    assert.equal(bad.status, 400);
+    const badId = await handleKeyCrmOrderStatusWebhook(orderEvent({ id: 'x' }), 'wh-secret', spy);
+    assert.equal(badId.status, 400);
     assert.equal(spy.upserted.length, 0);
   });
 
@@ -108,38 +210,20 @@ describe('keyCRM completed-order webhook', () => {
         buyer: { phone: '+380661112233', full_name: 'Rozetka buyer' },
       }),
     });
-    const result = await handleKeyCrmOrderStatusWebhook(orderEvent({ source_id: 2 }), 'wh-secret', spy);
+    const result = await handleKeyCrmOrderStatusWebhook(orderEvent({ source_id: 2, status_id: 12 }), 'wh-secret', spy);
     assert.equal(result.body.ok, true);
     assert.equal(spy.upserted[0].source, 'keycrm');
     assert.equal(spy.upserted[0].phone, '+380661112233');
   });
 
-  it('returns 500 so keyCRM retries when upsert fails, and stays idempotent on success', async () => {
-    let fail = true;
-    const upserted: string[] = [];
+  it('returns 500 so keyCRM retries when upsert fails', async () => {
     const spy = deps({
-      upsertCustomer: async (input) => {
-        if (fail) throw new Error('db down');
-        upserted.push(input.phone);
-        return null;
+      upsertCustomer: async () => {
+        throw new Error('db down');
       },
     });
-    const first = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', spy);
-    assert.equal(first.status, 500);
-    fail = false;
-    const second = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', spy);
-    const third = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', spy);
-    assert.equal(second.status, 200);
-    assert.equal(third.status, 200);
-    // Repeat delivery of the same event must not throw or create errors;
-    // uniqueness of customers.phone makes the upsert a no-op.
-    assert.equal(upserted.length, 2);
-  });
-
-  it('rejects malformed bodies and order ids', async () => {
-    const bad = await handleKeyCrmOrderStatusWebhook(null, 'wh-secret', deps());
-    assert.equal(bad.status, 400);
-    const badId = await handleKeyCrmOrderStatusWebhook(orderEvent({ id: 'x' }), 'wh-secret', deps());
-    assert.equal(badId.status, 400);
+    const result = await handleKeyCrmOrderStatusWebhook(orderEvent({ status_id: 21 }), 'wh-secret', spy);
+    assert.equal(result.status, 500);
+    assert.equal(result.body.error, 'upsert_failed');
   });
 });

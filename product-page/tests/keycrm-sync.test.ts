@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { isKeyCrmSyncEnabled, readKeyCrmConfig } from '../lib/keycrm/config';
+import { isKeyCrmSyncEnabled, parseStatusIdList, readKeyCrmConfig } from '../lib/keycrm/config';
 import { syncKeyCrmOrder } from '../lib/keycrm/sync';
 import type { KeyCrmOrderInput } from '../lib/keycrm/types';
 
@@ -10,7 +10,7 @@ const FULL_ENV = {
   KEYCRM_SOURCE_ID: '6',
   KEYCRM_DELIVERY_SERVICE_ID: '1',
   KEYCRM_CUSTOM_FIELD_CONTACT_METHOD_UUID: 'OR_1007',
-  KEYCRM_COMPLETED_STATUS_ID: '12',
+  KEYCRM_LOYALTY_STATUS_IDS: '21,12',
   KEYCRM_WEBHOOK_SECRET: 'wh-secret',
   KEYCRM_SYNC_ENABLED: 'true',
 } as unknown as NodeJS.ProcessEnv;
@@ -92,7 +92,18 @@ describe('keyCRM checkout sync gate', () => {
     assert.equal(config.sourceId, 6);
     assert.equal(config.deliveryServiceId, 1);
     assert.equal(config.contactMethodFieldUuid, 'OR_1007');
-    assert.equal(config.completedStatusId, 12);
+    assert.deepEqual(config.loyaltyStatusIds, [21, 12]);
     assert.equal(config.syncEnabled, true);
+  });
+
+  it('parses loyalty status id lists safely', () => {
+    assert.deepEqual(parseStatusIdList('21,12'), [21, 12]);
+    assert.deepEqual(parseStatusIdList('21, 12'), [21, 12]);
+    assert.deepEqual(parseStatusIdList('21;12'), [21, 12]);
+    assert.deepEqual(parseStatusIdList('21,12,21'), [21, 12]);
+    assert.deepEqual(parseStatusIdList('21,abc,12,-5,0,3.5'), [21, 12]);
+    assert.deepEqual(parseStatusIdList(''), []);
+    assert.deepEqual(parseStatusIdList(undefined), []);
+    assert.deepEqual(parseStatusIdList('abc'), []);
   });
 });

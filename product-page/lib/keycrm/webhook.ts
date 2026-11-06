@@ -9,6 +9,7 @@
  */
 
 import { normalizeCustomerPhone } from '@/lib/cart/customer-phone';
+import { parseStatusIdList } from './config';
 
 export interface KeyCrmWebhookOrder {
   id: number;
@@ -46,10 +47,10 @@ export async function handleKeyCrmOrderStatusWebhook(
   const env = deps.env ?? process.env;
   const logError = deps.logError ?? (() => {});
   const expectedSecret = env.KEYCRM_WEBHOOK_SECRET?.trim() || null;
-  const completedStatusId = Number(env.KEYCRM_COMPLETED_STATUS_ID);
+  const loyaltyStatusIds = parseStatusIdList(env.KEYCRM_LOYALTY_STATUS_IDS);
 
   // Without owner-provided settings the endpoint must never touch customers.
-  if (!expectedSecret || !Number.isInteger(completedStatusId) || completedStatusId <= 0) {
+  if (!expectedSecret || loyaltyStatusIds.length === 0) {
     return { status: 503, body: { error: 'not_configured' } };
   }
   if (!secret || !timingSafeEqual(secret, expectedSecret)) {
@@ -72,7 +73,8 @@ export async function handleKeyCrmOrderStatusWebhook(
   if (!Number.isInteger(orderId) || orderId <= 0) {
     return { status: 400, body: { error: 'invalid_order_id' } };
   }
-  if (contextStatus !== completedStatusId) {
+  // Any loyalty-granting status qualifies ("Получено" 21 / "Выполнен" 12).
+  if (!loyaltyStatusIds.includes(contextStatus)) {
     return { status: 200, body: { skipped: 'status' } };
   }
 
@@ -85,7 +87,8 @@ export async function handleKeyCrmOrderStatusWebhook(
   }
 
   // Never trust webhook payload alone — re-check the live order status.
-  if (Number(order.status_id) !== completedStatusId) {
+  // The live status may already have moved on (21 → 12); both grant loyalty.
+  if (!loyaltyStatusIds.includes(Number(order.status_id))) {
     return { status: 200, body: { skipped: 'status_mismatch' } };
   }
 
