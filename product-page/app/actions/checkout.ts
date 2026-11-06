@@ -352,6 +352,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
               customerName: snapshot.customerName,
               customerPhone: snapshot.customerPhone,
               customerComment: snapshot.customerComment,
+              managerNote: snapshot.managerNote,
               contactMethod: snapshot.contactMethod,
               deliveryMethod: snapshot.deliveryMethod,
               deliveryCityName: snapshot.deliveryCityName,

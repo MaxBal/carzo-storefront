@@ -30,6 +30,10 @@ export class KeyCrmPayloadError extends Error {
   }
 }
 
+/** Owner-created informational fields (number type, model order). */
+export const KEYCRM_FIELD_QUANTITY_DISCOUNT = 'OR_1008';
+export const KEYCRM_FIELD_LOYALTY_DISCOUNT = 'OR_1009';
+
 interface ComboGroup {
   brandName: string;
   fixationLabel: string;
@@ -81,18 +85,6 @@ export function buildCompositionComment(lines: KeyCrmSourceLine[]): string {
   return parts.length === 1
     ? `Комплектація: ${parts[0]}.`
     : `Комплектація:\n${parts.map((part) => `- ${part}.`).join('\n')}`;
-}
-
-function buildManagerComment(input: KeyCrmOrderInput): string | undefined {
-  const notes: string[] = [];
-  if (input.quantityDiscount > 0) {
-    const tier = input.discountTierKey ? ` (${input.discountTierKey})` : '';
-    notes.push(`Знижка за кількість: ${input.quantityDiscount} ₴${tier}.`);
-  }
-  if (input.loyaltyDiscountAmount > 0) {
-    notes.push(`Знижка постійного клієнта 5%: ${input.loyaltyDiscountAmount} ₴.`);
-  }
-  return notes.length > 0 ? notes.join(' ') : undefined;
 }
 
 function buildShipping(input: KeyCrmOrderInput, deliveryServiceId: number): KeyCrmOrderPayload['shipping'] {
@@ -210,7 +202,7 @@ export function buildKeyCrmOrder(
   }
 
   const buyerComment = input.customerComment?.trim();
-  const managerComment = buildManagerComment(input);
+  const managerNote = input.managerNote?.trim();
   const contactLabel = contactMethodLabel(input.contactMethod);
 
   const payload: KeyCrmOrderPayload = {
@@ -224,16 +216,22 @@ export function buildKeyCrmOrder(
     shipping: buildShipping(input, config.deliveryServiceId),
     products,
     ...(buyerComment ? { buyer_comment: buyerComment } : {}),
-    ...(managerComment ? { manager_comment: managerComment } : {}),
+    // Real manager notes only — discount breakdowns go to custom fields.
+    ...(managerNote ? { manager_comment: managerNote } : {}),
     ...(discountAmount > 0 ? { discount_amount: discountAmount } : {}),
   };
 
-  if (config.contactMethodFieldUuid) {
-    if (!contactLabel) throw new KeyCrmPayloadError(`UNKNOWN_CONTACT_METHOD:${input.contactMethod}`);
-    payload.custom_fields = [
-      { uuid: config.contactMethodFieldUuid, value: [contactLabel] },
-    ];
+  if (config.contactMethodFieldUuid && !contactLabel) {
+    throw new KeyCrmPayloadError(`UNKNOWN_CONTACT_METHOD:${input.contactMethod}`);
   }
+  payload.custom_fields = [
+    ...(config.contactMethodFieldUuid
+      ? [{ uuid: config.contactMethodFieldUuid, value: [contactLabel as string] }]
+      : []),
+    // Informational only — the real discount is discount_amount above.
+    { uuid: KEYCRM_FIELD_QUANTITY_DISCOUNT, value: wholeUah(input.quantityDiscount) },
+    { uuid: KEYCRM_FIELD_LOYALTY_DISCOUNT, value: wholeUah(input.loyaltyDiscountAmount) },
+  ];
 
   return payload;
 }

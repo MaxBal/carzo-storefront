@@ -69,7 +69,12 @@ describe('keyCRM order payload builder', () => {
     assert.equal(payload.products[0].quantity, 1);
     assert.equal(payload.products[0].comment, undefined);
     assert.equal(payload.discount_amount, undefined);
-    assert.deepEqual(payload.custom_fields, [{ uuid: 'OR_1007', value: ['Telegram'] }]);
+    assert.equal(payload.custom_fields?.length, 3);
+    assert.deepEqual(payload.custom_fields?.[0], { uuid: 'OR_1007', value: ['Telegram'] });
+    assert.deepEqual(payload.custom_fields?.slice(1), [
+      { uuid: 'OR_1008', value: 0 },
+      { uuid: 'OR_1009', value: 0 },
+    ]);
   });
 
   it('groups identical base SKUs and keeps free fixations in the comment', () => {
@@ -153,8 +158,10 @@ describe('keyCRM order payload builder', () => {
       total: 6572,
     }), CONFIG);
     assert.equal(payload.discount_amount, 545);
-    assert.match(payload.manager_comment ?? '', /Знижка за кількість: 200 ₴ \(quantity-2\)/);
-    assert.match(payload.manager_comment ?? '', /Знижка постійного клієнта 5%: 345 ₴/);
+    assert.equal(payload.manager_comment, undefined);
+    const fields = Object.fromEntries((payload.custom_fields ?? []).map((f) => [f.uuid, f.value]));
+    assert.equal(fields.OR_1008, 200);
+    assert.equal(fields.OR_1009, 345);
   });
 
   it('rejects orders whose positions do not sum to subtotal', () => {
@@ -235,9 +242,18 @@ describe('keyCRM order payload builder', () => {
     );
   });
 
-  it('does not include custom_fields when the uuid is not configured', () => {
-    const payload = buildKeyCrmOrder(input(), { sourceId: 6, deliveryServiceId: 1 });
-    assert.equal(payload.custom_fields, undefined);
+  it('always sends the two discount fields; contact method joins them when configured', () => {
+    const withoutContact = buildKeyCrmOrder(input(), { sourceId: 6, deliveryServiceId: 1 });
+    const fields = (withoutContact.custom_fields ?? []).map((f) => f.uuid);
+    assert.deepEqual(fields, ['OR_1008', 'OR_1009']);
+    assert.deepEqual(withoutContact.custom_fields, [
+      { uuid: 'OR_1008', value: 0 },
+      { uuid: 'OR_1009', value: 0 },
+    ]);
+
+    const withContact = buildKeyCrmOrder(input(), CONFIG);
+    assert.deepEqual((withContact.custom_fields ?? []).map((f) => f.uuid), ['OR_1007', 'OR_1008', 'OR_1009']);
+    assert.deepEqual(withContact.custom_fields?.[0], { uuid: 'OR_1007', value: ['Telegram'] });
   });
 
   it('includes the email only when provided', () => {
@@ -245,5 +261,109 @@ describe('keyCRM order payload builder', () => {
     assert.equal(payload.buyer.email, 'test@example.com');
     const payloadNoEmail = buildKeyCrmOrder(input(), CONFIG);
     assert.equal('email' in payloadNoEmail.buyer, false);
+  });
+});
+
+describe('keyCRM discount custom fields (OR_1008 / OR_1009)', () => {
+  function discountOrder(quantityDiscount: number, loyaltyDiscountAmount: number) {
+    // 2539 + 2980 = 5519 (matches the Phase 6 example).
+    return input({
+      lines: [
+        line({
+          designSlug: '3-0', brandSlug: 'volvo', brandName: 'Volvo', fixationKey: 'none', fixationLabel: 'без фіксації',
+          logoExtra: 290, unitPrice: 2539, basePrice: 2249,
+        }),
+        line({
+          sizeCode: 'L', designSlug: '3-0', brandSlug: 'honda', brandName: 'Honda',
+          fixationKey: 'both', fixationLabel: 'фікс.дно+стінка', logoExtra: 290, fixationExtra: 100,
+          unitPrice: 2980, basePrice: 2590,
+        }),
+      ],
+      subtotal: 5519,
+      quantityDiscount,
+      loyaltyDiscountAmount,
+      total: 5519 - quantityDiscount - loyaltyDiscountAmount,
+    });
+  }
+
+  function fields(payload: ReturnType<typeof buildKeyCrmOrder>) {
+    return Object.fromEntries((payload.custom_fields ?? []).map((f) => [f.uuid, f.value]));
+  }
+
+  it('sends quantity discount 200 as OR_1008 number', () => {
+    const f = fields(buildKeyCrmOrder(discountOrder(200, 0), CONFIG));
+    assert.equal(f.OR_1008, 200);
+    assert.equal(f.OR_1009, 0);
+  });
+
+  it('sends quantity discount 500 as OR_1008 number', () => {
+    const f = fields(buildKeyCrmOrder(discountOrder(500, 0), CONFIG));
+    assert.equal(f.OR_1008, 500);
+  });
+
+  it('sends loyalty 5% discount as OR_1009 number', () => {
+    const f = fields(buildKeyCrmOrder(discountOrder(0, 265), CONFIG));
+    assert.equal(f.OR_1008, 0);
+    assert.equal(f.OR_1009, 265);
+  });
+
+  it('sends both discounts together (200 + 265)', () => {
+    const payload = buildKeyCrmOrder(discountOrder(200, 265), CONFIG);
+    const f = fields(payload);
+    assert.equal(f.OR_1008, 200);
+    assert.equal(f.OR_1009, 265);
+    assert.equal(payload.discount_amount, 465);
+    assert.equal(payload.manager_comment, undefined);
+  });
+
+  it('sends zeros when no discount applies', () => {
+    const f = fields(buildKeyCrmOrder(discountOrder(0, 0), CONFIG));
+    assert.equal(f.OR_1008, 0);
+    assert.equal(f.OR_1009, 0);
+  });
+
+  it('passes all three custom fields simultaneously with correct types', () => {
+    const payload = buildKeyCrmOrder(discountOrder(200, 265), CONFIG);
+    const list = payload.custom_fields ?? [];
+    assert.equal(list.length, 3);
+    assert.deepEqual(list.map((x) => x.uuid), ['OR_1007', 'OR_1008', 'OR_1009']);
+    assert.deepEqual(list[0].value, ['Telegram']);
+    assert.equal(typeof list[1].value, 'number');
+    assert.equal(typeof list[2].value, 'number');
+    assert.equal(Array.isArray(list[1].value), false);
+    assert.equal(Array.isArray(list[2].value), false);
+  });
+
+  it('keeps products_total - discount_amount = total and never double-charges', () => {
+    const payload = buildKeyCrmOrder(discountOrder(200, 265), CONFIG);
+    const productsTotal = payload.products.reduce((sum, p) => sum + p.price * p.quantity, 0);
+    assert.equal(productsTotal, 5519);
+    assert.equal(productsTotal - (payload.discount_amount ?? 0), 5054);
+  });
+
+  it('does not touch product composition comments or the buyer comment', () => {
+    const payload = buildKeyCrmOrder({
+      ...discountOrder(200, 265),
+      customerComment: 'Подарункове пакування',
+    }, CONFIG);
+    const base = payload.products.find((p) => p.sku === 'M3.0');
+    assert.equal(
+      base?.comment,
+      'Комплектація: 1 шт. — Volvo, без фіксації.',
+    );
+    const l = payload.products.find((p) => p.sku === 'L3.0');
+    assert.equal(l?.comment, 'Комплектація: 1 шт. — Honda, фікс.дно+стінка.');
+    assert.equal(payload.buyer_comment, 'Подарункове пакування');
+  });
+
+  it('passes a real manager note through without generating discount text', () => {
+    const payload = buildKeyCrmOrder({
+      ...discountOrder(200, 265),
+      managerNote: 'Узгоджено з клієнтом',
+    }, CONFIG);
+    assert.equal(payload.manager_comment, 'Узгоджено з клієнтом');
+
+    const withoutNote = buildKeyCrmOrder(discountOrder(200, 265), CONFIG);
+    assert.equal(withoutNote.manager_comment, undefined);
   });
 });
