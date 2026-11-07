@@ -35,6 +35,8 @@ export interface NewOrderNotification {
   customerName: string;
   customerPhone: string;
   contactMethod: string;
+  /** Payment terms label ("Передоплата 200 ₴" | "Повна оплата"); '' when not recorded. */
+  paymentOption: string;
   itemsQuantity: number;
   /** Authoritative quantity discount from server quote (0 when not applied). */
   quantityDiscount: number;
@@ -145,6 +147,30 @@ function renderTemplate(template: string, variables: Record<string, string>) {
 const DISCOUNTS_SUMMARY_TOKEN = /\{\{\s*discounts_summary\s*\}\}/i;
 
 /**
+ * Custom templates may predate `{{payment_option}}`.
+ * When the token is absent and an option was recorded, insert the line
+ * after the `Адреса:` line (or append at the end).
+ */
+const PAYMENT_OPTION_TOKEN = /\{\{\s*payment_option\s*\}\}/i;
+
+/** Exported for tests. */
+export function applyPaymentOptionFallback(
+  template: string,
+  rendered: string,
+  paymentOption: string,
+): string {
+  if (!paymentOption || PAYMENT_OPTION_TOKEN.test(template)) return rendered;
+  const line = `Варіант оплати: ${paymentOption}`;
+  const lines = rendered.split('\n');
+  const addressIndex = lines.findIndex((entry) => /^\s*Адреса\s*:/i.test(entry));
+  if (addressIndex >= 0) {
+    lines.splice(addressIndex + 1, 0, line);
+    return lines.join('\n');
+  }
+  return `${rendered}\n${line}`;
+}
+
+/**
  * Custom Directus templates may predate `{{discounts_summary}}`.
  * When the token is absent and discounts apply, insert the summary
  * immediately before the `Сума:` total line (single insertion point).
@@ -181,6 +207,7 @@ function renderedMessage(settings: NotificationSettings, order: NewOrderNotifica
     quantity_discount: order.quantityDiscount > 0 ? String(Math.trunc(order.quantityDiscount)) : '',
     loyalty_discount: order.loyaltyDiscountAmount > 0 ? String(Math.trunc(order.loyaltyDiscountAmount)) : '',
     total: String(order.total),
+    payment_option: order.paymentOption,
     delivery_method: order.deliveryMethod,
     delivery_city: order.deliveryCity,
     delivery_destination: order.deliveryDestination,
@@ -188,10 +215,14 @@ function renderedMessage(settings: NotificationSettings, order: NewOrderNotifica
     delivery_point: order.deliveryDestination,
     order_url: orderUrl,
   };
-  const message = applyDiscountsSummaryFallback(
+  const message = applyPaymentOptionFallback(
     settings.messageTemplate,
-    renderTemplate(settings.messageTemplate, variables),
-    discountsSummary,
+    applyDiscountsSummaryFallback(
+      settings.messageTemplate,
+      renderTemplate(settings.messageTemplate, variables),
+      discountsSummary,
+    ),
+    order.paymentOption,
   );
   return {
     subject: renderTemplate(settings.subjectTemplate, variables).trim().slice(0, 255),

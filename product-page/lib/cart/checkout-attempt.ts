@@ -21,6 +21,8 @@ export interface FingerprintInput {
   customerPhone: string;
   contactMethod: string;
   deliveryMethod: string;
+  /** Payment terms are part of buyer intent — same attempt with a different option must not match. */
+  paymentOption?: string | null;
   items: Array<{
     size: string;
     designSlug: string;
@@ -48,6 +50,7 @@ export function computeRequestFingerprint(input: FingerprintInput): string {
     input.customerPhone.trim(),
     input.contactMethod.trim(),
     input.deliveryMethod.trim(),
+    (input.paymentOption ?? '').trim(),
     ...lines,
   ].join('\n');
   return createHash('sha256').update(canonical, 'utf8').digest('hex');

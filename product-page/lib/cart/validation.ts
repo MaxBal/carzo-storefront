@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CONTACT_METHOD_VALUES } from './contact-method';
+import { PAYMENT_OPTION_VALUES } from './payment-option';
 
 export const cartItemSchema = z.object({
   size: z.enum(['S', 'M', 'L', 'XL']),
@@ -35,6 +36,7 @@ export const checkoutSchema = z.object({
   loyaltyPhone: z.string().trim().min(9).max(24).optional().or(z.literal('')),
   customerComment: z.string().trim().max(1000).optional().or(z.literal('')),
   contactMethod: z.enum(CONTACT_METHOD_VALUES),
+  paymentOption: z.enum(PAYMENT_OPTION_VALUES).optional(),
   delivery: z.discriminatedUnion('method', [
     deliveryPointSchema('BRANCH'),
     deliveryPointSchema('POSTOMAT'),

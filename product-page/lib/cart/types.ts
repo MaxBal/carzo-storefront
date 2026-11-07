@@ -1,5 +1,6 @@
 import type { ProductParams } from '@/lib/content/types';
 import type { ContactMethod } from './contact-method';
+import type { PaymentOption } from './payment-option';
 import type { OrderPackage, WarehouseLimits } from './shipping';
 
 export interface CartInputItem extends ProductParams {
@@ -101,6 +102,11 @@ export interface CheckoutInput {
   loyaltyPhone?: string;
   customerComment?: string;
   contactMethod: ContactMethod;
+  /**
+   * Selected payment terms (intent only — never a registered payment).
+   * Optional so requests from the pre-payment-option app version still validate.
+   */
+  paymentOption?: PaymentOption;
   delivery: CheckoutDelivery;
   /**
    * Client-generated UUID for one logical checkout attempt. Stable across

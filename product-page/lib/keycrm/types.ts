@@ -68,6 +68,8 @@ export interface KeyCrmOrderInput {
   /** Real manager note, if any. Never auto-generated discount text. */
   managerNote?: string | null;
   contactMethod: string;
+  /** Payment terms label ("Передоплата 200 ₴" | "Повна оплата"); intent only. */
+  paymentOptionLabel?: string | null;
   deliveryMethod: 'BRANCH' | 'POSTOMAT' | 'COURIER';
   deliveryCityName?: string | null;
   deliveryPointRef?: string | null;
@@ -90,4 +92,6 @@ export interface KeyCrmOrderConfig {
   sourceId: number;
   deliveryServiceId: number;
   contactMethodFieldUuid?: string | null;
+  /** Order select field "Варіанти оплати" (e.g. OR_1010). */
+  paymentOptionFieldUuid?: string | null;
 }

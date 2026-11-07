@@ -57,6 +57,8 @@ export interface OrderSnapshot {
   customerPhone: string;
   customerComment: string | null;
   contactMethod: ContactMethod;
+  /** Payment terms chosen at checkout ('prepayment_200' | 'full'); null for legacy/absent. */
+  paymentOption: string | null;
   deliveryMethod: OrderDeliveryMethod;
   deliveryCityRef: string | null;
   deliveryCityName: string | null;

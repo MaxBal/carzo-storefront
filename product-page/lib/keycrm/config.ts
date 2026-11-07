@@ -16,6 +16,8 @@ export interface KeyCrmConfig {
   deliveryServiceId: number | null;
   /** Custom order field "Cпосіб зв'язку" (select). */
   contactMethodFieldUuid: string | null;
+  /** Custom order field "Варіанти оплати" (select). */
+  paymentOptionFieldUuid: string | null;
   /**
    * Order statuses that grant the loyalty discount (owner-approved).
    * e.g. KEYCRM_LOYALTY_STATUS_IDS=21,12 ("Получено" + "Выполнен").
@@ -59,6 +61,7 @@ export function readKeyCrmConfig(env: NodeJS.ProcessEnv = process.env): KeyCrmCo
     sourceId: intOrNull(env.KEYCRM_SOURCE_ID),
     deliveryServiceId: intOrNull(env.KEYCRM_DELIVERY_SERVICE_ID),
     contactMethodFieldUuid: trimmed(env.KEYCRM_CUSTOM_FIELD_CONTACT_METHOD_UUID),
+    paymentOptionFieldUuid: trimmed(env.KEYCRM_CUSTOM_FIELD_PAYMENT_OPTION_UUID),
     loyaltyStatusIds: parseStatusIdList(env.KEYCRM_LOYALTY_STATUS_IDS),
     webhookSecret: trimmed(env.KEYCRM_WEBHOOK_SECRET),
     syncEnabled: env.KEYCRM_SYNC_ENABLED?.trim().toLowerCase() === 'true',

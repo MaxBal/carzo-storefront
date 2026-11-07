@@ -27,6 +27,7 @@ function rpcParams(snapshot: OrderSnapshot) {
     p_customer_phone: snapshot.customerPhone,
     p_customer_comment: snapshot.customerComment,
     p_contact_method: snapshot.contactMethod,
+    p_payment_option: snapshot.paymentOption,
     p_delivery_method: snapshot.deliveryMethod,
     p_delivery_city_ref: snapshot.deliveryCityRef,
     p_delivery_city_name: snapshot.deliveryCityName,

@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { checkoutSchema } from '@/lib/cart/validation';
 import { CHECKOUT_MAINTENANCE_MESSAGE, isCheckoutMaintenance } from '@/lib/checkout-maintenance';
 import { CartQuoteError, quoteCartItems } from '@/lib/cart/server';
+import { paymentOptionLabel } from '@/lib/cart/payment-option';
 import { checkPostomatPackage, checkWarehousePackage } from '@/lib/cart/shipping';
 import {
   resolveNovaPoshtaCity,
@@ -154,6 +155,7 @@ function buildOrderSnapshot(input: {
     customerPhone: input.phone,
     customerComment: parsed.customerComment?.trim() || null,
     contactMethod: parsed.contactMethod,
+    paymentOption: parsed.paymentOption ?? null,
     deliveryMethod: delivery.method,
     deliveryCityRef: delivery.cityRef,
     deliveryCityName: delivery.cityName,
@@ -246,6 +248,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
       customerPhone: phone,
       contactMethod: parsed.data.contactMethod,
       deliveryMethod: parsed.data.delivery.method,
+      paymentOption: parsed.data.paymentOption ?? null,
       items: parsed.data.items,
     });
 
@@ -348,6 +351,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
               customerName: parsed.data.customerName.trim(),
               customerPhone: phone,
               contactMethod: contactMethodLabel(parsed.data.contactMethod),
+              paymentOption: paymentOptionLabel(parsed.data.paymentOption) ?? '',
               itemsQuantity: quote.itemsQuantity,
               // Authoritative server amounts — never recomputed in notification layer.
               quantityDiscount: quote.quantityDiscount,
@@ -374,6 +378,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
               customerComment: snapshot.customerComment,
               managerNote: snapshot.managerNote,
               contactMethod: snapshot.contactMethod,
+              paymentOptionLabel: paymentOptionLabel(snapshot.paymentOption),
               deliveryMethod: snapshot.deliveryMethod,
               deliveryCityName: snapshot.deliveryCityName,
               deliveryPointRef: snapshot.deliveryPointRef,

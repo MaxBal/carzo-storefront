@@ -228,6 +228,10 @@ export function buildKeyCrmOrder(
     ...(config.contactMethodFieldUuid
       ? [{ uuid: config.contactMethodFieldUuid, value: [contactLabel as string] }]
       : []),
+    // Payment terms (select field "Варіанти оплати") — intent only, never a payment.
+    ...(config.paymentOptionFieldUuid && input.paymentOptionLabel
+      ? [{ uuid: config.paymentOptionFieldUuid, value: [input.paymentOptionLabel] }]
+      : []),
     // Informational only — the real discount is discount_amount above.
     { uuid: KEYCRM_FIELD_QUANTITY_DISCOUNT, value: wholeUah(input.quantityDiscount) },
     { uuid: KEYCRM_FIELD_LOYALTY_DISCOUNT, value: wholeUah(input.loyaltyDiscountAmount) },

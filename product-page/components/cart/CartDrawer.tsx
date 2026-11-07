@@ -10,6 +10,7 @@ import { calculateLoyaltyDiscount, checkLoyaltyDiscount } from '@/lib/cart/loyal
 import { buildFullPhone } from '@/lib/cart/phone';
 import { normalizeCustomerPhone } from '@/lib/cart/customer-phone';
 import type { CheckoutDelivery, CheckoutResult } from '@/lib/cart/types';
+import { DEFAULT_PAYMENT_OPTION, PAYMENT_OPTION_LABELS, PAYMENT_OPTION_VALUES, type PaymentOption } from '@/lib/cart/payment-option';
 import { checkPostomatPackage } from '@/lib/cart/shipping';
 import NovaPoshtaSelector from './NovaPoshtaSelector';
 import NovaPoshtaTrustRow from './NovaPoshtaTrustRow';
@@ -39,14 +40,13 @@ export default function CartDrawer() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
-  const [customerComment, setCustomerComment] = useState('');
+  const [paymentOption, setPaymentOption] = useState<PaymentOption>(DEFAULT_PAYMENT_OPTION);
   const [contactMethod, setContactMethod] = useState<ContactMethod>('phone');
   const [delivery, setDelivery] = useState<CheckoutDelivery>({ method: 'BRANCH', cityRef: '', pointRef: '' });
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const [closing, setClosing] = useState(false);
   const [loyaltyOpen, setLoyaltyOpen] = useState(false);
   const [loyaltyPhoneFocused, setLoyaltyPhoneFocused] = useState(false);
-  const [commentOpen, setCommentOpen] = useState(false);
   const [loyaltyPhone, setLoyaltyPhone] = useState('');
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
   const [loyaltyPercent, setLoyaltyPercent] = useState<number | null>(null);
@@ -81,7 +81,6 @@ export default function CartDrawer() {
       setSubmitAttempted(false);
       setDelivery({ method: 'BRANCH', cityRef: '', pointRef: '' });
       setLoyaltyOpen(false);
-      setCommentOpen(false);
       setLoyaltyPhone('');
       setLoyaltyError(null);
       setLoyaltyPercent(null);
@@ -187,8 +186,8 @@ export default function CartDrawer() {
         customerName,
         customerPhone: buildFullPhone(customerPhone),
         loyaltyPhone: loyaltyPhoneDigits ? buildFullPhone(loyaltyPhone) : undefined,
-        customerComment,
         contactMethod,
+        paymentOption,
         delivery,
         checkoutAttemptId,
       });
@@ -274,23 +273,24 @@ export default function CartDrawer() {
                     </div>
                   </div>
 
-                  <div className={`form-collapse${commentOpen ? ' form-collapse--open' : ''} border-t border-gray-100 pt-5`}>
-                    <button type="button" className="form-collapse-trigger" aria-expanded={commentOpen} onClick={() => setCommentOpen(v => !v)}>
-                      <span className="form-collapse-copy">
-                        <strong>Коментар до замовлення</strong>
-                        <span>(не обов’язково)</span>
-                      </span>
-                      <span className="form-collapse-chevron" aria-hidden="true">
-                        <ChevronDown size={18} />
-                      </span>
-                    </button>
-                    <div className="form-collapse-content">
-                      <div className="form-collapse-content-inner">
-                        <div className="form-field">
-                          <textarea value={customerComment} onChange={event => setCustomerComment(event.target.value)} maxLength={1000} rows={3} placeholder="Коментар (не обов’язково)" />
-                        </div>
-                      </div>
+                  <div className="border-t border-gray-100 pt-5">
+                    <h3 className="form-section-label">Варіант оплати</h3>
+                    <div className="mt-3 flex gap-4" role="radiogroup" aria-label="Варіант оплати">
+                      {PAYMENT_OPTION_VALUES.map(option => (
+                        <label key={option} className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-[13px] leading-5 text-gray-900 sm:text-sm">
+                          <input
+                            type="radio"
+                            name="payment-option"
+                            value={option}
+                            checked={paymentOption === option}
+                            onChange={() => setPaymentOption(option)}
+                            className="h-4 w-4 shrink-0 accent-black"
+                          />
+                          {PAYMENT_OPTION_LABELS[option]}
+                        </label>
+                      ))}
                     </div>
+                    <p className="mt-2 text-xs leading-5 text-gray-500">Оплата на рахунок (IBAN) ФОП після підтвердження замовлення.</p>
                   </div>
 
                   <label className="form-field relative block border-t border-gray-100 pt-5">

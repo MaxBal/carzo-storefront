@@ -17,6 +17,7 @@ function minimalSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot 
     customerPhone: '+380501112233',
     customerComment: null,
     contactMethod: 'phone',
+    paymentOption: null,
     deliveryMethod: 'BRANCH',
     deliveryCityRef: 'city-ref',
     deliveryCityName: 'Київ',
