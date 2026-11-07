@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { clearGuestCart, guestCartItemKey, readGuestCart, writeGuestCart } from '@/lib/cart/guest-cart';
 import type { CartInputItem, CartQuote } from '@/lib/cart/types';
-import { CartContext, type OrderConfirmation } from './cart-context';
+import { CartContext, type CartOpenView, type OrderConfirmation } from './cart-context';
 
 const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false });
 
@@ -12,6 +12,7 @@ export default function CartProvider({ children }: { children: React.ReactNode }
   const [items, setItems] = useState<CartInputItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [openView, setOpenView] = useState<CartOpenView>('cart');
   const [quote, setQuote] = useState<CartQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -75,6 +76,9 @@ export default function CartProvider({ children }: { children: React.ReactNode }
   }, []);
 
   const addItem = useCallback((item: Omit<CartInputItem, 'quantity'>) => {
+    // Additive only — opening the drawer is a separate intent (openCart /
+    // openCheckout) so callers pick the surface and no intermediate cart
+    // screen can flash before checkout.
     updateItems(current => {
       const key = guestCartItemKey(item);
       const existing = current.find(candidate => guestCartItemKey(candidate) === key);
@@ -87,7 +91,6 @@ export default function CartProvider({ children }: { children: React.ReactNode }
       }
       return [...current, { ...item, quantity: 1 }];
     });
-    setIsOpen(true);
   }, [updateItems]);
 
   const setQuantity = useCallback((key: string, quantity: number) => {
@@ -134,7 +137,14 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     setConfirmation(result);
     checkoutAttemptIdRef.current = null;
   }, []);
-  const openCart = useCallback(() => setIsOpen(true), []);
+  const openCart = useCallback(() => {
+    setOpenView('cart');
+    setIsOpen(true);
+  }, []);
+  const openCheckout = useCallback(() => {
+    setOpenView('checkout');
+    setIsOpen(true);
+  }, []);
   const closeCart = useCallback(() => setIsOpen(false), []);
   const closeConfirmation = useCallback(() => setConfirmation(null), []);
 
@@ -147,6 +157,7 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     items,
     itemsQuantity,
     isOpen,
+    openView,
     hydrated,
     quote,
     quoteLoading,
@@ -156,6 +167,7 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     setQuantity,
     removeItem,
     openCart,
+    openCheckout,
     closeCart,
     replaceQuote: setQuote,
     completeOrder,
@@ -163,9 +175,9 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     getCheckoutAttemptId,
     resetCheckoutAttemptId,
   }), [
-    items, itemsQuantity, isOpen, hydrated, quote, quoteLoading, quoteError,
+    items, itemsQuantity, isOpen, openView, hydrated, quote, quoteLoading, quoteError,
     confirmation, addItem, setQuantity, removeItem, completeOrder,
-    openCart, closeCart, closeConfirmation,
+    openCart, openCheckout, closeCart, closeConfirmation,
     getCheckoutAttemptId, resetCheckoutAttemptId,
   ]);
 

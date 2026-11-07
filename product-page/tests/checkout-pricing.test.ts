@@ -96,23 +96,65 @@ describe('resolveLoyaltyState', () => {
     assert.equal(called, false);
   });
 
-  it('blocks loyalty when loyaltyPhone != customerPhone', async () => {
-    let called = false;
+  it('applies loyalty when the promo number is in the store even if it differs from the contact phone', async () => {
+    let lookedUp: string | null = null;
     const outcome = await resolveLoyaltyState({
       customerPhone: PHONE,
       loyaltyPhone: OTHER_PHONE,
       subtotal: 2249,
       quantityDiscount: 0,
-      lookup: async () => {
-        called = true;
+      lookup: async (canonicalPhone) => {
+        lookedUp = canonicalPhone;
         return { phone: OTHER_PHONE };
       },
     });
     assert.equal(outcome.ok, true);
     if (!outcome.ok) return;
-    assert.equal(outcome.loyalty.phoneMismatch, true);
+    assert.equal(lookedUp, OTHER_PHONE);
+    assert.equal(outcome.loyalty.eligible, true);
+    assert.equal(outcome.loyalty.applied, true);
+    assert.equal(outcome.loyalty.discountPercent, 5);
+    assert.equal(outcome.loyalty.discountAmount, 112);
+    assert.equal(outcome.loyalty.loyaltyPhone, OTHER_PHONE);
+    assert.equal(outcome.loyalty.customerPhone, PHONE);
+    // Different-but-valid numbers are not a mismatch under the promo-code policy.
+    assert.equal(outcome.loyalty.phoneMismatch, false);
+  });
+
+  it('does not apply loyalty when the promo number is absent from the store (phones differ)', async () => {
+    const outcome = await resolveLoyaltyState({
+      customerPhone: PHONE,
+      loyaltyPhone: OTHER_PHONE,
+      subtotal: 2249,
+      quantityDiscount: 0,
+      lookup: ineligibleLookup(),
+    });
+    assert.equal(outcome.ok, true);
+    if (!outcome.ok) return;
+    assert.equal(outcome.loyalty.eligible, false);
+    assert.equal(outcome.loyalty.applied, false);
     assert.equal(outcome.loyalty.discountAmount, 0);
+    assert.equal(outcome.loyalty.phoneMismatch, false);
+  });
+
+  it('flags an unusable loyalty phone and applies no discount', async () => {
+    let called = false;
+    const outcome = await resolveLoyaltyState({
+      customerPhone: PHONE,
+      loyaltyPhone: '123',
+      subtotal: 2249,
+      quantityDiscount: 0,
+      lookup: async () => {
+        called = true;
+        return { phone: PHONE };
+      },
+    });
+    assert.equal(outcome.ok, true);
+    if (!outcome.ok) return;
     assert.equal(called, false);
+    assert.equal(outcome.loyalty.applied, false);
+    assert.equal(outcome.loyalty.discountAmount, 0);
+    assert.equal(outcome.loyalty.phoneMismatch, true);
   });
 
   it('normalizes equivalent phone formats before comparing', async () => {
@@ -292,7 +334,7 @@ describe('resolveCheckoutPricing', () => {
     assert.equal(outcome.pricing.loyalty.eligible, true);
   });
 
-  it('returns LOYALTY_CHANGED when phones mismatch and UI expected a discount', async () => {
+  it('accepts different customer/loyalty phones when the loyalty number is in the store', async () => {
     const outcome = await resolveCheckoutPricing({
       quote: makeQuote(),
       customerPhone: PHONE,
@@ -301,10 +343,29 @@ describe('resolveCheckoutPricing', () => {
       expectedBaseTotal: 2249,
       lookup: eligibleLookup(),
     });
+    assert.equal(outcome.ok, true);
+    if (!outcome.ok) return;
+    assert.equal(outcome.pricing.total, 2137);
+    assert.equal(outcome.pricing.loyalty.applied, true);
+    assert.equal(outcome.pricing.loyalty.phoneMismatch, false);
+    // Contact and loyalty numbers stay separate on the authoritative state.
+    assert.equal(outcome.pricing.loyalty.customerPhone, PHONE);
+    assert.equal(outcome.pricing.loyalty.loyaltyPhone, OTHER_PHONE);
+  });
+
+  it('returns LOYALTY_CHANGED when the promo number is not in the store but UI expected a discount', async () => {
+    const outcome = await resolveCheckoutPricing({
+      quote: makeQuote(),
+      customerPhone: PHONE,
+      loyaltyPhone: OTHER_PHONE,
+      expectedTotal: 2137,
+      expectedBaseTotal: 2249,
+      lookup: ineligibleLookup(),
+    });
     assert.equal(outcome.ok, false);
     if (outcome.ok) return;
     assert.equal(outcome.code, 'LOYALTY_CHANGED');
-    assert.equal(outcome.pricing.loyalty.phoneMismatch, true);
+    assert.equal(outcome.pricing.loyalty.eligible, false);
     assert.equal(outcome.pricing.total, 2249);
   });
 

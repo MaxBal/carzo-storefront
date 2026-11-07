@@ -112,4 +112,21 @@ describe('checkout input contract', () => {
     assert.equal(checkoutSchema.safeParse({ ...baseCheckout, expectedTotal: -1 }).success, false);
     assert.equal(checkoutSchema.safeParse({ ...baseCheckout, expectedTotal: 10.5 }).success, false);
   });
+
+  it('accepts a loyalty phone different from the contact phone', () => {
+    const parsed = checkoutSchema.safeParse({
+      ...baseCheckout,
+      customerPhone: '+380501112233',
+      loyaltyPhone: '+380671234567',
+    });
+    assert.ok(parsed.success);
+    assert.equal(parsed.success && parsed.data.customerPhone, '+380501112233');
+    assert.equal(parsed.success && parsed.data.loyaltyPhone, '+380671234567');
+  });
+
+  it('accepts an absent or empty loyalty phone (no discount requested)', () => {
+    assert.equal(checkoutSchema.safeParse(baseCheckout).success, true);
+    assert.equal(checkoutSchema.safeParse({ ...baseCheckout, loyaltyPhone: '' }).success, true);
+    assert.equal(checkoutSchema.safeParse({ ...baseCheckout, loyaltyPhone: null }).success, false);
+  });
 });

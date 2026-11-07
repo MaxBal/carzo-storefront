@@ -21,7 +21,12 @@ export interface LoyaltyPricingState {
   loyaltyPhone: string | null;
   /** Canonical checkout phone. */
   customerPhone: string | null;
-  /** Loyalty phone present but does not match the checkout phone (or is invalid). */
+  /**
+   * Legacy flag kept for historical order compatibility. Since the loyalty
+   * phone became an independent promo code, it now only marks a supplied
+   * loyalty phone that is unusable (failed to normalize). A difference between
+   * two valid numbers is allowed and never blocks the discount.
+   */
   phoneMismatch: boolean;
 }
 
@@ -63,8 +68,14 @@ export const LOYALTY_UNAVAILABLE_MESSAGE =
 /**
  * Resolve loyalty eligibility server-side.
  * - No loyalty phone → no discount (loyalty is opt-in via lookup phone).
- * - Loyalty phone != customer phone → no discount (phoneMismatch).
- * - Match → customer-store lookup; store failure is infrastructure error, never ineligible.
+ * - Loyalty phone acts as a promo code: it is checked against the customer
+ *   store independently of the checkout contact phone. The two numbers are
+ *   allowed to differ; the discount never depends on them matching.
+ * - Supplied loyalty phone that fails to normalize → no discount
+ *   (phoneMismatch kept as an audit flag for unusable numbers only).
+ * - Store lookup decides eligibility; store failure is an infrastructure
+ *   error (LOYALTY_UNAVAILABLE), never a silent ineligibility.
+ * - The 5% is always recomputed here; client-side percent/amount are untrusted.
  */
 export async function resolveLoyaltyState(input: {
   customerPhone: string;
@@ -92,7 +103,8 @@ export async function resolveLoyaltyState(input: {
     };
   }
 
-  if (!loyaltyPhone || !customerPhone || loyaltyPhone !== customerPhone) {
+  if (!loyaltyPhone) {
+    // Supplied but not a valid UA number — audit flag, no discount.
     return {
       ok: true,
       loyalty: {
@@ -100,7 +112,7 @@ export async function resolveLoyaltyState(input: {
         eligible: false,
         discountPercent: 0,
         discountAmount: 0,
-        loyaltyPhone,
+        loyaltyPhone: null,
         customerPhone,
         phoneMismatch: true,
       },

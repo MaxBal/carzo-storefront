@@ -121,6 +121,7 @@ export interface CheckoutLoyaltyState {
   eligible: boolean;
   discountPercent: number;
   discountAmount: number;
+  /** Legacy audit flag: a supplied loyalty phone that failed to normalize. A difference between two valid numbers never blocks the discount. */
   phoneMismatch: boolean;
 }
 

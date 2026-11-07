@@ -37,10 +37,12 @@ export interface OrderItemSnapshot {
 }
 
 export interface OrderLoyaltySnapshot {
+  /** Loyalty/promo number used for the discount — stored independently of customerPhone. */
   loyaltyPhone: string | null;
   eligible: boolean;
   discountPercent: number;
   discountAmount: number;
+  /** Legacy audit flag: supplied loyalty phone that failed to normalize. Kept for historical rows. */
   phoneMismatch: boolean;
 }
 

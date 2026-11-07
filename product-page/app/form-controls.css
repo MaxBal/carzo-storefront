@@ -27,7 +27,7 @@
 .form-field input,
 .form-field select,
 .form-field-input {
-  height: 54px;
+  height: 48px;
   padding: 0 15px;
 }
 
@@ -79,7 +79,7 @@
 /* Phone composite (UA flag + prefix) — matches .cm-quote-phone */
 .form-phone {
   display: flex;
-  height: 54px;
+  height: 48px;
   align-items: center;
   border: 1px solid #d1d5db;
   border-radius: 11px;
@@ -95,7 +95,7 @@
 
 .form-phone input {
   min-width: 0;
-  height: 52px;
+  height: 46px;
   flex: 1;
   border: 0;
   border-radius: 0 11px 11px 0;

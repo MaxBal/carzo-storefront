@@ -102,7 +102,7 @@ interface ProductOptionsProps {
 
 export default function ProductOptions({ params, content }: ProductOptionsProps) {
   const router = useRouter();
-  const { addItem } = useCart();
+  const { addItem, openCheckout } = useCart();
   const { size, designSlug, brandId } = params;
   const { catalog, pricing, siteSettings } = content;
 
@@ -202,6 +202,8 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
   const handleBuy = () => {
     addItem({ size, designSlug, brandId, fixation: selectedFixation });
+    // One-step checkout: skip the intermediate cart screen entirely.
+    openCheckout();
   };
 
   return (

@@ -186,11 +186,10 @@ describe('keyCRM payment option custom field', () => {
       keyCrmInput({ paymentOptionLabel: 'Повна оплата', quantityDiscount: 200, loyaltyDiscountAmount: 119 }),
       config,
     );
-    assert.equal(prepay.total, full.total);
     assert.equal(prepay.discount_amount, full.discount_amount);
     assert.deepEqual({ ...prepay, custom_fields: null }, { ...full, custom_fields: null });
-    assert.equal((prepay as Record<string, unknown>).payments, undefined);
-    assert.equal((full as Record<string, unknown>).status, undefined);
+    assert.equal((prepay as unknown as Record<string, unknown>).payments, undefined);
+    assert.equal((full as unknown as Record<string, unknown>).status, undefined);
   });
 });
 
