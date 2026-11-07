@@ -380,7 +380,7 @@ export default function CartDrawer() {
                   <div className="border-t border-gray-100 pt-4">
                     <div className="flex gap-4" role="radiogroup" aria-label="Варіант оплати">
                       {PAYMENT_OPTION_VALUES.map(option => (
-                        <label key={option} className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-[13px] leading-5 text-gray-900 sm:text-sm">
+                        <label key={option} className="flex cursor-pointer items-center gap-2 whitespace-nowrap text-[14px] leading-5 text-gray-900 sm:text-[15px]">
                           <input
                             type="radio"
                             name="payment-option"
@@ -393,7 +393,7 @@ export default function CartDrawer() {
                         </label>
                       ))}
                     </div>
-                    <p className="mt-2 text-xs leading-5 text-gray-500">Оплата на рахунок (IBAN) ФОП після підтвердження замовлення.</p>
+                    <p className="mt-2 text-[13px] leading-5 text-gray-500">Оплата на рахунок (IBAN) ФОП після підтвердження замовлення.</p>
                   </div>
 
                   <label className="form-field relative block border-t border-gray-100 pt-4">

@@ -398,7 +398,7 @@ export default function NovaPoshtaSelector({
           })}
         </div>
         {pkg && (
-          <p className="mt-3 text-xs leading-5 text-gray-500">
+          <p className="mt-3 text-[13px] leading-5 text-gray-500">
             {packageLineParts(pkg, exceededFields).map((part, index) => (
               part.field
                 ? <span key={index} className="text-red-600">{part.text}</span>
@@ -407,7 +407,7 @@ export default function NovaPoshtaSelector({
           </p>
         )}
         {status && (
-          <p className={`mt-2 flex items-start gap-1.5 text-xs font-medium leading-5 ${status.tone}`}>
+          <p className={`mt-2 flex items-start gap-1.5 text-[13px] font-medium leading-5 ${status.tone}`}>
             {status.positive
               ? <CheckCircle2 aria-hidden="true" className="mt-px shrink-0" size={16} />
               : <XCircle aria-hidden="true" className="mt-px shrink-0" size={16} />}

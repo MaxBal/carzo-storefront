@@ -39,11 +39,11 @@ export default function CartLineItems({ lines, onQuantityChange, onRemove, onNav
               <Link
                 href={line.productUrl}
                 onClick={onNavigate}
-                className="block truncate text-[14px] font-semibold leading-[1.3] hover:underline"
+                className="block truncate text-[15px] font-semibold leading-[1.3] hover:underline"
               >
                 {line.title}
               </Link>
-              <p className="mt-0.5 text-[12px] leading-[1.35] text-gray-500">
+              <p className="mt-0.5 text-[13px] leading-[1.35] text-gray-500">
                 {line.sizeLabel} · {line.brandName}
                 <br />
                 {line.fixationLabel}
@@ -82,7 +82,7 @@ export default function CartLineItems({ lines, onQuantityChange, onRemove, onNav
               </button>
             </div>
             <div className="text-right">
-              {line.quantity > 1 && <p className="text-[11px] leading-[1.3] text-gray-500">{money(line.unitPrice)} ₴ / шт.</p>}
+              {line.quantity > 1 && <p className="text-[12px] leading-[1.3] text-gray-500">{money(line.unitPrice)} ₴ / шт.</p>}
               <p className="text-[15px] font-bold leading-[1.3]">{money(line.lineTotal)} ₴</p>
             </div>
           </div>
