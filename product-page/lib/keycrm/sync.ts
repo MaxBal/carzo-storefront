@@ -24,6 +24,7 @@ export async function syncKeyCrmOrder(
     sourceId: config.sourceId,
     deliveryServiceId: config.deliveryServiceId,
     contactMethodFieldUuid: config.contactMethodFieldUuid,
+    paymentOptionFieldUuid: config.paymentOptionFieldUuid,
   });
   await createKeyCrmOrder(payload, options);
   return 'sent';
