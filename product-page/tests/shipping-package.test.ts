@@ -161,7 +161,7 @@ describe('checkPostomatPackage — 60 × 40 × 30 cm, 20 kg', () => {
     assert.deepEqual(check.exceeded, ['weightKg']);
   });
 
-  it('denyToSelect marks the point unusable', () => {
+  it('denyToSelect marks the postomat unusable without blanket highlighting', () => {
     const pkg = calculateOrderPackage([line('S', 1)])!;
     const check = checkPostomatPackage(pkg, {
       totalMaxWeightKg: null,
@@ -170,6 +170,21 @@ describe('checkPostomatPackage — 60 × 40 × 30 cm, 20 kg', () => {
       denyToSelect: true,
     });
     assert.equal(check.status, 'exceeds');
+    assert.deepEqual(check.exceeded, []);
+  });
+
+  it('denyToSelect with a confirmed exceedance highlights only that parameter', () => {
+    const check = checkPostomatPackage(
+      calculateOrderPackage([line('XL', 1)])!,
+      {
+        totalMaxWeightKg: null,
+        placeMaxWeightKg: null,
+        sendingMaxDimensionsCm: null,
+        denyToSelect: true,
+      },
+    );
+    assert.equal(check.status, 'exceeds');
+    assert.deepEqual(check.exceeded, ['lengthCm']);
   });
 });
 
@@ -238,22 +253,75 @@ describe('checkWarehousePackage — branch limitations', () => {
     }).status, 'unknown');
   });
 
-  it('partial limits: weight confirmed and passing → fits without dimension data', () => {
+  it('weight known and passing, dimensions unknown → unknown (no fake green)', () => {
     assert.equal(checkWarehousePackage(pkg, {
       totalMaxWeightKg: 10,
       placeMaxWeightKg: 10,
       sendingMaxDimensionsCm: null,
       denyToSelect: false,
+    }).status, 'unknown');
+  });
+
+  it('dimensions known and passing, weight unknown → unknown (no fake green)', () => {
+    assert.equal(checkWarehousePackage(pkg, {
+      totalMaxWeightKg: null,
+      placeMaxWeightKg: null,
+      sendingMaxDimensionsCm: { lengthCm: 120, widthCm: 100, heightCm: 100 },
+      denyToSelect: false,
+    }).status, 'unknown');
+  });
+
+  it('both limits known and satisfied → fits', () => {
+    assert.equal(checkWarehousePackage(pkg, {
+      totalMaxWeightKg: 10,
+      placeMaxWeightKg: 10,
+      sendingMaxDimensionsCm: { lengthCm: 120, widthCm: 100, heightCm: 100 },
+      denyToSelect: false,
     }).status, 'fits');
   });
 
-  it('denyToSelect blocks the branch', () => {
-    assert.equal(checkWarehousePackage(pkg, {
+  it('exceeds on a known weight limit even when dimensions are unknown', () => {
+    const check = checkWarehousePackage(pkg, {
+      totalMaxWeightKg: 2,
+      placeMaxWeightKg: null,
+      sendingMaxDimensionsCm: null,
+      denyToSelect: false,
+    });
+    assert.equal(check.status, 'exceeds');
+    assert.deepEqual(check.exceeded, ['weightKg']);
+  });
+
+  it('exceeds on a known dimension limit even when weight is unknown', () => {
+    const check = checkWarehousePackage(pkg, {
+      totalMaxWeightKg: null,
+      placeMaxWeightKg: null,
+      sendingMaxDimensionsCm: { lengthCm: 50, widthCm: 40, heightCm: 30 },
+      denyToSelect: false,
+    });
+    assert.equal(check.status, 'exceeds');
+    assert.deepEqual(check.exceeded, ['lengthCm']);
+  });
+
+  it('DenyToSelect alone blocks without highlighting any package values', () => {
+    const check = checkWarehousePackage(pkg, {
       totalMaxWeightKg: 300,
       placeMaxWeightKg: 30,
       sendingMaxDimensionsCm: { lengthCm: 120, widthCm: 100, heightCm: 100 },
       denyToSelect: true,
-    }).status, 'exceeds');
+    });
+    assert.equal(check.status, 'exceeds');
+    assert.deepEqual(check.exceeded, []);
+  });
+
+  it('DenyToSelect with a confirmed exceedance highlights only that parameter', () => {
+    const check = checkWarehousePackage(pkg, {
+      totalMaxWeightKg: 1,
+      placeMaxWeightKg: null,
+      sendingMaxDimensionsCm: { lengthCm: 120, widthCm: 100, heightCm: 100 },
+      denyToSelect: true,
+    });
+    assert.equal(check.status, 'exceeds');
+    assert.deepEqual(check.exceeded, ['weightKg']);
   });
 });
 

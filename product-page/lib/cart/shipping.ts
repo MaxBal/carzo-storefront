@@ -137,17 +137,12 @@ function checkSidesPairwise(
 
 /**
  * Branch/warehouse rule: only the longest package side is checked against the
- * largest documented dimension limit. If the API sent no limits the result is
- * 'unknown' — never a fake green and never a sales block.
+ * largest documented dimension limit. 'fits' requires every applicable limit
+ * (dimensions AND weight) to be confirmed by the API and satisfied; partial
+ * data is 'unknown' — never a fake green and never a sales block.
  */
 export function checkWarehousePackage(pkg: OrderPackage, limits: WarehouseLimits | null): LimitCheck {
   if (!limits) return NO_LIMITS;
-  if (limits.denyToSelect) {
-    return {
-      status: 'exceeds',
-      exceeded: ['lengthCm', 'widthCm', 'heightCm', 'weightKg'],
-    };
-  }
   const dimensionLimit = limits.sendingMaxDimensionsCm;
   const limitMaxSide = dimensionLimit
     ? Math.max(...[dimensionLimit.lengthCm, dimensionLimit.widthCm, dimensionLimit.heightCm].map(v => positive(v) ?? 0))
@@ -172,9 +167,12 @@ export function checkWarehousePackage(pkg: OrderPackage, limits: WarehouseLimits
     .sort((left, right) => left - right)[0] ?? null;
   const weightCheck = checkWeight(pkg.weightKg, maxWeightKg);
 
-  const exceeded = [...sideCheck.exceeded, ...weightCheck.exceeded];
-  if (exceeded.length > 0) return { status: 'exceeds', exceeded: Array.from(new Set(exceeded)) };
-  if (sideCheck.status === 'fits' || weightCheck.status === 'fits') {
+  const exceeded = Array.from(new Set([...sideCheck.exceeded, ...weightCheck.exceeded]));
+  // DenyToSelect: the warehouse is unusable regardless of limits. Red status,
+  // but only genuinely exceeded parameters are highlighted.
+  if (limits.denyToSelect) return { status: 'exceeds', exceeded };
+  if (exceeded.length > 0) return { status: 'exceeds', exceeded };
+  if (sideCheck.status === 'fits' && weightCheck.status === 'fits') {
     return { status: 'fits', exceeded: [] };
   }
   return NO_LIMITS;
@@ -195,12 +193,6 @@ export function checkPostomatPackage(pkg: OrderPackage, limits?: WarehouseLimits
   let stricterSides: LimitCheck = NO_LIMITS;
   let stricterWeight: LimitCheck = NO_LIMITS;
   if (limits) {
-    if (limits.denyToSelect) {
-      return {
-        status: 'exceeds',
-        exceeded: ['lengthCm', 'widthCm', 'heightCm', 'weightKg'],
-      };
-    }
     stricterSides = checkSidesPairwise(pkg, limits.sendingMaxDimensionsCm);
     const maxWeightKg = [positive(limits.totalMaxWeightKg), positive(limits.placeMaxWeightKg)]
       .filter((value): value is number => value !== null)
@@ -208,14 +200,17 @@ export function checkPostomatPackage(pkg: OrderPackage, limits?: WarehouseLimits
     stricterWeight = checkWeight(pkg.weightKg, maxWeightKg);
   }
 
-  const exceeded = [
+  const exceeded = Array.from(new Set([
     ...standardSides.exceeded,
     ...standardWeight.exceeded,
     ...stricterSides.exceeded,
     ...stricterWeight.exceeded,
-  ];
+  ]));
+  // DenyToSelect: red status without blanket highlighting — only genuinely
+  // exceeded parameters are marked.
+  if (limits?.denyToSelect) return { status: 'exceeds', exceeded };
   return exceeded.length > 0
-    ? { status: 'exceeds', exceeded: Array.from(new Set(exceeded)) }
+    ? { status: 'exceeds', exceeded }
     : { status: 'fits', exceeded: [] };
 }
 
