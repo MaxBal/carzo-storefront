@@ -59,7 +59,7 @@ function input(overrides: Partial<KeyCrmOrderInput> = {}): KeyCrmOrderInput {
 }
 
 describe('keyCRM order payload builder', () => {
-  it('sends a plain case as one position without comment', () => {
+  it('sends a plain case as one position with the default composition comment', () => {
     const payload = buildKeyCrmOrder(input(), CONFIG);
     assert.equal(payload.source_id, 6);
     assert.equal(payload.source_uuid, 'CZ-20261106-ABC123');
@@ -67,7 +67,7 @@ describe('keyCRM order payload builder', () => {
     assert.equal(payload.products[0].sku, 'M4.0');
     assert.equal(payload.products[0].price, 2249);
     assert.equal(payload.products[0].quantity, 1);
-    assert.equal(payload.products[0].comment, undefined);
+    assert.equal(payload.products[0].comment, 'Комплектація: 1 шт. — Без логотипа, без фіксації.');
     assert.equal(payload.discount_amount, undefined);
     assert.equal(payload.custom_fields?.length, 3);
     assert.deepEqual(payload.custom_fields?.[0], { uuid: 'OR_1007', value: ['Telegram'] });
@@ -234,11 +234,12 @@ describe('keyCRM order payload builder', () => {
     assert.equal(courier.shipping.recipient_phone, '+380931234567');
   });
 
-  it('builds a default-combo comment only when options differ from defaults', () => {
-    assert.equal(buildCompositionComment([line()]), '');
+  it('builds a composition comment for every combo, including the default one', () => {
+    assert.equal(buildCompositionComment([line()]), 'Комплектація: 1 шт. — Без логотипа, без фіксації.');
+    assert.equal(buildCompositionComment([line(), line()]), 'Комплектація: 2 шт. — Без логотипа, без фіксації.');
     assert.equal(
-      buildCompositionComment([line({ brandSlug: 'bmw', brandName: 'BMW', fixationKey: 'none', fixationLabel: 'без фіксації', logoExtra: 290, unitPrice: 2539, basePrice: 2249 })]),
-      'Комплектація: 1 шт. — BMW, без фіксації.',
+      buildCompositionComment([line({ brandSlug: 'tesla', brandName: 'Tesla', fixationKey: 'wall', fixationLabel: 'фікс.на стінці', logoExtra: 290, unitPrice: 2539, basePrice: 2249 })]),
+      'Комплектація: 1 шт. — Tesla, фікс.на стінці.',
     );
   });
 

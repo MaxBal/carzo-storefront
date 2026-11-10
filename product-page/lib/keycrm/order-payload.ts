@@ -70,15 +70,10 @@ function groupCombos(lines: KeyCrmSourceLine[]): ComboGroup[] {
 
 /**
  * "Комплектація:" comment that keeps the logo↔fixation pairing per case unit.
- * Empty string when every unit is "Без логотипа" + "без фіксації".
+ * Built for every case — including the default "Без логотипа, без фіксації" combo.
  */
 export function buildCompositionComment(lines: KeyCrmSourceLine[]): string {
   const combos = groupCombos(lines);
-  const onlyDefaults = combos.length === 1
-    && combos[0].brandName === 'Без логотипа'
-    && combos[0].fixationLabel === 'без фіксації';
-  if (onlyDefaults) return '';
-
   const parts = combos.map((combo) => (
     `${combo.quantity} шт. — ${combo.brandName}, ${combo.fixationLabel}`
   ));
