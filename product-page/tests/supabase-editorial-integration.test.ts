@@ -208,8 +208,8 @@ describe('Supabase editorial integration (read-only, Stage 7.x)', () => {
     );
     assert.equal(
       carMat.promoMedia.videoUrl,
-      'https://media.carzo.com.ua/content/products/car-mats/promo-video.mp4',
-      'car-mat promo video is the live R2 URL (DEFAULT is a local path)',
+      'https://media.carzo.com.ua/content/products/car-mats/promo-video.webm',
+      'car-mat promo video is the live R2 WebM URL',
     );
     assert.equal(editorial.reviews.settings.title, String(reviewRow.reviews_title));
     assert.equal(editorial.videoReviews.socialHandle, String(videoRow.video_reviews_social_handle));

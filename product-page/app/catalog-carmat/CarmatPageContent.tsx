@@ -50,8 +50,8 @@ interface CarmatPageContentProps {
 
 export default function CarmatPageContent({
   designs,
-  promoVideoUrl = '/carmat-video.mov',
-  promoCoverUrl = '/carmat-desktop.jpeg',
+  promoVideoUrl = 'https://media.carzo.com.ua/content/products/car-mats/promo-video.webm',
+  promoCoverUrl = 'https://media.carzo.com.ua/content/products/car-mats/cover-video.webp',
 }: CarmatPageContentProps) {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [designModalOpen, setDesignModalOpen] = useState(false);

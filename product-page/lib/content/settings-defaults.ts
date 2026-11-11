@@ -214,14 +214,14 @@ export const DEFAULT_ABOUT: AboutData = {
 };
 
 export const DEFAULT_CAR_MAT_DESIGNS: CarMatDesign[] = [
-  { code: '2.0', title: 'Дизайн Carzo 2.0', altText: 'Автокилимки Carzo дизайн 2.0', image: '' },
-  { code: '3.0', title: 'Дизайн Carzo 3.0', altText: 'Автокилимки Carzo дизайн 3.0', image: '' },
-  { code: '4.0', title: 'Дизайн Carzo 4.0', altText: 'Автокилимки Carzo дизайн 4.0', image: '' },
+  { code: '2.0', title: 'Дизайн Carzo 2.0', altText: 'Автокилимки Carzo дизайн 2.0', image: 'https://media.carzo.com.ua/content/products/car-mats/modal/design-2.0.webp' },
+  { code: '3.0', title: 'Дизайн Carzo 3.0', altText: 'Автокилимки Carzo дизайн 3.0', image: 'https://media.carzo.com.ua/content/products/car-mats/modal/design-3.0.webp' },
+  { code: '4.0', title: 'Дизайн Carzo 4.0', altText: 'Автокилимки Carzo дизайн 4.0', image: 'https://media.carzo.com.ua/content/products/car-mats/modal/design-4.0.webp' },
 ];
 
 export const DEFAULT_CAR_MAT_PROMO_MEDIA: CarMatPromoMedia = {
-  videoUrl: '/carmat-video.mov',
-  coverUrl: '/carmat-desktop.jpeg',
+  videoUrl: 'https://media.carzo.com.ua/content/products/car-mats/promo-video.webm',
+  coverUrl: 'https://media.carzo.com.ua/content/products/car-mats/cover-video.webp',
 };
 
 export function parseProducts(raw: unknown): HomepageProduct[] {
