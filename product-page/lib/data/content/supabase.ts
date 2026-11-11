@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getSupabaseAdminClient } from '@/lib/supabase/server';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { DEFAULT_CONTENT_SOURCE } from '@/lib/content/default-source';
 import {
   DEFAULT_ABOUT,
@@ -75,12 +75,42 @@ function supabaseMediaUrl(external: unknown, _file: unknown, fallback: string): 
   return r2Url(external) || fallback;
 }
 
+/**
+ * Editorial-scoped Supabase client. Unlike the shared admin client, every read
+ * bypasses the Next data cache: the default fetch cache stores PostgREST
+ * responses with a one-year TTL, so CMS edits (car-mat promo media, design
+ * photos) would stay invisible until deploy. The shared admin client is
+ * deliberately untouched — catalog, cart and orders keep their fetch behaviour.
+ */
+let cachedContentClient: SupabaseClient | null = null;
+
+function getContentClient(): SupabaseClient {
+  if (!cachedContentClient) {
+    const url = process.env.SUPABASE_URL?.trim();
+    const secretKey = process.env.SUPABASE_SECRET_KEY?.trim();
+    if (!url || !secretKey) {
+      throw new EditorialUnavailableError('Missing required Supabase environment variables');
+    }
+    cachedContentClient = createClient(url, secretKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+      },
+    });
+  }
+  return cachedContentClient;
+}
+
 async function selectRows(
   table: string,
   columns: string,
   options?: { publishedOnly?: boolean },
 ): Promise<SupabaseRow[]> {
-  let query = getSupabaseAdminClient().from(table).select(columns);
+  let query = getContentClient().from(table).select(columns);
   if (options?.publishedOnly) {
     query = query.eq('status', 'published');
   }
