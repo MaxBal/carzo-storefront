@@ -10,7 +10,9 @@ const currentYear = new Date().getUTCFullYear();
 
 export const carMatQuoteSchema = z.object({
   customerName: z.string().trim().min(2).max(120),
-  customerPhone: z.string().trim().min(10).max(24),
+  // PhoneInput stores subscriber digits only (max 9), e.g. "931234567";
+  // full "+380..." / "0..." forms are also accepted and normalized later.
+  customerPhone: z.string().trim().min(9).max(24),
   carModel: z.string().trim().min(1).max(120),
   carYear: z.string()
     .trim()

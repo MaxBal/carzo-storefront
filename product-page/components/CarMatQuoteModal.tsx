@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
+import { buildFullPhone } from '@/lib/cart/phone';
 import type { ContactMethod } from '@/lib/cart/contact-method';
 import { submitCarMatQuote } from '@/app/actions/carmat-quote';
 import {
@@ -167,6 +168,7 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
     try {
       const result = await submitCarMatQuote({
         ...form,
+        customerPhone: buildFullPhone(form.customerPhone),
         comment: form.comment?.trim() || '',
         photoChoices: Array.from(photoChoices),
         informationChoices: Array.from(informationChoices),
