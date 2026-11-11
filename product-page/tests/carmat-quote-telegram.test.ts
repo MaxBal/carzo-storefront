@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   deliverCarMatQuoteTelegram,
   formatCarMatQuoteTelegramText,
+  normalizeChatId,
   type CarMatQuoteTelegramDeps,
   type CarMatQuoteTelegramRequest,
 } from '../lib/carmat-quote/notifications';
@@ -103,6 +104,16 @@ describe('car mat quote — telegram message format', () => {
 });
 
 describe('car mat quote — telegram delivery core', () => {
+  it('normalizes chat ids pasted with quotes or noise', () => {
+    assert.equal(normalizeChatId('-1005353419581'), '-1005353419581');
+    assert.equal(normalizeChatId('"-1005353419581"'), '-1005353419581');
+    assert.equal(normalizeChatId("'-1005353419581'"), '-1005353419581');
+    assert.equal(normalizeChatId('  -1005353419581  '), '-1005353419581');
+    assert.equal(normalizeChatId('chat: -1005353419581'), '-1005353419581');
+    assert.equal(normalizeChatId(''), '');
+    assert.equal(normalizeChatId('   '), '');
+  });
+
   it('delivers to the configured carmat chat only and returns true', async () => {
     const calls: Array<{ token: string; chatId: string; text: string }> = [];
     const ok = await deliverCarMatQuoteTelegram(REQUEST, deps({
@@ -126,6 +137,21 @@ describe('car mat quote — telegram delivery core', () => {
     assert.equal(sent, false);
   });
 
+  it('quoted chat id from env is delivered unquoted', async () => {
+    const calls: Array<{ chatId: string }> = [];
+    const ok = await deliverCarMatQuoteTelegram(REQUEST, deps({
+      env: {
+        TELEGRAM_CARMAT_BOT_TOKEN: 'carmat-token-secret',
+        TELEGRAM_CARMAT_CHAT_ID: '"-1005353419581"',
+      },
+      sendTelegramText: async (_token, chatId) => {
+        calls.push({ chatId });
+      },
+    }));
+    assert.equal(ok, true);
+    assert.equal(calls[0].chatId, '-1005353419581');
+  });
+
   it('missing chat id blocks the send', async () => {
     let sent = false;
     const ok = await deliverCarMatQuoteTelegram(REQUEST, deps({
@@ -139,6 +165,12 @@ describe('car mat quote — telegram delivery core', () => {
   it('delivery failure returns false, does not throw, and never leaks the token', async () => {
     const errors: string[] = [];
     const originalError = console.error;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response(JSON.stringify({ ok: false, description: 'offline' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      }))) as typeof globalThis.fetch;
     console.error = (...args: unknown[]) => {
       errors.push(args.map(arg => typeof arg === 'string' ? arg : JSON.stringify(arg)).join(' '));
     };
@@ -151,6 +183,7 @@ describe('car mat quote — telegram delivery core', () => {
       assert.equal(ok, false);
     } finally {
       console.error = originalError;
+      globalThis.fetch = realFetch;
     }
     const logged = errors.join('\n');
     assert.ok(!logged.includes('carmat-token-secret'), 'token leaked into logs');

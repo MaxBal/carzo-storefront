@@ -95,6 +95,34 @@ function safeErrorMessage(error: unknown, secrets: string[] = []) {
 }
 
 /**
+ * Accepts "-1005353419581" as-is, tolerates quotes/spaces pasted into the env
+ * var, and extracts the numeric id from noisy values.
+ */
+export function normalizeChatId(raw: string): string {
+  const cleaned = raw.trim().replace(/^["'`]|["'`]$/g, '').trim();
+  return /^-?\d+$/.test(cleaned) ? cleaned : cleaned.match(/-?\d+/)?.[0] ?? '';
+}
+
+/** Fire-and-forget Telegram self-check for failure logs. Never logs the token. */
+async function logTelegramDiagnostics(token: string, chatId: string) {
+  try {
+    const getMe = await fetch(`https://api.telegram.org/bot${token}/getMe`, { cache: 'no-store' })
+      .then(r => r.json()) as { ok?: boolean; result?: { username?: string }; description?: string };
+    const getChat = await fetch(`https://api.telegram.org/bot${token}/getChat?chat_id=${encodeURIComponent(chatId)}`, { cache: 'no-store' })
+      .then(r => r.json()) as { ok?: boolean; result?: { id?: number; type?: string; title?: string }; description?: string };
+    console.error('Car mat quote telegram diagnostics', {
+      chatId,
+      botUsername: getMe.result?.username ?? getMe.description ?? 'unknown',
+      chat: getChat.ok
+        ? { id: getChat.result?.id, type: getChat.result?.type, title: getChat.result?.title }
+        : `getChat failed: ${getChat.description ?? 'unknown'}`,
+    });
+  } catch {
+    // diagnostics must never mask the original failure
+  }
+}
+
+/**
  * Delivery core with injected env/sender. Returns true only when the Telegram
  * message was handed to the sender without throwing. Never logs the token.
  */
@@ -103,7 +131,7 @@ export async function deliverCarMatQuoteTelegram(
   deps: CarMatQuoteTelegramDeps,
 ): Promise<boolean> {
   const token = deps.env.TELEGRAM_CARMAT_BOT_TOKEN?.trim();
-  const chatId = deps.env.TELEGRAM_CARMAT_CHAT_ID?.trim();
+  const chatId = normalizeChatId(deps.env.TELEGRAM_CARMAT_CHAT_ID ?? '');
   if (!token || !chatId) {
     console.error('Car mat quote telegram config missing', {
       hasToken: Boolean(token),
@@ -118,8 +146,10 @@ export async function deliverCarMatQuoteTelegram(
     return true;
   } catch (error) {
     console.error('Car mat quote telegram delivery failed', {
+      chatId,
       error: safeErrorMessage(error, [token]),
     });
+    await logTelegramDiagnostics(token, chatId);
     return false;
   }
 }
