@@ -765,6 +765,21 @@
   background: #374151;
 }
 
+.cm-quote-submit button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.cm-quote-error {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 @media (min-width: 1024px) {
   .cm-quote-panel {
     width: clamp(440px, 34vw, 520px);

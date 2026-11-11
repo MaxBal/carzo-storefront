@@ -4,9 +4,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 import type { ContactMethod } from '@/lib/cart/contact-method';
+import { submitCarMatQuote } from '@/app/actions/carmat-quote';
 import {
+  CARMAT_INFORMATION_OPTIONS,
   CARMAT_INTEREST_OPTIONS,
+  CARMAT_PHOTO_OPTIONS,
+  type CarMatInformationChoice,
   type CarMatInterest,
+  type CarMatPhotoChoice,
   type CarMatQuoteInput,
 } from '@/lib/carmat-quote/types';
 
@@ -15,28 +20,11 @@ interface CarMatQuoteModalProps {
   onClose: () => void;
 }
 
-type PhotoChoice = 'none' | 'all' | 'carzo-2' | 'carzo-3' | 'carzo-4';
-type InformationChoice = 'none' | 'care' | 'materials';
-
 const CONTACT_METHOD_OPTIONS: ReadonlyArray<{ value: ContactMethod; label: string }> = [
   { value: 'telegram', label: 'написати в Telegram' },
   { value: 'whatsapp', label: 'написати у WhatsApp' },
   { value: 'viber', label: 'написати у Viber' },
   { value: 'phone', label: 'зателефонувати' },
-];
-
-const PHOTO_OPTIONS: ReadonlyArray<{ value: PhotoChoice; label: string }> = [
-  { value: 'none', label: 'Не отримувати' },
-  { value: 'all', label: 'Усі дизайни' },
-  { value: 'carzo-2', label: 'Carzo 2.0 (подовжений ромб)' },
-  { value: 'carzo-3', label: 'Carzo 3.0 (Сота)' },
-  { value: 'carzo-4', label: 'Carzo 4.0 (Urus)' },
-];
-
-const INFORMATION_OPTIONS: ReadonlyArray<{ value: InformationChoice; label: string }> = [
-  { value: 'none', label: 'Не отримувати' },
-  { value: 'care', label: 'Як доглядати за килимками' },
-  { value: 'materials', label: 'Детально про матеріали' },
 ];
 
 const INITIAL_FORM: CarMatQuoteInput = {
@@ -54,12 +42,15 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
   const [form, setForm] = useState<CarMatQuoteInput>(INITIAL_FORM);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [informationOpen, setInformationOpen] = useState(false);
-  const [photoChoices, setPhotoChoices] = useState<Set<PhotoChoice>>(
-    () => new Set<PhotoChoice>(['none']),
+  const [photoChoices, setPhotoChoices] = useState<Set<CarMatPhotoChoice>>(
+    () => new Set<CarMatPhotoChoice>(['none']),
   );
-  const [informationChoices, setInformationChoices] = useState<Set<InformationChoice>>(
-    () => new Set<InformationChoice>(['none']),
+  const [informationChoices, setInformationChoices] = useState<Set<CarMatInformationChoice>>(
+    () => new Set<CarMatInformationChoice>(['none']),
   );
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -84,8 +75,11 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
     setForm(INITIAL_FORM);
     setPhotosOpen(false);
     setInformationOpen(false);
-    setPhotoChoices(new Set<PhotoChoice>(['none']));
-    setInformationChoices(new Set<InformationChoice>(['none']));
+    setPhotoChoices(new Set<CarMatPhotoChoice>(['none']));
+    setInformationChoices(new Set<CarMatInformationChoice>(['none']));
+    setSubmitting(false);
+    setSubmitError(null);
+    setSubmitted(false);
 
     const body = document.body;
     const previousOverflow = body.style.overflow;
@@ -130,13 +124,13 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
     };
   }, [isOpen]);
 
-  const togglePhotoChoice = (choice: PhotoChoice) => {
+  const togglePhotoChoice = (choice: CarMatPhotoChoice) => {
     setPhotoChoices(current => {
       if (choice === 'none') {
-        return current.has('none') ? new Set<PhotoChoice>() : new Set<PhotoChoice>(['none']);
+        return current.has('none') ? new Set<CarMatPhotoChoice>() : new Set<CarMatPhotoChoice>(['none']);
       }
       if (choice === 'all') {
-        return current.has('all') ? new Set<PhotoChoice>() : new Set<PhotoChoice>(['all']);
+        return current.has('all') ? new Set<CarMatPhotoChoice>() : new Set<CarMatPhotoChoice>(['all']);
       }
 
       const next = new Set(current);
@@ -148,12 +142,12 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
     });
   };
 
-  const toggleInformationChoice = (choice: InformationChoice) => {
+  const toggleInformationChoice = (choice: CarMatInformationChoice) => {
     setInformationChoices(current => {
       if (choice === 'none') {
         return current.has('none')
-          ? new Set<InformationChoice>()
-          : new Set<InformationChoice>(['none']);
+          ? new Set<CarMatInformationChoice>()
+          : new Set<CarMatInformationChoice>(['none']);
       }
 
       const next = new Set(current);
@@ -163,6 +157,31 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
       return next;
     });
   };
+
+  const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (submitting) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const result = await submitCarMatQuote({
+        ...form,
+        comment: form.comment?.trim() || '',
+        photoChoices: Array.from(photoChoices),
+        informationChoices: Array.from(informationChoices),
+      });
+      if (result.ok) {
+        setSubmitted(true);
+      } else {
+        setSubmitError(result.message);
+      }
+    } catch {
+      setSubmitError('Не вдалося надіслати заявку. Спробуйте ще раз або напишіть нам у месенджер.');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [form, photoChoices, informationChoices, submitting]);
 
   const keepFocusedControlVisible = (event: React.FocusEvent<HTMLDivElement>) => {
     if (!(event.target instanceof HTMLElement)) return;
@@ -195,7 +214,20 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
           </button>
         </header>
 
-        <form className="cm-quote-form" onSubmit={event => event.preventDefault()}>
+        {submitted ? (
+          <>
+            <div className="cm-quote-content">
+              <div className="cm-quote-intro">
+                <p><strong>Дякуємо! Заявку надіслано.</strong></p>
+                <p>Ми зв’яжемося з вами найближчим часом.</p>
+              </div>
+            </div>
+            <footer className="cm-quote-submit">
+              <button type="button" onClick={onClose}>Закрити</button>
+            </footer>
+          </>
+        ) : (
+        <form className="cm-quote-form" onSubmit={handleSubmit}>
           <div ref={contentRef} className="cm-quote-content" onFocusCapture={keepFocusedControlVisible}>
             <div className="cm-quote-intro">
               <p id="cm-quote-intro">Отримайте ціну максимально швидко та у зручний для вас спосіб</p>
@@ -335,7 +367,7 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
                   aria-hidden={!photosOpen}
                 >
                   <div className="cm-quote-accordion-content-inner" role="group" aria-label="Фото виконаних робіт">
-                    {PHOTO_OPTIONS.map((option, index) => (
+                    {CARMAT_PHOTO_OPTIONS.map((option, index) => (
                       <label
                         key={option.value}
                         className={`cm-quote-check${index === 2 ? ' cm-quote-check--section' : ''}`}
@@ -382,7 +414,7 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
                     role="group"
                     aria-label="Детально про догляд та матеріали"
                   >
-                    {INFORMATION_OPTIONS.map((option, index) => (
+                    {CARMAT_INFORMATION_OPTIONS.map((option, index) => (
                       <label
                         key={option.value}
                         className={`cm-quote-check${index === 1 ? ' cm-quote-check--section' : ''}`}
@@ -400,12 +432,18 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
                 </div>
               </div>
             </div>
+            {submitError && (
+              <div className="cm-quote-error" role="alert">{submitError}</div>
+            )}
           </div>
 
           <footer className="cm-quote-submit">
-            <button type="submit">Відправити дані</button>
+            <button type="submit" disabled={submitting}>
+              {submitting ? 'Надсилаємо…' : 'Відправити дані'}
+            </button>
           </footer>
         </form>
+        )}
       </section>
     </div>
   );

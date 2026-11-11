@@ -1,10 +1,16 @@
 'use server';
 
 import { contactMethodLabel } from '@/lib/cart/contact-method';
-import { CARMAT_INTEREST_OPTIONS } from '@/lib/carmat-quote/types';
+import {
+  CARMAT_INFORMATION_OPTIONS,
+  CARMAT_INTEREST_OPTIONS,
+  CARMAT_PHOTO_OPTIONS,
+  type CarMatInformationChoice,
+  type CarMatPhotoChoice,
+} from '@/lib/carmat-quote/types';
 import { carMatQuoteSchema } from '@/lib/carmat-quote/validation';
 import { QUOTE_MAINTENANCE_MESSAGE, isCheckoutMaintenance } from '@/lib/checkout-maintenance';
-import { notifyNewCarMatQuote } from '@/lib/order-notifications';
+import { sendCarMatQuoteTelegram } from '@/lib/carmat-quote/notifications';
 import type { CarMatQuoteInput, CarMatQuoteResult } from '@/lib/carmat-quote/types';
 
 function normalizePhone(value: string) {
@@ -12,6 +18,26 @@ function normalizePhone(value: string) {
   if (digits.length === 10 && digits.startsWith('0')) return `+38${digits}`;
   if (digits.length === 12 && digits.startsWith('380')) return `+${digits}`;
   return null;
+}
+
+function labelsFor<T extends string>(
+  values: readonly T[] | undefined,
+  options: ReadonlyArray<{ value: T; label: string }>,
+): string[] {
+  if (!values?.length) return [];
+  return values
+    .map(value => options.find(option => option.value === value)?.label)
+    .filter((label): label is string => Boolean(label));
+}
+
+function photoLabels(values: CarMatPhotoChoice[] | undefined): string[] {
+  const active = values?.filter(value => value !== 'none') ?? [];
+  return labelsFor(active, CARMAT_PHOTO_OPTIONS);
+}
+
+function informationLabels(values: CarMatInformationChoice[] | undefined): string[] {
+  const active = values?.filter(value => value !== 'none') ?? [];
+  return labelsFor(active, CARMAT_INFORMATION_OPTIONS);
 }
 
 export async function submitCarMatQuote(input: CarMatQuoteInput): Promise<CarMatQuoteResult> {
@@ -33,7 +59,7 @@ export async function submitCarMatQuote(input: CarMatQuoteInput): Promise<CarMat
   const interest = CARMAT_INTEREST_OPTIONS.find(option => option.value === parsed.data.interest);
 
   try {
-    const delivered = await notifyNewCarMatQuote({
+    const delivered = await sendCarMatQuoteTelegram({
       customerName: parsed.data.customerName.trim(),
       customerPhone: phone,
       carModel: parsed.data.carModel.trim(),
@@ -42,6 +68,9 @@ export async function submitCarMatQuote(input: CarMatQuoteInput): Promise<CarMat
       interest: interest?.label ?? parsed.data.interest,
       contactMethod: contactMethodLabel(parsed.data.contactMethod),
       comment: parsed.data.comment?.trim() || '',
+      photoLabels: photoLabels(parsed.data.photoChoices),
+      informationLabels: informationLabels(parsed.data.informationChoices),
+      requestedAt: new Date(),
     });
 
     if (!delivered) {
