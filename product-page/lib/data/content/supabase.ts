@@ -179,7 +179,7 @@ const CONTENT_SECTION_COLUMNS =
   'key,content_set_id,title,text,media_url,image_placeholder,sort,content_sets:content_set_id(key)';
 const RICH_SECTION_IMAGE_COLUMNS =
   'key,section_id,design_id,media_url,alt,designs:design_id(slug),rich_sections:section_id(key)';
-const LOGO_SETTINGS_COLUMNS = 'title,info_text,fallback_image_url,placement_video_url,specs';
+const LOGO_SETTINGS_COLUMNS = 'title,info_text,fallback_image_url,placement_image_url,specs';
 const PRODUCT_MEDIA_COLUMNS = 'slot,media_url';
 
 /**
@@ -339,7 +339,7 @@ export function createSupabaseContentRepository(): ContentRepository {
               title: text(logoRow.title),
               infoText: text(logoRow.info_text),
               fallbackImage: r2Url(logoRow.fallback_image_url),
-              placementVideo: r2Url(logoRow.placement_video_url),
+              placementImage: r2Url(logoRow.placement_image_url),
               specs: Array.isArray(logoRow.specs)
                 ? (logoRow.specs as LogoSettings['specs'])
                 : [],

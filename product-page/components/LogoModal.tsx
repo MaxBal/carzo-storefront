@@ -109,20 +109,9 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
               </>
             )}
 
-            {/* Placement tab — global video preferred, image as legacy fallback */}
+            {/* Placement tab — one shared placement photo for all cases */}
             {activeTab === 'placement' && (
-              data.placementVideo ? (
-                <div className="modal-image-container aspect-video">
-                  <video
-                    src={data.placementVideo}
-                    controls
-                    playsInline
-                    preload="metadata"
-                    className="h-full w-full object-contain"
-                    aria-label={`Розміщення логотипа ${data.brandName}`}
-                  />
-                </div>
-              ) : (
+              <div className="flex flex-col gap-3">
                 <div className="modal-image-container aspect-video">
                   <Image
                     src={data.placementImage}
@@ -133,7 +122,13 @@ export default function LogoModal({ onClose, data }: LogoModalProps) {
                     unoptimized
                   />
                 </div>
-              )
+                <div className="modal-image-caption">
+                  <Info size={14} strokeWidth={2} aria-hidden="true" />
+                  <p>
+                    На фото показано приклад розміщення логотипа. Зовнішній вигляд кейсу та логотип залежить від обраної комплектації.
+                  </p>
+                </div>
+              </div>
             )}
 
             {/* FAQ tab */}

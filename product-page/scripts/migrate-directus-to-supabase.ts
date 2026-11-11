@@ -306,7 +306,7 @@ async function main() {
         info_text: asString(logoSettingsSrc.info_text),
         specs: stripDirectusFileIds(logoSettingsSrc.specs ?? null),
         fallback_image_url: mediaUrl(logoSettingsSrc.fallback_image_url).url,
-        placement_video_url: mediaUrl(logoSettingsSrc.logo_placement_video_url).url,
+        placement_image_url: mediaUrl(logoSettingsSrc.logo_placement_video_url).url,
         status: asString(logoSettingsSrc.status) ?? 'published',
       }]
     : [];

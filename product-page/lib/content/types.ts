@@ -120,16 +120,8 @@ export interface LogoSettings {
   title: string;
   infoText: string;
   fallbackImage: string;
-  placementVideo: string;
+  placementImage: string;
   specs: LogoSpec[];
-}
-
-export interface LogoPlacement {
-  key: string;
-  designSlug: string | null;
-  size: SizeId | null;
-  image: string;
-  sort: number;
 }
 
 export interface LogoModalData {
@@ -138,7 +130,6 @@ export interface LogoModalData {
   infoText: string;
   logoImage: string;
   placementImage: string;
-  placementVideo: string;
   specs: LogoSpec[];
   faqs: FaqItem[];
 }
@@ -324,7 +315,6 @@ export interface ContentSource extends ProductCatalog {
   contentSections: ContentSection[];
   faqItems: FaqItem[];
   logoSettings: LogoSettings;
-  logoPlacements: LogoPlacement[];
   richSections: RichContentSection[];
   richSectionImages: RichContentSectionImage[];
   magneticSystemMedia: MagneticSystemMedia;

@@ -159,7 +159,6 @@ export const getContentSource = cache(async (): Promise<ContentSource> => {
     contentSections: editorial.contentSections,
     faqItems: editorial.faqItems,
     logoSettings: editorial.logoSettings,
-    logoPlacements: DEFAULT_CONTENT_SOURCE.logoPlacements,
     richSections: editorial.richSections,
     richSectionImages: editorial.richSectionImages,
     magneticSystemMedia: editorial.magneticSystemMedia,

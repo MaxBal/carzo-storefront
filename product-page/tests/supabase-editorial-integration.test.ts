@@ -102,7 +102,7 @@ describe('Supabase editorial integration (read-only, Stage 7.x)', () => {
       ['review_settings', 'reviews_title'],
       ['video_review_settings', 'video_reviews'],
       ['site_settings', 'media_placeholder_url'],
-      ['logo_settings', 'placement_video_url'],
+      ['logo_settings', 'placement_image_url'],
     ];
     for (const [table, column] of probes) {
       const { data, error } = await client.from(table).select(column).limit(1);
@@ -213,7 +213,7 @@ describe('Supabase editorial integration (read-only, Stage 7.x)', () => {
     );
     assert.equal(editorial.reviews.settings.title, String(reviewRow.reviews_title));
     assert.equal(editorial.videoReviews.socialHandle, String(videoRow.video_reviews_social_handle));
-    assert.ok(editorial.logoSettings.placementVideo.includes('media.carzo.com.ua'), 'logo placement video is R2');
+    assert.ok(editorial.logoSettings.placementImage.includes('media.carzo.com.ua'), 'logo placement image is R2');
 
     // loadEditorial carries the same typed settings data (no read-and-discard).
     assert.deepEqual(editorial.homepage, homepage);

@@ -119,20 +119,6 @@ function resolveFixationModal(params: ProductParams, source: ContentSource) {
   return modal;
 }
 
-function resolvePlacement(params: ProductParams, source: ContentSource) {
-  const exact = source.logoPlacements.find(item => item.designSlug === params.designSlug && item.size === params.size);
-  if (exact) return exact.image;
-  const designFallback = source.logoPlacements.find(item => item.designSlug === params.designSlug && item.size === null);
-  if (designFallback) return designFallback.image;
-  const globalFallback = source.logoPlacements.find(item => item.designSlug === null && item.size === null);
-  warnFallback('logo placement', `${params.designSlug}:${params.size}`, globalFallback?.key ?? 'logo fallback image');
-  return globalFallback?.image || source.logoSettings.fallbackImage;
-}
-
-function resolvePlacementVideo(source: ContentSource) {
-  return source.logoSettings.placementVideo || '';
-}
-
 function resolveRichContent(params: ProductParams, source: ContentSource): ResolvedRichContentSection[] {
   const design = source.designs.find(item => item.slug === params.designSlug);
   const templates = sorted(
@@ -245,8 +231,7 @@ export function resolveProductContent(
       brandName: selectedBrand.name ?? '',
       infoText: source.logoSettings.infoText,
       logoImage: brandImage,
-      placementImage: resolvePlacement(params, source),
-      placementVideo: resolvePlacementVideo(source),
+      placementImage: source.logoSettings.placementImage,
       specs: source.logoSettings.specs,
       faqs: faqs('logo', source),
     },

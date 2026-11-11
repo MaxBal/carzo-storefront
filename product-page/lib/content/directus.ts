@@ -164,7 +164,7 @@ function parseVideoReviews(site: RecordValue | undefined): ContentSource['videoR
 async function loadDirectusSource(): Promise<ContentSource> {
   const [
     designs, sizes, brands, brandPricing, sizeShipping, fixations, variants, galleryImages, contentSets,
-    contentSections, faqItems, logoSettings, logoPlacements, richSections, richSectionImages,
+    contentSections, faqItems, logoSettings, richSections, richSectionImages,
     benefitModals, discountTiers, siteSettings, mediaSettings,
   ] = await Promise.all([
     readCollection('carzo_designs', '*,selector_image.id'),
@@ -179,7 +179,6 @@ async function loadDirectusSource(): Promise<ContentSource> {
     readCollection('carzo_content_sections', '*,content_set.key,image.id'),
     readCollection('carzo_faq_items'),
     readCollection('carzo_logo_settings', '*,fallback_image.id,logo_placement_video.id'),
-    readCollection('carzo_logo_placements', '*,design.slug,size.code,image.id'),
     readCollection('carzo_rich_sections'),
     readCollection('carzo_rich_section_images', '*,design.slug,section.key,image.id'),
     readCollection('carzo_benefit_modals'),
@@ -294,15 +293,10 @@ async function loadDirectusSource(): Promise<ContentSource> {
       ? {
           title: string(logoSettings[0].title), infoText: string(logoSettings[0].info_text),
           fallbackImage: resolveMediaUrl(logoSettings[0].fallback_image_url, logoSettings[0].fallback_image, '/Без_имени-1.jpg'),
-          placementVideo: resolveMediaUrl(logoSettings[0].logo_placement_video_url, logoSettings[0].logo_placement_video),
+          placementImage: resolveMediaUrl(logoSettings[0].logo_placement_video_url, logoSettings[0].logo_placement_video),
           specs: Array.isArray(logoSettings[0].specs) ? logoSettings[0].specs as ContentSource['logoSettings']['specs'] : [],
         }
       : DEFAULT_CONTENT_SOURCE.logoSettings,
-    logoPlacements: logoPlacements.map(item => ({
-      key: string(item.key), designSlug: relationValue(item.design, 'slug'),
-      size: relationValue(item.size, 'code') as SizeId | null,
-      image: resolveMediaUrl(item.external_url, item.image), sort: number(item.sort),
-    })),
     richSections: richSections.map(item => ({
       key: string(item.key), title: string(item.title),
       subtitle: string(item.subtitle), description: string(item.description),

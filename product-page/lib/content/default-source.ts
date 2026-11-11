@@ -95,10 +95,9 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
     title: seed.logoSettings.title,
     infoText: seed.logoSettings.infoText,
     fallbackImage: seed.logoSettings.fallbackImagePath,
-    placementVideo: '',
+    placementImage: '',
     specs: seed.logoSettings.specs,
   },
-  logoPlacements: [],
   richSections: seed.richSections.map(item => ({
     key: item.key,
     title: item.title,

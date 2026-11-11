@@ -348,6 +348,22 @@
   background: #fafafa;
 }
 
+.modal-image-caption {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #858585;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.modal-image-caption svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .modal-tab-bar {
   display: flex;
   gap: 24px;
