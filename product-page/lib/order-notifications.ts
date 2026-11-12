@@ -5,6 +5,7 @@ import {
   type NotificationOrderItem,
 } from '@/lib/cart/order-items-summary';
 import { formatOrderDiscountsSummary } from '@/lib/cart/order-discounts-summary';
+import { formatOrderNotificationHtml } from '@/lib/cart/order-notification-message';
 import { resolveOrderStoreBackend } from '@/lib/data/config';
 import {
   getNotificationSettingsRepository,
@@ -37,6 +38,8 @@ export interface NewOrderNotification {
   contactMethod: string;
   /** Payment terms label ("Передоплата 200 ₴" | "Повна оплата"); '' when not recorded. */
   paymentOption: string;
+  /** Freeform buyer comment; shown in the notification only when present. */
+  customerComment?: string;
   itemsQuantity: number;
   /** Authoritative quantity discount from server quote (0 when not applied). */
   quantityDiscount: number;
@@ -144,8 +147,6 @@ function renderTemplate(template: string, variables: Record<string, string>) {
   return template.replace(/{{\s*([a-z_]+)\s*}}/gi, (_, key: string) => variables[key] ?? '');
 }
 
-const DISCOUNTS_SUMMARY_TOKEN = /\{\{\s*discounts_summary\s*\}\}/i;
-
 /**
  * Custom templates may predate `{{payment_option}}`.
  * When the token is absent and an option was recorded, insert the line
@@ -168,27 +169,6 @@ export function applyPaymentOptionFallback(
     return lines.join('\n');
   }
   return `${rendered}\n${line}`;
-}
-
-/**
- * Custom Directus templates may predate `{{discounts_summary}}`.
- * When the token is absent and discounts apply, insert the summary
- * immediately before the `Сума:` total line (single insertion point).
- */
-function applyDiscountsSummaryFallback(
-  template: string,
-  rendered: string,
-  discountsSummary: string,
-): string {
-  if (!discountsSummary || DISCOUNTS_SUMMARY_TOKEN.test(template)) return rendered;
-  const lines = rendered.split('\n');
-  const totalIndex = lines.findIndex((line) => /^\s*Сума\s*:/i.test(line));
-  const insertLines = discountsSummary.split('\n');
-  if (totalIndex >= 0) {
-    lines.splice(totalIndex, 0, ...insertLines);
-    return lines.join('\n');
-  }
-  return `${rendered}\n${discountsSummary}`;
 }
 
 function renderedMessage(settings: NotificationSettings, order: NewOrderNotification, orderUrl: string) {
@@ -215,18 +195,9 @@ function renderedMessage(settings: NotificationSettings, order: NewOrderNotifica
     delivery_point: order.deliveryDestination,
     order_url: orderUrl,
   };
-  const message = applyPaymentOptionFallback(
-    settings.messageTemplate,
-    applyDiscountsSummaryFallback(
-      settings.messageTemplate,
-      renderTemplate(settings.messageTemplate, variables),
-      discountsSummary,
-    ),
-    order.paymentOption,
-  );
   return {
     subject: renderTemplate(settings.subjectTemplate, variables).trim().slice(0, 255),
-    message: message.trim().slice(0, 3_500),
+    message: formatOrderNotificationHtml({ ...order, orderUrl }).trim().slice(0, 4_000),
     orderUrl,
   };
 }
@@ -255,13 +226,23 @@ async function sendDirectusMessage(
   if (!response.ok) throw new Error(`Directus email notification failed: ${response.status}`);
 }
 
-async function sendTelegramToChatIds(token: string, chatIds: string[], text: string) {
+async function sendTelegramToChatIds(
+  token: string,
+  chatIds: string[],
+  text: string,
+  parseMode?: 'HTML',
+) {
   try {
     await Promise.all(chatIds.map(async (chatId) => {
       const response = await fetchWithTimeout(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+        body: JSON.stringify({
+          chat_id: chatId,
+          text,
+          disable_web_page_preview: true,
+          ...(parseMode ? { parse_mode: parseMode } : {}),
+        }),
         cache: 'no-store',
       });
       const payload = await response.json() as { ok?: boolean; description?: string };
@@ -279,6 +260,7 @@ async function sendTelegram(
   subject: string,
   message: string,
   orderUrl?: string,
+  parseMode?: 'HTML',
 ) {
   const botSettings = await readTelegramBotSettings();
   const token = botSettings.token || process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -288,8 +270,12 @@ async function sendTelegram(
   if (!token) throw new Error('Telegram bot token is not configured');
   if (chatIds.length === 0) throw new Error('Telegram chat recipients are not configured');
   const suffix = orderUrl && !message.includes(orderUrl) ? `\n\n${orderUrl}` : '';
-  const text = `${subject}\n\n${message}${suffix}`.slice(0, 4_000);
-  await sendTelegramToChatIds(token, chatIds, text);
+  // HTML order messages are self-contained (header + link); plain messages
+  // keep the legacy subject prefix and URL suffix.
+  const text = (parseMode === 'HTML'
+    ? message
+    : `${subject}\n\n${message}${suffix}`).slice(0, 4_000);
+  await sendTelegramToChatIds(token, chatIds, text, parseMode);
 }
 
 function safeErrorMessage(error: unknown, extraSecrets: string[] = []) {
@@ -323,7 +309,7 @@ export async function notifyNewOrder(order: NewOrderNotification) {
     if (settings.channel === 'telegram' || settings.channel === 'both') {
       deliveries.push({
         channel: 'telegram',
-        task: sendTelegram(settings, subject, message, orderUrl),
+        task: sendTelegram(settings, subject, message, orderUrl, 'HTML'),
       });
     }
     const results = await Promise.allSettled(deliveries.map(item => item.task));
@@ -366,7 +352,7 @@ async function notifyNewOrderSupabase(order: NewOrderNotification) {
     }
     if (settings.channel === 'email') return;
 
-    const { subject, message } = renderedMessage(settings, order, '');
+    const { message } = renderedMessage(settings, order, '');
     const credentials = await repository.readTelegramCredentials();
     const token = process.env.TELEGRAM_BOT_TOKEN?.trim() || credentials.token;
     // Preview/development must send only to TELEGRAM_TEST_CHAT_IDS; a missing
@@ -391,8 +377,7 @@ async function notifyNewOrderSupabase(order: NewOrderNotification) {
       });
       return;
     }
-    const text = `${subject}\n\n${message}`.slice(0, 4_000);
-    await sendTelegramToChatIds(token, recipients.chatIds, text);
+    await sendTelegramToChatIds(token, recipients.chatIds, message.slice(0, 4_000), 'HTML');
   } catch (error) {
     console.error('Order notification setup failed', {
       orderId: order.id,

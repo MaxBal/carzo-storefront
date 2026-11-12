@@ -361,11 +361,13 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
               deliveryMethod: DELIVERY_METHOD_LABELS[delivery.method],
               deliveryCity: delivery.cityName,
               deliveryDestination: destination,
+              customerComment: parsed.data.customerComment?.trim() || '',
               items: quote.lines.map(line => ({
                 title: line.title,
                 quantity: line.quantity,
                 lineTotal: line.lineTotal,
                 fixationLabel: line.fixationLabel,
+                brandName: line.brandName,
               })),
             });
           },

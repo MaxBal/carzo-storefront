@@ -3,6 +3,8 @@ export interface NotificationOrderItem {
   quantity: number;
   lineTotal: number;
   fixationLabel: string;
+  /** "Без логотипа" or the chosen car logo brand; shown as its own line. */
+  brandName?: string;
 }
 
 /** Pure formatter for `{{items_summary}}` — includes human-readable fixation. */

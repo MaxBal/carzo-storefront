@@ -14,7 +14,7 @@
     "test:shipping": "tsx --test tests/shipping-package.test.ts",
     "test:payment": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/payment-option.test.ts",
     "test:keycrm": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/keycrm-sku.test.ts tests/keycrm-order-payload.test.ts tests/keycrm-client.test.ts tests/keycrm-webhook.test.ts tests/keycrm-sync.test.ts",
-    "test:order-notifications": "tsx --test tests/order-items-summary.test.ts tests/order-discounts-summary.test.ts tests/telegram-recipients.test.ts",
+    "test:order-notifications": "tsx --test tests/order-items-summary.test.ts tests/order-discounts-summary.test.ts tests/order-notification-message.test.ts tests/telegram-recipients.test.ts",
     "test:stage9-prep": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/carmat-quote-notifications.test.ts tests/checkout-maintenance.test.ts",
     "test:carmat-telegram": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/carmat-quote-telegram.test.ts tests/carmat-quote-validation.test.ts",
     "test:carmat-supabase": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/carmat-quote-supabase-integration.test.ts",
