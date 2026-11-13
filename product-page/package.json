@@ -9,6 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:customer-store": "tsx --test tests/customer-store.test.ts",
+    "test:audit-fixes": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/cms-href.test.ts tests/supabase-catalog-published-filter.test.ts tests/robots-env.test.ts",
     "test:loyalty": "tsx --test tests/loyalty-math.test.ts tests/checkout-pricing.test.ts tests/checkout-side-effects.test.ts",
     "test:checkout-reliability": "tsx --test tests/checkout-reliability.test.ts",
     "test:shipping": "tsx --test tests/shipping-package.test.ts",
