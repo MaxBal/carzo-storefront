@@ -12,7 +12,7 @@
 | Локальный `main` на момент старта (чужой коммит, НЕ входит в работу) | `f8e0e63c9cda807d13a30b0b90970d4717298893` (`AGENTS.md`, `.gitignore`) |
 | Рабочая ветка | `fix/xiaomi-audit-2026-11-13` |
 | Конечный SHA | вершина ветки `fix/xiaomi-audit-2026-11-13` (`git rev-parse HEAD`); порядок коммитов — §2 |
-| Pull Request | см. ссылку в конце документа (обновляется после создания PR) |
+| Pull Request | **https://github.com/MaxBal/carzo-storefront/pull/4** |
 
 Worktree для независимой локальной проверки: `/Users/qq/Documents/GitHub/carzo-xiaomi-audit-2026-11-13`
 Валидация перед ревью: `cd product-page && pnpm install && pnpm exec tsc --noEmit &&
@@ -164,7 +164,5 @@ push-автодеплой выключен (деплой CLI); Deployment Protec
 
 ## 12. Pull Request
 
-Ссылка на PR: _(обновляется ниже после создания)_
-
-> PR создан для ветки `fix/xiaomi-audit-2026-11-13` в репозитории `MaxBal/carzo-storefront`.
-> В описании PR есть ссылка на этот файл.
+**https://github.com/MaxBal/carzo-storefront/pull/4** — PR ветки `fix/xiaomi-audit-2026-11-13`
+(база `main`, репозиторий `MaxBal/carzo-storefront`). В описании PR есть ссылка на этот файл.

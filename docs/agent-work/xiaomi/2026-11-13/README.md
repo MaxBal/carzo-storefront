@@ -65,6 +65,7 @@ OpenAI Codex по Git diff.
 - [VERIFICATION.md](./VERIFICATION.md) — протоколы проверок и их результаты.
 - [SUBAGENTS_REPORT.md](./SUBAGENTS_REPORT.md) — результаты четырёх субагентов.
 - [CODEX_HANDOFF.md](./CODEX_HANDOFF.md) — пакет для независимой проверки OpenAI Codex.
+- Pull Request: https://github.com/MaxBal/carzo-storefront/pull/4
 
 ## Статус выполнения
 
