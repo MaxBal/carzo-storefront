@@ -84,7 +84,7 @@ export function createSupabaseCatalogRepository(): CatalogRepository {
               'key,price,old_price,in_stock,quantity_discount_eligible,status,designs:design_id(slug),sizes:size_id(code)',
               { publishedOnly: true },
             ),
-            selectAll('discount_tiers', 'key,min_quantity,amount,sort'),
+            selectAll('discount_tiers', 'key,min_quantity,amount,sort', { publishedOnly: true }),
             selectAll('site_settings', 'checkout_payment_details'),
           ]);
 

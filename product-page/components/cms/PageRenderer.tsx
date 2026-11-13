@@ -2,6 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import sanitizeHtml from 'sanitize-html';
 import Header from '@/components/Header';
+import { sanitizeCmsHref } from '@/lib/cms/href';
 import type { CmsPage, CmsPageBlock } from '@/lib/pages/types';
 
 const themeClasses = {
@@ -33,10 +34,11 @@ function CmsLink({ href, children, className }: {
   children: React.ReactNode;
   className: string;
 }) {
-  if (/^(https?:|mailto:|tel:)/i.test(href)) {
-    return <a href={href} className={className} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">{children}</a>;
+  const safeHref = sanitizeCmsHref(href);
+  if (/^(https?:|mailto:|tel:)/i.test(safeHref)) {
+    return <a href={safeHref} className={className} target={safeHref.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">{children}</a>;
   }
-  return <Link href={href} className={className}>{children}</Link>;
+  return <Link href={safeHref} className={className}>{children}</Link>;
 }
 
 function Buttons({ block, inverse = false }: { block: CmsPageBlock; inverse?: boolean }) {

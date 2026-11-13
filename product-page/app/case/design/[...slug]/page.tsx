@@ -73,9 +73,14 @@ export default async function Page({ params }: PageProps) {
 
   const content = resolveProductContent(parsed.params, source);
 
-  const productUrl = absoluteSiteUrl(buildProductUrl(parsed.params, catalog));
-  const productTitle = buildProductTitle(parsed.params, catalog);
-  const productDescription = buildMetaDescription(parsed.params, catalog);
+  // JSON-LD must describe the canonical (unbranded) page: branded URLs are
+  // canonicalized away, and the UI price includes the logo surcharge that the
+  // base variant price does not. Aligning name/url/price with canonical keeps
+  // microdata consistent with the visible canonical page.
+  const canonicalParams = { ...parsed.params, brandId: 'none' };
+  const productUrl = absoluteSiteUrl(buildProductUrl(canonicalParams, catalog));
+  const productTitle = buildProductTitle(canonicalParams, catalog);
+  const productDescription = buildMetaDescription(canonicalParams, catalog);
   const { selectedVariant } = content.pricing;
   const firstImage = content.gallery.find(img => !img.isPlaceholder);
   const productImage = firstImage ? absoluteSiteUrl(firstImage.src) : absoluteSiteUrl('/case.jpg');
