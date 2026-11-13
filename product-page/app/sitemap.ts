@@ -25,6 +25,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   });
 
+  entries.set(absoluteSiteUrl('/catalog-carmat'), {
+    url: absoluteSiteUrl('/catalog-carmat'),
+    changeFrequency: 'weekly',
+    priority: 0.8,
+  });
+
   pages
     .filter(page => !page.noIndex)
     .forEach((page) => {
