@@ -199,6 +199,31 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
       { value: '<1%', text: 'клієнтів у 2025 році скористалися обміном або поверненням' },
       { value: '100%', text: 'знаються на якості' },
     ],
-    videos: [],
+    videos: [
+      {
+        id: 'vr-01',
+        title: 'Відеовідгук 01',
+        videoUrl: 'https://media.carzo.com.ua/content/products/case/reviews/video/01.webm',
+        coverUrl: 'https://media.carzo.com.ua/content/products/case/reviews/cover/01.webp',
+        sort: 1,
+        isActive: true,
+      },
+      {
+        id: 'vr-02',
+        title: 'Відеовідгук 02',
+        videoUrl: 'https://media.carzo.com.ua/content/products/case/reviews/video/02.webm',
+        coverUrl: 'https://media.carzo.com.ua/content/products/case/reviews/cover/02.webp',
+        sort: 2,
+        isActive: true,
+      },
+      {
+        id: 'vr-03',
+        title: 'Відеовідгук 03',
+        videoUrl: 'https://media.carzo.com.ua/content/products/case/reviews/video/03.webm',
+        coverUrl: 'https://media.carzo.com.ua/content/products/case/reviews/cover/03.webp',
+        sort: 3,
+        isActive: true,
+      },
+    ],
   },
 };
