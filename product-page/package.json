@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:caching": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/caching-strategy.test.ts",
     "test:customer-store": "tsx --test tests/customer-store.test.ts",
     "test:loyalty": "tsx --test tests/loyalty-math.test.ts tests/checkout-pricing.test.ts tests/checkout-side-effects.test.ts",
     "test:checkout-reliability": "tsx --test tests/checkout-reliability.test.ts",

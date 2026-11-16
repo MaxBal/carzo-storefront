@@ -110,7 +110,7 @@ export const getContentSource = cache(async (): Promise<ContentSource> => {
     checkoutPaymentDetails: string;
   };
   try {
-    const data = await loadCatalogData();
+    const data = await loadCatalogData({ cache: 'revalidate' });
     catalog = {
       designs: data.designs,
       sizes: data.sizes,
