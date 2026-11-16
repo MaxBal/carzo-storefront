@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { assertSafeSupabaseTarget } from './environment';
 
 export class SupabaseConfigError extends Error {
   readonly code = 'CONFIG' as const;
@@ -25,6 +26,7 @@ function requireEnv(name: string): string {
  */
 export function createSupabaseAdminClient(): SupabaseClient {
   const url = requireEnv('SUPABASE_URL');
+  assertSafeSupabaseTarget(url);
   const secretKey = requireEnv('SUPABASE_SECRET_KEY');
 
   return createClient(url, secretKey, {

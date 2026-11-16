@@ -379,9 +379,13 @@ describe('Directus adapter write validation', () => {
   };
 
   function withDirectusEnv(fn: () => Promise<void>): Promise<void> {
+    const originalVercelEnv = process.env.VERCEL_ENV;
+    process.env.VERCEL_ENV = 'production'; // Production compatibility, fetch is mocked.
     process.env.DIRECTUS_URL = 'https://directus.test';
     process.env.DIRECTUS_READ_TOKEN = 'test-token';
     return fn().finally(() => {
+      if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+      else process.env.VERCEL_ENV = originalVercelEnv;
       if (originalEnv.DIRECTUS_URL === undefined) delete process.env.DIRECTUS_URL;
       else process.env.DIRECTUS_URL = originalEnv.DIRECTUS_URL;
       if (originalEnv.DIRECTUS_READ_TOKEN === undefined) delete process.env.DIRECTUS_READ_TOKEN;

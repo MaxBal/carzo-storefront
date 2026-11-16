@@ -16,24 +16,36 @@
 
 Guard не скрывает ошибку заявки на коврики успешным ответом: существующий action получает false и показывает ошибку отправки. Для заказа Directus существующий error handler сохраняет корзину и возвращает FAILED. Локальный next start также блокируется по умолчанию; production-like тесты используют synthetic env и mock fetch, не рабочие ключи.
 
-Это точечная защита перечисленных границ, а не запрет всех записей приложения: Supabase order/customer writers и keyCRM webhook в пакет не входят. Отдельный staging-проект, развёрнутый с VERCEL_ENV=production, пройдёт predicate; его изоляция должна обеспечиваться собственными credentials и отдельной проверкой целевого проекта. Не подменять системное VERCEL_ENV ради тестов с рабочими ключами.
+После дополнительной проверки пакет расширен в том же PR №12:
+
+- Общая проверка Supabase target применяется ко всем трём клиентам: admin, editorial и pages. Вне Production удалённый backend требует SUPABASE_PREVIEW_PROJECT_REF и точного HTTPS origin этого проекта. Рабочий project ref kmhegysmtsjqtwwaacht запрещён даже при ошибочном включении в эту настройку. Это защищает order RPC, customer upsert/lookup и чтения через отдельные клиенты.
+- Локальные loopback URL разрешены только без VERCEL и VERCEL_ENV: для Supabase CLI/Docker или synthetic server. На Vercel loopback запрещён. Другие custom domains/proxy URL по умолчанию не разрешены.
+- Directus customer lookup и обе ветки регистрации (collection POST и singleton registry PATCH) блокируются до чтения credentials/клиентских данных.
+- keyCRM: checkout sync возвращает disabled, непосредственное создание заказа отклоняется, webhook возвращает 503 disabled_environment до чтения keyCRM и записи клиента. Только VERCEL_ENV=production сохраняет прежнюю обработку.
+
+Изолированные Supabase order/customer writes доступны с собственным тестовым ключом и явно указанным отдельным проектом; blanket bypass-флага нет. Telegram через Supabase по-прежнему использует только TELEGRAM_TEST_CHAT_IDS вне Production. Dedicated carmat и legacy Directus sender остаются отключены; для них использовать mocks.
+
+Это защита текущих приложенческих границ, не отзыв credentials и не сетевая песочница. Отдельный staging-проект, развёрнутый с VERCEL_ENV=production, пройдёт predicate; его изоляция должна обеспечиваться собственными credentials и отдельной проверкой целевого проекта. Не подменять системное VERCEL_ENV ради тестов с рабочими ключами. При смене рабочего Supabase-проекта обновить защищённый публичный ref в lib/supabase/environment.ts.
 
 ## Проверки
 
 - До guard: первые 9 новых тестов дали 8 FAIL / 1 PASS (production compatibility). В частности, Preview разрешал Directus POST и вызывал carmat sender.
 - Новая suite содержит 13 проверок: preview, development, unknown/unset; отдельные write и notification assertions; NODE_ENV=production при non-production target; случайно присутствующие credentials; запрет diagnostics; production destinations через mocks.
-- Самостоятельная ветка от main: 447 safe unit/mock PASS / 72 suites; tsc PASS; ESLint PASS, прежние 10 warnings; synthetic next build PASS.
+- Первоначальный пакет от main: 447 safe unit/mock PASS / 72 suites; tsc PASS; ESLint PASS, прежние 10 warnings; synthetic next build PASS.
 - Совместимость с #4–10 и известным baseline patch: commit локально применён к /workspace/carzo-baseline-composition без конфликтов, baseline patch остался отдельными незакоммиченными изменениями. 553 safe unit/mock PASS / 84 suites; tsc PASS.
 - Build полной композиции: PASS (exit 0), синтетический PostgREST localhost:4320, без live credentials. Публичные static/data-cache границы сохранились.
 - В safe run исключены supabase-catalog-integration, supabase-editorial-integration, carmat-quote-supabase-integration и editorial-fallback-detection (live/env suites). Никаких реальных заказов, писем, Telegram-сообщений, keyCRM или записей в БД.
 
 Запуск узкой проверки: из product-page выполнить npm run test:preview-safety. Скрипт использует node --import tsx и существующий server-only stub, новых зависимостей нет. Полный safe test run — тот же список тестов из предыдущего VERIFICATION.md.
 
+Актуальная расширенная ветка: 463 safe tests / 74 suites PASS, в том числе 134 tests / 20 suites команды test:preview-safety. TypeScript и ESLint PASS (прежние 10 warnings). Synthetic next build PASS на localhost:4320, без рабочих credentials. Новые проверки требуют нулевых сетевых обращений при ошибочно выданных synthetic credentials и неверной цели. Положительный Preview тест проверяет маршрутизацию order RPC и customer POST только в явно разрешённый тестовый origin через mock fetch. Production compatibility также проверяется только mock transport. Более ранняя проверка композиции 553 tests относится к первоначальному пакету; расширение пока не проверено в той композиции.
+
 ## План env: подготовлен, НЕ применён
 
 | Настройка | Предложенное состояние Preview | Что требуется / проверка |
 |---|---|---|
 | SUPABASE_URL + SUPABASE_SECRET_KEY | отдельная подтверждённая тестовая БД, собственный ключ | отдельно согласовать ресурс/бюджет; не копировать клиентские данные; сравнить назначения без вывода ключей |
+| SUPABASE_PREVIEW_PROJECT_REF | ref отдельного hosted тестового проекта | совпадение с SUPABASE_URL обязательно; рабочий ref отклоняется кодом; локальный Docker не требует этой настройки |
 | Production key assignment | убрать Preview target только после подготовки замены | Production target не менять; не удалять secret целиком по общему ID |
 | CATALOG_STORE, CONTENT_STORE, PAGE_STORE, ORDER_STORE, CUSTOMER_STORE, NOTIFICATION_SETTINGS_STORE | явно supabase в нужных Preview branch scopes | отсутствие флага не допускается как конфигурация теста, даже с новым guard: чтение всё ещё может выбирать Directus |
 | DIRECTUS_READ_TOKEN / DIRECTUS_URL | убрать рабочие credentials из Preview; старые сервисы сохранить | guard — второй барьер, не замена управления секретами; учесть dev/ветки и уже выпущенные deployments |

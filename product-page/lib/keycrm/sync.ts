@@ -6,16 +6,17 @@
  */
 
 import { isKeyCrmSyncEnabled, readKeyCrmConfig } from './config';
+import { isVercelProduction } from '@/lib/production-integrations';
 import { createKeyCrmOrder, type KeyCrmClientOptions } from './client';
 import { buildKeyCrmOrder } from './order-payload';
 import type { KeyCrmOrderInput } from './types';
 
 export async function syncKeyCrmOrder(
   input: KeyCrmOrderInput,
-  options: KeyCrmClientOptions & { env?: NodeJS.ProcessEnv } = {},
+  options: KeyCrmClientOptions = {},
 ): Promise<'sent' | 'disabled'> {
   const env = options.env ?? process.env;
-  if (!isKeyCrmSyncEnabled(env)) return 'disabled';
+  if (!isVercelProduction(env) || !isKeyCrmSyncEnabled(env)) return 'disabled';
 
   const config = readKeyCrmConfig(env);
   if (!config.sourceId || !config.deliveryServiceId) return 'disabled';

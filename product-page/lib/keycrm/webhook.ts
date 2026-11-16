@@ -9,6 +9,7 @@
  */
 
 import { normalizeCustomerPhone } from '@/lib/cart/customer-phone';
+import { isVercelProduction } from '@/lib/production-integrations';
 import { parseStatusIdList } from './config';
 
 export interface KeyCrmWebhookOrder {
@@ -45,6 +46,9 @@ export async function handleKeyCrmOrderStatusWebhook(
   deps: KeyCrmWebhookDeps,
 ): Promise<KeyCrmWebhookResult> {
   const env = deps.env ?? process.env;
+  if (!isVercelProduction(env)) {
+    return { status: 503, body: { error: 'disabled_environment' } };
+  }
   const logError = deps.logError ?? (() => {});
   const expectedSecret = env.KEYCRM_WEBHOOK_SECRET?.trim() || null;
   const loyaltyStatusIds = parseStatusIdList(env.KEYCRM_LOYALTY_STATUS_IDS);
