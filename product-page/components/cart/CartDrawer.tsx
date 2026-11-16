@@ -48,6 +48,7 @@ export default function CartDrawer() {
   const [loyaltyError, setLoyaltyError] = useState<string | null>(null);
   const [loyaltyPercent, setLoyaltyPercent] = useState<number | null>(null);
   const [loyaltyChecking, setLoyaltyChecking] = useState(false);
+  const submittingRef = useRef(false);
   const closeTimerRef = useRef<number | null>(null);
   const { viewportRef, scrollRef } = useCartViewport(isOpen, checkout || loyaltyOpen);
 
@@ -160,6 +161,7 @@ export default function CartDrawer() {
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submittingRef.current) return;
     setSubmitAttempted(true);
     if (!cart.quote || !deliveryIsComplete(delivery)) {
       setSubmitError('Заповніть контактні дані та адресу доставки.');
@@ -171,6 +173,9 @@ export default function CartDrawer() {
       setSubmitError('Для цього замовлення недоступна доставка у поштомати. Оберіть інший спосіб або місце доставки.');
       return;
     }
+    const attempt = cart.beginCheckoutAttempt();
+    if (!attempt.allowed) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
     const loyaltyPhoneDigits = loyaltyPhone.replace(/\D/g, '');
@@ -179,7 +184,7 @@ export default function CartDrawer() {
     const confirmedLoyaltyPhone = loyaltyPercent !== null && loyaltyPhoneDigits
       ? buildFullPhone(loyaltyPhone)
       : undefined;
-    const checkoutAttemptId = cart.getCheckoutAttemptId();
+    const checkoutAttemptId = attempt.attemptId;
     let result: CheckoutResult;
     try {
       result = await createOrder({
@@ -196,8 +201,11 @@ export default function CartDrawer() {
       });
     } catch {
       result = { ok: false, code: 'FAILED', message: 'Не вдалося оформити замовлення. Кошик збережено.' };
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
     }
-    setSubmitting(false);
+    cart.resolveCheckoutAttemptOutcome(result);
     if (result.ok) {
       cart.completeOrder({ orderNumber: result.orderNumber, total: result.total });
       return;

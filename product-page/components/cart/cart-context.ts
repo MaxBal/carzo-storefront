@@ -35,6 +35,10 @@ export interface CartContextValue {
   closeConfirmation: () => void;
   /** Stable checkout attempt id for the current purchase intent (client-generated UUID). */
   getCheckoutAttemptId: () => string;
+  /** Marks the current attempt as in-flight before calling createOrder; blocks double-submit. */
+  beginCheckoutAttempt: () => { allowed: boolean; attemptId: string };
+  /** Updates persisted attempt state after createOrder resolves or fails. */
+  resolveCheckoutAttemptOutcome: (outcome: { ok: boolean; code?: string; replayed?: boolean }) => void;
   /** Invalidate the current attempt id (new purchase intent / replay mismatch). */
   resetCheckoutAttemptId: () => void;
 }

@@ -20,7 +20,11 @@ import {
 import { withCheckoutPricing } from '@/lib/cart/checkout-pricing';
 import { runPostOrderSideEffectsOnCreate, safeErrorDetail } from '@/lib/cart/checkout-reliability';
 import { syncKeyCrmOrder } from '@/lib/keycrm/sync';
-import { computeRequestFingerprint, isCheckoutAttemptId, isFingerprintBound } from '@/lib/cart/checkout-attempt';
+import {
+  computeRequestFingerprint,
+  evaluateAttemptProbe,
+  isCheckoutAttemptId,
+} from '@/lib/cart/checkout-attempt';
 import { resolveOrderStoreBackend } from '@/lib/data/config';
 import {
   OrderStoreError,
@@ -244,10 +248,16 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         message: 'Не вдалося ідентифікувати спробу оформлення. Оновіть сторінку та спробуйте ще раз.',
       };
     }
+    const rawLoyaltyPhone = parsed.data.loyaltyPhone?.trim() || '';
+    const canonicalLoyaltyPhone = rawLoyaltyPhone
+      ? (normalizeCustomerPhone(rawLoyaltyPhone) ?? rawLoyaltyPhone)
+      : null;
+
     requestFingerprint = computeRequestFingerprint({
       customerPhone: phone,
+      loyaltyPhone: canonicalLoyaltyPhone,
       contactMethod: parsed.data.contactMethod,
-      deliveryMethod: parsed.data.delivery.method,
+      delivery: parsed.data.delivery,
       paymentOption: parsed.data.paymentOption ?? null,
       items: parsed.data.items,
     });
@@ -256,14 +266,15 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
     // even if catalog/loyalty drifted since the original submit.
     try {
       const existing = await findOrderByAttemptId(attemptId);
-      if (existing) {
-        if (!isFingerprintBound(existing.requestFingerprint, requestFingerprint)) {
-          return { ok: false, code: 'ATTEMPT_REUSED', message: ATTEMPT_REUSED_MESSAGE };
-        }
+      const decision = evaluateAttemptProbe(existing, requestFingerprint);
+      if (decision.action === 'conflict') {
+        return { ok: false, code: 'ATTEMPT_REUSED', message: ATTEMPT_REUSED_MESSAGE };
+      }
+      if (decision.action === 'replay') {
         return {
           ok: true,
-          orderNumber: existing.orderNumber,
-          total: existing.total,
+          orderNumber: decision.orderNumber,
+          total: decision.total,
           replayed: true,
         };
       }

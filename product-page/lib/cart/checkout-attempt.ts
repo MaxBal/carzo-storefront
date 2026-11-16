@@ -1,11 +1,27 @@
 import { createHash, randomUUID } from 'node:crypto';
 
+export {
+  CHECKOUT_ATTEMPT_STORAGE_KEY,
+  CHECKOUT_ATTEMPT_TTL_MS,
+  clearPersistedCheckoutAttempt,
+  computeCartItemsSignature,
+  createCheckoutAttemptTracker,
+  isValidAttemptUuid,
+  readPersistedCheckoutAttempt,
+  writePersistedCheckoutAttempt,
+  type CheckoutAttemptOutcomeInput,
+  type CheckoutAttemptRecord,
+  type CheckoutAttemptStatus,
+  type StorageLike,
+} from './checkout-attempt-client';
+
 /**
  * Checkout attempt identity + request fingerprint.
  *
  * The fingerprint binds a checkout attempt to its material intent (who buys
- * what, and how they receive it) without binding to transient catalog prices,
- * so a successful prior order stays retrievable after later price changes.
+ * what, with which loyalty phone, payment option, and exact delivery destination)
+ * without binding to transient catalog prices, so a successful prior order
+ * stays retrievable after later price changes.
  */
 
 export function newCheckoutAttemptId(): string {
@@ -17,10 +33,31 @@ export function isCheckoutAttemptId(value: unknown): value is string {
     && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
+export interface FingerprintDeliveryInput {
+  method: string;
+  cityRef?: string | null;
+  pointRef?: string | null;
+  warehouseRef?: string | null;
+  streetRef?: string | null;
+  house?: string | null;
+  apartment?: string | null;
+}
+
 export interface FingerprintInput {
   customerPhone: string;
+  /** Canonical or raw loyalty phone if a loyalty discount was requested. */
+  loyaltyPhone?: string | null;
   contactMethod: string;
-  deliveryMethod: string;
+  /** Delivery method ('BRANCH' | 'POSTOMAT' | 'COURIER'). Optional when `delivery` object is passed. */
+  deliveryMethod?: string;
+  /** Full delivery destination object (preferred). */
+  delivery?: FingerprintDeliveryInput | null;
+  cityRef?: string | null;
+  pointRef?: string | null;
+  warehouseRef?: string | null;
+  streetRef?: string | null;
+  house?: string | null;
+  apartment?: string | null;
   /** Payment terms are part of buyer intent — same attempt with a different option must not match. */
   paymentOption?: string | null;
   items: Array<{
@@ -32,8 +69,31 @@ export interface FingerprintInput {
   }>;
 }
 
+function buildDeliveryTargetLine(input: FingerprintInput): string {
+  const method = (input.delivery?.method ?? input.deliveryMethod ?? '').trim().toUpperCase();
+  const cityRef = (input.delivery?.cityRef ?? input.cityRef ?? '').trim().toLowerCase();
+  const pointRef = (
+    input.delivery?.pointRef ??
+    input.delivery?.warehouseRef ??
+    input.pointRef ??
+    input.warehouseRef ??
+    ''
+  ).trim().toLowerCase();
+  const streetRef = (input.delivery?.streetRef ?? input.streetRef ?? '').trim().toLowerCase();
+  const house = (input.delivery?.house ?? input.house ?? '').trim().toLowerCase();
+  const apartment = (input.delivery?.apartment ?? input.apartment ?? '').trim().toLowerCase();
+
+  if (method === 'COURIER') {
+    return ['COURIER', cityRef, streetRef, house, apartment].join('|');
+  }
+  return [method, cityRef, pointRef].join('|');
+}
+
 /**
  * Canonical SHA-256 fingerprint of material checkout intent.
+ * Includes customerPhone, loyaltyPhone, contactMethod, full delivery target
+ * (method, cityRef, pointRef or streetRef/house/apartment), paymentOption,
+ * and sorted cart items with quantities.
  * Prices/names/comments are intentionally excluded (contract §6.7).
  */
 export function computeRequestFingerprint(input: FingerprintInput): string {
@@ -48,8 +108,9 @@ export function computeRequestFingerprint(input: FingerprintInput): string {
     .sort();
   const canonical = [
     input.customerPhone.trim(),
+    (input.loyaltyPhone ?? '').trim(),
     input.contactMethod.trim(),
-    input.deliveryMethod.trim(),
+    buildDeliveryTargetLine(input),
     (input.paymentOption ?? '').trim(),
     ...lines,
   ].join('\n');
@@ -68,4 +129,33 @@ export function isFingerprintBound(
   request: string | null | undefined,
 ): boolean {
   return Boolean(stored) && stored === request;
+}
+
+export type AttemptProbeDecision =
+  | { action: 'proceed' }
+  | { action: 'replay'; orderNumber: string; total: number; replayed: true }
+  | { action: 'conflict'; code: 'ATTEMPT_REUSED' };
+
+/**
+ * Evaluates the pre-pricing order lookup for an incoming checkout attempt.
+ * - If no order exists for `attemptId`, proceed to pricing and order creation.
+ * - If an order exists with an identical `requestFingerprint`, replay it (`replayed: true`).
+ * - If an order exists with a different (or missing) fingerprint, reject with `ATTEMPT_REUSED`.
+ */
+export function evaluateAttemptProbe(
+  existing: { orderNumber: string; total: number; requestFingerprint: string | null } | null,
+  requestFingerprint: string,
+): AttemptProbeDecision {
+  if (!existing) {
+    return { action: 'proceed' };
+  }
+  if (!isFingerprintBound(existing.requestFingerprint, requestFingerprint)) {
+    return { action: 'conflict', code: 'ATTEMPT_REUSED' };
+  }
+  return {
+    action: 'replay',
+    orderNumber: existing.orderNumber,
+    total: existing.total,
+    replayed: true,
+  };
 }
