@@ -84,9 +84,9 @@ function buildDeliveryTargetLine(input: FingerprintInput): string {
   const apartment = (input.delivery?.apartment ?? input.apartment ?? '').trim().toLowerCase();
 
   if (method === 'COURIER') {
-    return ['COURIER', cityRef, streetRef, house, apartment].join('|');
+    return JSON.stringify(['COURIER', cityRef, streetRef, house, apartment]);
   }
-  return [method, cityRef, pointRef].join('|');
+  return JSON.stringify([method, cityRef, pointRef]);
 }
 
 /**

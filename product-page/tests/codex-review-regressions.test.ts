@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { it } from 'node:test';
 import { createCheckoutAttemptTracker, CHECKOUT_ATTEMPT_TTL_MS, computeCartItemsSignature } from '../lib/cart/checkout-attempt-client';
-import { evaluateAttemptProbe } from '../lib/cart/checkout-attempt';
+import { computeRequestFingerprint, evaluateAttemptProbe } from '../lib/cart/checkout-attempt';
 
 function memory() {
   const data = new Map<string, string>();
@@ -10,6 +10,12 @@ function memory() {
     removeItem: (k: string) => { data.delete(k); } };
 }
 const sig = computeCartItemsSignature([{ size: 'M', designSlug: '2-0', brandId: 'none', fixation: 'both', quantity: 1 }]);
+
+it('distinct courier house/apartment fields cannot alias through delimiter injection', () => {
+  const base = { customerPhone: '+380501112233', contactMethod: 'phone', items: [], delivery: { method: 'COURIER', cityRef: 'city', streetRef: 'street', house: '12|3', apartment: '4' } };
+  assert.notEqual(computeRequestFingerprint(base), computeRequestFingerprint({ ...base,
+    delivery: { ...base.delivery, house: '12', apartment: '3|4' } }));
+});
 
 it('lost response, reload, changed address, conflict, click again never creates a second order', () => {
   const storage = memory();
