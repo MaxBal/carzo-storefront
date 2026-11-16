@@ -428,10 +428,11 @@ describe('checkout attempt tracker state machine — 14 scenarios (C-04 + C-05)'
     );
     assert.deepEqual(committedDecision, { action: 'conflict', code: 'ATTEMPT_REUSED' });
     tracker.resolveOutcome({ ok: false, code: 'ATTEMPT_REUSED' }, sigA);
-    // After ATTEMPT_REUSED, tracker resets so a subsequent explicit submit gets a new UUID
-    assert.equal(tracker.getState(), null);
+    // A committed conflicting order blocks creation with a fresh UUID.
+    assert.equal(tracker.getState()?.status, 'conflict');
     const freshAfterConflict = tracker.getAttemptId(sigA);
-    assert.notEqual(freshAfterConflict, first.attemptId);
+    assert.equal(freshAfterConflict, first.attemptId);
+    assert.equal(tracker.beginSubmit(sigA).allowed, false);
 
     // Case 13B: First request NEVER reached server DB -> server probe returns proceed and creates order with A1 + fp2
     const uncommittedDecision = evaluateAttemptProbe(null, fp2);
