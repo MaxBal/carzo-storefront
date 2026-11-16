@@ -11,38 +11,169 @@ import type { WarehouseLimits } from './cart/shipping';
 const ENDPOINT = 'https://api.novaposhta.ua/v2.0/json/';
 const POINT_RESULT_LIMIT = 20;
 const POINT_FETCH_LIMIT = 50;
+
+export const NOVA_POSHTA_TIMEOUT_MS = 8_000;
+export const NOVA_POSHTA_CACHE_TTL_MS = 5 * 60_000;
+export const NOVA_POSHTA_CACHE_MAX_ENTRIES = 500;
+export const NOVA_POSHTA_RATE_WINDOW_MS = 60_000;
+export const NOVA_POSHTA_RATE_MAX_HITS = 60;
+export const NOVA_POSHTA_RATE_MAX_IPS = 1_000;
+
+const UUID_REF_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const cache = new Map<string, { expires: number; data: unknown[] }>();
+const ipHits = new Map<string, { count: number; resetAt: number }>();
 
 type NovaRecord = Record<string, unknown>;
 type PointDeliveryMethod = Exclude<DeliveryMethod, 'COURIER'>;
 
-async function callNovaPoshta(method: string, properties: Record<string, string>) {
+export function isNovaPoshtaUuidRef(value: string): boolean {
+  return UUID_REF_REGEX.test(value.trim());
+}
+
+/**
+ * Bounded per-IP rate limiter for public Nova Poshta autocomplete routes.
+ * Evicts expired buckets and caps map size so spoofed IPs cannot exhaust memory.
+ */
+export function isNovaPoshtaRateLimited(
+  ip: string,
+  now: number = Date.now(),
+  maxHits: number = NOVA_POSHTA_RATE_MAX_HITS,
+): boolean {
+  const key = ip.trim() || 'unknown';
+  const existing = ipHits.get(key);
+  if (existing && existing.resetAt > now) {
+    existing.count += 1;
+    return existing.count > maxHits;
+  }
+
+  if (ipHits.size >= NOVA_POSHTA_RATE_MAX_IPS) {
+    ipHits.forEach((v, k) => {
+      if (v.resetAt <= now) ipHits.delete(k);
+    });
+    if (ipHits.size >= NOVA_POSHTA_RATE_MAX_IPS) {
+      const oldestKey = ipHits.keys().next().value;
+      if (oldestKey !== undefined) ipHits.delete(oldestKey);
+    }
+  }
+
+  ipHits.set(key, { count: 1, resetAt: now + NOVA_POSHTA_RATE_WINDOW_MS });
+  return false;
+}
+
+export function extractClientIp(request: Request): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
+
+function getCachedNovaPoshta(cacheKey: string, now: number): NovaRecord[] | null {
+  const cached = cache.get(cacheKey);
+  if (!cached) return null;
+  if (cached.expires <= now) {
+    cache.delete(cacheKey);
+    return null;
+  }
+  // Refresh LRU insertion order on hit
+  cache.delete(cacheKey);
+  cache.set(cacheKey, cached);
+  return cached.data as NovaRecord[];
+}
+
+function setCachedNovaPoshta(
+  cacheKey: string,
+  data: NovaRecord[],
+  now: number,
+  maxEntries: number = NOVA_POSHTA_CACHE_MAX_ENTRIES,
+): void {
+  if (cache.has(cacheKey)) {
+    cache.delete(cacheKey);
+  } else if (cache.size >= maxEntries) {
+    cache.forEach((v, k) => {
+      if (v.expires <= now) cache.delete(k);
+    });
+    while (cache.size >= maxEntries) {
+      const oldestKey = cache.keys().next().value;
+      if (oldestKey === undefined) break;
+      cache.delete(oldestKey);
+    }
+  }
+  cache.set(cacheKey, { expires: now + NOVA_POSHTA_CACHE_TTL_MS, data });
+}
+
+/** Test helpers for inspecting and resetting bounded cache and rate-limit state. */
+export function getNovaPoshtaCacheSizeForTests(): number {
+  return cache.size;
+}
+
+export function resetNovaPoshtaStateForTests(): void {
+  cache.clear();
+  ipHits.clear();
+}
+
+export async function callNovaPoshta(
+  method: string,
+  properties: Record<string, string>,
+  options?: { timeoutMs?: number; maxCacheEntries?: number; now?: number },
+): Promise<NovaRecord[]> {
   const apiKey = process.env.NOVA_POSHTA_API_KEY?.trim();
   if (!apiKey) throw new Error('NOVA_POSHTA_API_KEY is not configured');
-  const cacheKey = `${method}:${JSON.stringify(properties)}`;
-  const cached = cache.get(cacheKey);
-  if (cached && cached.expires > Date.now()) return cached.data as NovaRecord[];
 
-  const response = await fetch(ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      apiKey,
-      modelName: 'Address',
-      calledMethod: method,
-      methodProperties: properties,
-    }),
-    cache: 'no-store',
-  });
-  const payload = await response.json() as {
+  const now = options?.now ?? Date.now();
+  const cacheKey = `${method}:${JSON.stringify(properties)}`;
+  const hit = getCachedNovaPoshta(cacheKey, now);
+  if (hit) return hit;
+
+  const timeoutMs = options?.timeoutMs ?? NOVA_POSHTA_TIMEOUT_MS;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        apiKey,
+        modelName: 'Address',
+        calledMethod: method,
+        methodProperties: properties,
+      }),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+  } catch (error) {
+    clearTimeout(timer);
+    if (
+      controller.signal.aborted ||
+      (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError'))
+    ) {
+      throw new Error('Nova Poshta request timed out');
+    }
+    throw error;
+  }
+
+  let payload: {
     success?: boolean;
     data?: NovaRecord[];
     errors?: string[];
-  };
-  if (!response.ok || !payload.success || !Array.isArray(payload.data)) {
-    throw new Error(payload.errors?.join('; ') || 'Nova Poshta request failed');
+  } | null = null;
+  try {
+    payload = (await response.json()) as {
+      success?: boolean;
+      data?: NovaRecord[];
+      errors?: string[];
+    };
+  } catch {
+    if (controller.signal.aborted) throw new Error('Nova Poshta request timed out');
+    throw new Error(`Nova Poshta invalid JSON response (HTTP ${response.status})`);
+  } finally {
+    clearTimeout(timer);
   }
-  cache.set(cacheKey, { expires: Date.now() + 5 * 60_000, data: payload.data });
+
+  if (!response.ok || !payload?.success || !Array.isArray(payload.data)) {
+    throw new Error(payload?.errors?.join('; ') || `Nova Poshta request failed (HTTP ${response.status})`);
+  }
+
+  setCachedNovaPoshta(cacheKey, payload.data, now, options?.maxCacheEntries);
   return payload.data;
 }
 
@@ -129,8 +260,12 @@ export async function findNovaPoshtaPoints(
   method: PointDeliveryMethod,
   query = '',
 ): Promise<NovaPoshtaPoint[]> {
+  const cleanCityRef = cityRef.trim();
+  if (!isNovaPoshtaUuidRef(cleanCityRef)) {
+    throw new Error('Invalid Nova Poshta cityRef');
+  }
   const properties: Record<string, string> = {
-    CityRef: cityRef,
+    CityRef: cleanCityRef,
     Limit: String(POINT_FETCH_LIMIT),
     Page: '1',
   };
@@ -152,39 +287,52 @@ export async function resolveNovaPoshtaPoint(
   pointRef: string,
   method: PointDeliveryMethod,
 ) {
+  const cleanCityRef = cityRef.trim();
+  const cleanPointRef = pointRef.trim();
+  if (!isNovaPoshtaUuidRef(cleanCityRef) || !isNovaPoshtaUuidRef(cleanPointRef)) {
+    throw new Error('Delivery point was not found');
+  }
   const data = await callNovaPoshta('getWarehouses', {
-    CityRef: cityRef,
-    Ref: pointRef,
+    CityRef: cleanCityRef,
+    Ref: cleanPointRef,
     Limit: '1',
     Page: '1',
   });
-  const record = data.find(item => text(item, 'Ref') === pointRef);
-  if (!record || text(record, 'CityRef') !== cityRef) throw new Error('Delivery point was not found');
+  const record = data.find(item => text(item, 'Ref') === cleanPointRef);
+  if (!record || text(record, 'CityRef') !== cleanCityRef) throw new Error('Delivery point was not found');
   const point = toPoint(record);
   const expectedType: NovaPoshtaPoint['type'] = method === 'POSTOMAT' ? 'postomat' : 'branch';
   if (!point || point.type !== expectedType) throw new Error('Delivery point type does not match');
   const cityName = text(record, 'CityDescription');
   if (!cityName) throw new Error('Delivery city was not found');
-  return { cityRef, cityName, point };
+  return { cityRef: cleanCityRef, cityName, point };
 }
 
 export async function resolveNovaPoshtaCity(cityRef: string) {
+  const cleanCityRef = cityRef.trim();
+  if (!isNovaPoshtaUuidRef(cleanCityRef)) {
+    throw new Error('Delivery city was not found');
+  }
   const data = await callNovaPoshta('getCities', {
-    Ref: cityRef,
+    Ref: cleanCityRef,
     Limit: '1',
     Page: '1',
   });
-  const record = data.find(item => text(item, 'Ref') === cityRef);
+  const record = data.find(item => text(item, 'Ref') === cleanCityRef);
   const cityName = record ? text(record, 'Description') : '';
   if (!record || !cityName) throw new Error('Delivery city was not found');
-  return { cityRef, cityName };
+  return { cityRef: cleanCityRef, cityName };
 }
 
 export async function findNovaPoshtaStreets(cityRef: string, query: string): Promise<NovaPoshtaStreet[]> {
+  const cleanCityRef = cityRef.trim();
+  if (!isNovaPoshtaUuidRef(cleanCityRef)) {
+    throw new Error('Invalid Nova Poshta cityRef');
+  }
   const normalized = query.trim().slice(0, 80);
   if (normalized.length < 2) return [];
   const data = await callNovaPoshta('getStreet', {
-    CityRef: cityRef,
+    CityRef: cleanCityRef,
     FindByString: normalized,
     Limit: '20',
     Page: '1',
@@ -195,13 +343,18 @@ export async function findNovaPoshtaStreets(cityRef: string, query: string): Pro
 }
 
 export async function resolveNovaPoshtaStreet(cityRef: string, streetRef: string) {
+  const cleanCityRef = cityRef.trim();
+  const cleanStreetRef = streetRef.trim();
+  if (!isNovaPoshtaUuidRef(cleanCityRef) || !isNovaPoshtaUuidRef(cleanStreetRef)) {
+    throw new Error('Delivery street was not found');
+  }
   const data = await callNovaPoshta('getStreet', {
-    CityRef: cityRef,
-    Ref: streetRef,
+    CityRef: cleanCityRef,
+    Ref: cleanStreetRef,
     Limit: '1',
     Page: '1',
   });
-  const record = data.find(item => text(item, 'Ref') === streetRef);
+  const record = data.find(item => text(item, 'Ref') === cleanStreetRef);
   if (!record) throw new Error('Delivery street was not found');
   const street = toStreet(record);
   if (!street.ref || !street.name) throw new Error('Delivery street was not found');
