@@ -54,7 +54,7 @@ describe('legacy integrations fail closed outside explicit Vercel production', (
   });
 
   for (const env of ['preview', 'development', 'custom-staging', undefined]) {
-    it(`blocks Directus orders and both legacy notification entry points with VERCEL_ENV=${env}`, async () => {
+    it(`blocks Directus orders with VERCEL_ENV=${env}`, async () => {
       if (env === undefined) delete process.env.VERCEL_ENV; else process.env.VERCEL_ENV = env;
       await assert.rejects(() => createDirectusOrderRepository().createOrder(snapshot), /disabled outside Vercel Production/);
       assert.deepEqual(calls, [], 'no order POST');

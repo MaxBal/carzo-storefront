@@ -24,7 +24,7 @@ Guard не скрывает ошибку заявки на коврики усп
 - Новая suite содержит 13 проверок: preview, development, unknown/unset; отдельные write и notification assertions; NODE_ENV=production при non-production target; случайно присутствующие credentials; запрет diagnostics; production destinations через mocks.
 - Самостоятельная ветка от main: 447 safe unit/mock PASS / 72 suites; tsc PASS; ESLint PASS, прежние 10 warnings; synthetic next build PASS.
 - Совместимость с #4–10 и известным baseline patch: commit локально применён к /workspace/carzo-baseline-composition без конфликтов, baseline patch остался отдельными незакоммиченными изменениями. 553 safe unit/mock PASS / 84 suites; tsc PASS.
-- Build полной композиции: результат указан в финальном отчёте после завершения процесса.
+- Build полной композиции: PASS (exit 0), синтетический PostgREST localhost:4320, без live credentials. Публичные static/data-cache границы сохранились.
 - В safe run исключены supabase-catalog-integration, supabase-editorial-integration, carmat-quote-supabase-integration и editorial-fallback-detection (live/env suites). Никаких реальных заказов, писем, Telegram-сообщений, keyCRM или записей в БД.
 
 Запуск узкой проверки: из product-page выполнить npm run test:preview-safety. Скрипт использует node --import tsx и существующий server-only stub, новых зависимостей нет. Полный safe test run — тот же список тестов из предыдущего VERIFICATION.md.
