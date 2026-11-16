@@ -16,7 +16,7 @@
 export const CHECKOUT_ATTEMPT_STORAGE_KEY = 'carzo:checkout-attempt:v1';
 export const CHECKOUT_ATTEMPT_TTL_MS = 24 * 60 * 60 * 1000;
 
-export type CheckoutAttemptStatus = 'idle' | 'in_flight' | 'uncertain';
+export type CheckoutAttemptStatus = 'idle' | 'in_flight' | 'uncertain' | 'conflict';
 
 export interface CheckoutAttemptRecord {
   attemptId: string;
@@ -80,7 +80,7 @@ function defaultUuid(): string {
 }
 
 function isAttemptStatus(value: unknown): value is CheckoutAttemptStatus {
-  return value === 'idle' || value === 'in_flight' || value === 'uncertain';
+  return value === 'idle' || value === 'in_flight' || value === 'uncertain' || value === 'conflict';
 }
 
 export function readPersistedCheckoutAttempt(
@@ -103,7 +103,8 @@ export function readPersistedCheckoutAttempt(
       storage.removeItem(CHECKOUT_ATTEMPT_STORAGE_KEY);
       return null;
     }
-    if (now - parsed.updatedAt > CHECKOUT_ATTEMPT_TTL_MS) {
+    // A timeout cannot prove that an order was never committed.
+    if (parsed.status === 'idle' && now - parsed.updatedAt > CHECKOUT_ATTEMPT_TTL_MS) {
       storage.removeItem(CHECKOUT_ATTEMPT_STORAGE_KEY);
       return null;
     }
@@ -188,6 +189,8 @@ export function createCheckoutAttemptTracker(options?: {
     hydrate(cartSignature: string): CheckoutAttemptRecord | null {
       const stored = readPersistedCheckoutAttempt(storage, now());
       if (!stored) {
+        // A storage event/removal must not erase an unresolved local attempt.
+        if (current && current.status !== 'idle') return { ...current };
         current = null;
         return null;
       }
@@ -259,7 +262,7 @@ export function createCheckoutAttemptTracker(options?: {
      * Returns `{ allowed: false }` if a submit is already in flight (double-click guard).
      */
     beginSubmit(cartSignature: string): { allowed: boolean; attemptId: string } {
-      if (current?.status === 'in_flight') {
+      if (current?.status === 'in_flight' || current?.status === 'conflict') {
         return { allowed: false, attemptId: current.attemptId };
       }
       const attemptId = this.getAttemptId(cartSignature);
@@ -284,9 +287,8 @@ export function createCheckoutAttemptTracker(options?: {
       }
 
       if (outcome.code === 'ATTEMPT_REUSED') {
-        // Server confirmed this attemptId was already used for a different committed order.
-        // Clear so a subsequent explicit submit gets a fresh attemptId.
-        persist(null);
+        // The server confirmed an existing order. Never turn this into a new purchase.
+        if (current) persist({ ...current, status: 'conflict', updatedAt: now() });
         return;
       }
 
@@ -297,12 +299,12 @@ export function createCheckoutAttemptTracker(options?: {
         outcome.code === 'PRICE_CHANGED' ||
         outcome.code === 'LOYALTY_CHANGED'
       ) {
-        // Deterministic pre-write rejection (and for UNAVAILABLE / PRICE_CHANGED / LOYALTY_CHANGED,
-        // findOrderByAttemptId already verified no prior order exists for this attemptId).
+        // A rejection of this request does not prove that a previous request
+        // never committed (maintenance/validation may run before the replay probe).
         if (current) {
           persist({
             attemptId: current.attemptId,
-            status: 'idle',
+            status: 'uncertain',
             cartSignature: currentCartSignature,
             updatedAt: now(),
           });

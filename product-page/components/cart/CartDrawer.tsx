@@ -174,7 +174,10 @@ export default function CartDrawer() {
       return;
     }
     const attempt = cart.beginCheckoutAttempt();
-    if (!attempt.allowed) return;
+    if (!attempt.allowed) {
+      setSubmitError('Попередня спроба вже використана або ще обробляється. Не повторюйте замовлення; зверніться до менеджера для перевірки.');
+      return;
+    }
     submittingRef.current = true;
     setSubmitting(true);
     setSubmitError(null);
@@ -209,11 +212,6 @@ export default function CartDrawer() {
     if (result.ok) {
       cart.completeOrder({ orderNumber: result.orderNumber, total: result.total });
       return;
-    }
-    if (result.code === 'ATTEMPT_REUSED') {
-      // The attempt id is bound to a different already-placed order.
-      // Start a fresh attempt so the next submit can succeed.
-      cart.resetCheckoutAttemptId();
     }
     if (result.code === 'PRICE_CHANGED' || result.code === 'LOYALTY_CHANGED') {
       cart.replaceQuote(result.quote);

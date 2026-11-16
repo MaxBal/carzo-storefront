@@ -64,7 +64,7 @@ const DELIVERY_METHOD_LABELS: Record<DeliveryMethod, string> = {
 };
 
 const ATTEMPT_REUSED_MESSAGE =
-  'Ця спроба оформлення вже використана для іншого замовлення. Перевірте дані та підтвердьте замовлення ще раз.';
+  'За цією спробою вже збережено замовлення з іншими даними. Не оформлюйте повторно; зверніться до менеджера для перевірки та зміни адреси.';
 
 // Same convention as app/api/customer-discount/check/route.ts.
 const RATE_WINDOW_MS = 60_000;
