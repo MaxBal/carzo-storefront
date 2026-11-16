@@ -26,6 +26,7 @@ const REQUEST: CarMatQuoteTelegramRequest = {
 function deps(overrides: Partial<CarMatQuoteTelegramDeps> = {}): CarMatQuoteTelegramDeps {
   return {
     env: {
+      VERCEL_ENV: 'production',
       TELEGRAM_CARMAT_BOT_TOKEN: 'carmat-token-secret',
       TELEGRAM_CARMAT_CHAT_ID: '-1005353419581',
     },
@@ -130,7 +131,7 @@ describe('car mat quote — telegram delivery core', () => {
   it('missing token blocks the send', async () => {
     let sent = false;
     const ok = await deliverCarMatQuoteTelegram(REQUEST, deps({
-      env: { TELEGRAM_CARMAT_CHAT_ID: '-1005353419581' },
+      env: { VERCEL_ENV: 'production', TELEGRAM_CARMAT_CHAT_ID: '-1005353419581' },
       sendTelegramText: async () => { sent = true; },
     }));
     assert.equal(ok, false);
@@ -141,6 +142,7 @@ describe('car mat quote — telegram delivery core', () => {
     const calls: Array<{ chatId: string }> = [];
     const ok = await deliverCarMatQuoteTelegram(REQUEST, deps({
       env: {
+        VERCEL_ENV: 'production',
         TELEGRAM_CARMAT_BOT_TOKEN: 'carmat-token-secret',
         TELEGRAM_CARMAT_CHAT_ID: '"-1005353419581"',
       },
@@ -155,7 +157,7 @@ describe('car mat quote — telegram delivery core', () => {
   it('missing chat id blocks the send', async () => {
     let sent = false;
     const ok = await deliverCarMatQuoteTelegram(REQUEST, deps({
-      env: { TELEGRAM_CARMAT_BOT_TOKEN: 'carmat-token-secret' },
+      env: { VERCEL_ENV: 'production', TELEGRAM_CARMAT_BOT_TOKEN: 'carmat-token-secret' },
       sendTelegramText: async () => { sent = true; },
     }));
     assert.equal(ok, false);
@@ -191,6 +193,8 @@ describe('car mat quote — telegram delivery core', () => {
   });
 
   it('reads credentials from process.env via sendCarMatQuoteTelegram (fetch contract)', async () => {
+    const originalVercelEnv = process.env.VERCEL_ENV;
+    process.env.VERCEL_ENV = 'production';
     process.env.TELEGRAM_CARMAT_BOT_TOKEN = 'fetch-token-secret';
     process.env.TELEGRAM_CARMAT_CHAT_ID = '-1005353419581';
 
@@ -215,6 +219,8 @@ describe('car mat quote — telegram delivery core', () => {
       assert.equal(seen[0].body.parse_mode, 'HTML');
     } finally {
       globalThis.fetch = realFetch;
+      if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+      else process.env.VERCEL_ENV = originalVercelEnv;
       delete process.env.TELEGRAM_CARMAT_BOT_TOKEN;
       delete process.env.TELEGRAM_CARMAT_CHAT_ID;
     }

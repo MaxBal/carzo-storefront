@@ -1,4 +1,5 @@
 import 'server-only';
+import { isVercelProduction } from '@/lib/production-integrations';
 
 /**
  * Car-mat quote delivery — dedicated Telegram bot (@carzoplus_bot) into the
@@ -130,6 +131,12 @@ export async function deliverCarMatQuoteTelegram(
   request: CarMatQuoteTelegramRequest,
   deps: CarMatQuoteTelegramDeps,
 ): Promise<boolean> {
+  // Dedicated carmat credentials are working destinations. Fail closed even
+  // if someone accidentally assigns them to Preview; no diagnostic calls either.
+  if (!isVercelProduction(deps.env)) {
+    console.warn('Dedicated carmat notifications blocked outside Vercel Production');
+    return false;
+  }
   const token = deps.env.TELEGRAM_CARMAT_BOT_TOKEN?.trim();
   const chatId = normalizeChatId(deps.env.TELEGRAM_CARMAT_CHAT_ID ?? '');
   if (!token || !chatId) {

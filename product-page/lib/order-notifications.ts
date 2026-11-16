@@ -14,6 +14,7 @@ import {
   type TelegramCredentials,
 } from '@/lib/data/notifications';
 import { resolveTelegramRecipients } from '@/lib/data/notifications/recipients';
+import { isVercelProduction } from '@/lib/production-integrations';
 
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
@@ -290,6 +291,11 @@ export async function notifyNewOrder(order: NewOrderNotification) {
   if (resolveOrderStoreBackend() === 'supabase') {
     return notifyNewOrderSupabase(order);
   }
+  // Block before reading legacy bot credentials or starting email/Telegram requests.
+  if (!isVercelProduction()) {
+    console.warn('Directus order notifications blocked outside Vercel Production');
+    return;
+  }
   try {
     const settings = await readSettings();
     if (settings.channel === 'off') return;
@@ -496,6 +502,11 @@ async function notifyNewCarMatQuoteSupabase(
 export async function notifyNewCarMatQuote(request: NewCarMatQuoteNotification) {
   if (resolveNotificationSettingsBackend() === 'supabase') {
     return notifyNewCarMatQuoteSupabase(request);
+  }
+
+  if (!isVercelProduction()) {
+    console.warn('Directus carmat notifications blocked outside Vercel Production');
+    return false;
   }
 
   // Legacy Directus path — Production until the Stage 9 cutover.
