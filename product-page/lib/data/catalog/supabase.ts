@@ -1,5 +1,7 @@
 import 'server-only';
 
+import { draftMode } from 'next/headers';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
 import type {
   BrandInfo,
@@ -11,9 +13,32 @@ import type {
   SizeId,
   SizeInfo,
 } from '@/lib/content/types';
-import type { CatalogData, CatalogRepository } from './types';
+import { CACHE_REVALIDATE_SECONDS, CACHE_TAGS } from '../config';
+import type {
+  CatalogCacheMode,
+  CatalogData,
+  CatalogRepository,
+  LoadCatalogOptions,
+} from './types';
 
 type SupabaseRow = Record<string, unknown>;
+
+export const __CATALOG_CACHE = {
+  revalidate: CACHE_REVALIDATE_SECONDS,
+  tags: [CACHE_TAGS.catalog],
+} as const;
+
+type NextFetchInit = RequestInit & {
+  next?: { revalidate?: number | false; tags?: string[] };
+};
+
+function isDraftModeEnabled(): boolean {
+  try {
+    return draftMode().isEnabled;
+  } catch {
+    return false;
+  }
+}
 
 export class CatalogUnavailableError extends Error {
   readonly code = 'UNAVAILABLE' as const;
@@ -22,6 +47,50 @@ export class CatalogUnavailableError extends Error {
     super(message);
     this.name = 'CatalogUnavailableError';
   }
+}
+
+let cachedRevalidateCatalogClient: SupabaseClient | null = null;
+
+function getRevalidatingCatalogClient(): SupabaseClient {
+  if (!cachedRevalidateCatalogClient) {
+    const url = process.env.SUPABASE_URL?.trim();
+    const secretKey = process.env.SUPABASE_SECRET_KEY?.trim();
+    if (!url || !secretKey) {
+      throw new CatalogUnavailableError('Missing required Supabase environment variables for catalog');
+    }
+    cachedRevalidateCatalogClient = createClient(url, secretKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        fetch: (input, init) => {
+          if (isDraftModeEnabled()) {
+            return fetch(input, { ...init, cache: 'no-store' });
+          }
+          const { cache: _cache, ...rest } = init ?? {};
+          return fetch(input, {
+            ...rest,
+            next: { revalidate: __CATALOG_CACHE.revalidate, tags: [...__CATALOG_CACHE.tags] },
+          } as NextFetchInit);
+        },
+      },
+    });
+  }
+  return cachedRevalidateCatalogClient;
+}
+
+function getCatalogClient(cacheMode: CatalogCacheMode = 'no-store'): SupabaseClient {
+  if (cacheMode === 'revalidate' && !isDraftModeEnabled()) {
+    return getRevalidatingCatalogClient();
+  }
+  return getSupabaseAdminClient();
+}
+
+/** Test helper to reset the revalidating catalog client singleton in unit tests. */
+export function resetSupabaseCatalogClientForTests(): void {
+  cachedRevalidateCatalogClient = null;
 }
 
 function text(value: unknown, fallback = '') {
@@ -45,9 +114,9 @@ function bool(value: unknown) {
 async function selectAll(
   table: string,
   columns: string,
-  options?: { publishedOnly?: boolean },
+  options?: { publishedOnly?: boolean; cacheMode?: CatalogCacheMode },
 ): Promise<SupabaseRow[]> {
-  let query = getSupabaseAdminClient()
+  let query = getCatalogClient(options?.cacheMode ?? 'no-store')
     .from(table)
     .select(columns);
   if (options?.publishedOnly) {
@@ -63,29 +132,32 @@ async function selectAll(
 /**
  * Supabase catalog repository — SELECT-only, R2 URL media, fail-closed.
  * Maps normalized tables into the existing domain types.
+ * Defaults to `cache: 'no-store'` for live checkout/quote verification;
+ * accepts `{ cache: 'revalidate' }` for public page rendering.
  */
 export function createSupabaseCatalogRepository(): CatalogRepository {
   return {
-    async loadCatalog(): Promise<CatalogData> {
+    async loadCatalog(options?: LoadCatalogOptions): Promise<CatalogData> {
+      const cacheMode: CatalogCacheMode = options?.cache ?? 'no-store';
       try {
         const [designs, sizes, brands, fixations, fixationExtras, variants, discountTiers, siteSettings] =
           await Promise.all([
-            selectAll('designs', 'slug,version,label,selector_image_url,sort,status', { publishedOnly: true }),
+            selectAll('designs', 'slug,version,label,selector_image_url,sort,status', { publishedOnly: true, cacheMode }),
             selectAll(
               'sizes',
               'id,code,slug,label,width_cm,height_cm,depth_cm,content_group,shipping_length_cm,shipping_width_cm,shipping_height_cm,shipping_weight_kg,sort,status',
-              { publishedOnly: true },
+              { publishedOnly: true, cacheMode },
             ),
-            selectAll('brands', 'slug,name,flag,logo_extra,logo_image_url,sort,status', { publishedOnly: true }),
-            selectAll('fixations', 'id,key,label,extra,sort,status', { publishedOnly: true }),
-            selectAll('fixation_size_extras', 'fixation_id,size_id,extra'),
+            selectAll('brands', 'slug,name,flag,logo_extra,logo_image_url,sort,status', { publishedOnly: true, cacheMode }),
+            selectAll('fixations', 'id,key,label,extra,sort,status', { publishedOnly: true, cacheMode }),
+            selectAll('fixation_size_extras', 'fixation_id,size_id,extra', { cacheMode }),
             selectAll(
               'variants',
               'key,price,old_price,in_stock,quantity_discount_eligible,status,designs:design_id(slug),sizes:size_id(code)',
-              { publishedOnly: true },
+              { publishedOnly: true, cacheMode },
             ),
-            selectAll('discount_tiers', 'key,min_quantity,amount,sort', { publishedOnly: true }),
-            selectAll('site_settings', 'checkout_payment_details'),
+            selectAll('discount_tiers', 'key,min_quantity,amount,sort', { publishedOnly: true, cacheMode }),
+            selectAll('site_settings', 'checkout_payment_details', { cacheMode }),
           ]);
 
         const sizeByCode = new Map(
