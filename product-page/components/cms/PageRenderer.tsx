@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import sanitizeHtml from 'sanitize-html';
 import Header from '@/components/Header';
-import { sanitizeCmsHref } from '@/lib/cms/href';
+import { isExternalHttpHref, sanitizeCmsHref } from '@/lib/cms/href';
 import type { CmsPage, CmsPageBlock } from '@/lib/pages/types';
 
 const themeClasses = {
@@ -35,8 +35,21 @@ function CmsLink({ href, children, className }: {
   className: string;
 }) {
   const safeHref = sanitizeCmsHref(href);
-  if (/^(https?:|mailto:|tel:)/i.test(safeHref)) {
-    return <a href={safeHref} className={className} target={safeHref.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">{children}</a>;
+  if (/^(https?:\/\/|mailto:|tel:)/i.test(safeHref)) {
+    const isHttp = isExternalHttpHref(safeHref);
+    return (
+      <a
+        href={safeHref}
+        className={className}
+        target={isHttp ? '_blank' : undefined}
+        rel={isHttp ? 'noopener noreferrer' : undefined}
+      >
+        {children}
+      </a>
+    );
+  }
+  if (safeHref.startsWith('#')) {
+    return <a href={safeHref} className={className}>{children}</a>;
   }
   return <Link href={safeHref} className={className}>{children}</Link>;
 }

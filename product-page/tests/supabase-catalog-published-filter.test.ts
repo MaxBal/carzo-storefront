@@ -5,7 +5,7 @@
  * Run: pnpm run test:audit-fixes
  */
 import assert from 'node:assert/strict';
-import { before, describe, it } from 'node:test';
+import { after, before, describe, it } from 'node:test';
 
 import { createSupabaseCatalogRepository } from '../lib/data/catalog/supabase';
 
@@ -58,6 +58,9 @@ function fakeFetch(input: RequestInfo | URL): Promise<Response> {
 
 describe('C-07 discount_tiers published filter (mock PostgREST, no DB)', () => {
   let tierKeys: string[];
+  const originalFetch = globalThis.fetch;
+  const originalUrl = process.env.SUPABASE_URL;
+  const originalSecret = process.env.SUPABASE_SECRET_KEY;
 
   before(async () => {
     process.env.SUPABASE_URL = 'http://supabase.invalid';
@@ -66,6 +69,14 @@ describe('C-07 discount_tiers published filter (mock PostgREST, no DB)', () => {
 
     const catalog = await createSupabaseCatalogRepository().loadCatalog();
     tierKeys = catalog.discountTiers.map(tier => tier.key);
+  });
+
+  after(() => {
+    globalThis.fetch = originalFetch;
+    if (originalUrl === undefined) delete process.env.SUPABASE_URL;
+    else process.env.SUPABASE_URL = originalUrl;
+    if (originalSecret === undefined) delete process.env.SUPABASE_SECRET_KEY;
+    else process.env.SUPABASE_SECRET_KEY = originalSecret;
   });
 
   it('requests discount_tiers with status=eq.published', () => {
