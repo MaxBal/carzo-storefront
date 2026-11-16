@@ -1,14 +1,25 @@
-import { findNovaPoshtaPoints } from '@/lib/nova-poshta';
+import {
+  extractClientIp,
+  findNovaPoshtaPoints,
+  isNovaPoshtaRateLimited,
+  isNovaPoshtaUuidRef,
+} from '@/lib/nova-poshta';
 import type { DeliveryMethod } from '@/lib/cart/types';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  if (isNovaPoshtaRateLimited(extractClientIp(request))) {
+    return Response.json(
+      { error: 'Забагато запитів. Спробуйте за хвилину.' },
+      { status: 429 },
+    );
+  }
   const params = new URL(request.url).searchParams;
   const cityRef = params.get('city') || '';
   const query = params.get('q') || '';
   const method = params.get('method');
-  if (!/^[0-9a-f-]{36}$/i.test(cityRef)) {
+  if (!isNovaPoshtaUuidRef(cityRef)) {
     return Response.json({ error: 'Спочатку оберіть місто.' }, { status: 400 });
   }
   if (method !== 'BRANCH' && method !== 'POSTOMAT') {
