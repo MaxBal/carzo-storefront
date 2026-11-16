@@ -141,6 +141,7 @@ export async function callNovaPoshta(
       signal: controller.signal,
     });
   } catch (error) {
+    clearTimeout(timer);
     if (
       controller.signal.aborted ||
       (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError'))
@@ -148,8 +149,6 @@ export async function callNovaPoshta(
       throw new Error('Nova Poshta request timed out');
     }
     throw error;
-  } finally {
-    clearTimeout(timer);
   }
 
   let payload: {
@@ -164,7 +163,10 @@ export async function callNovaPoshta(
       errors?: string[];
     };
   } catch {
+    if (controller.signal.aborted) throw new Error('Nova Poshta request timed out');
     throw new Error(`Nova Poshta invalid JSON response (HTTP ${response.status})`);
+  } finally {
+    clearTimeout(timer);
   }
 
   if (!response.ok || !payload?.success || !Array.isArray(payload.data)) {
