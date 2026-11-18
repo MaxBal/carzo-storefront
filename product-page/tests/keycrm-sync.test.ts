@@ -7,6 +7,7 @@ import type { KeyCrmOrderInput, KeyCrmOrderPayload } from '../lib/keycrm/types';
 import { applyPaymentOptionFallback } from '../lib/order-notifications';
 
 const FULL_ENV = {
+  VERCEL_ENV: 'production', // All transports below are mocked.
   KEYCRM_API_KEY: 'test-key',
   KEYCRM_SOURCE_ID: '6',
   KEYCRM_DELIVERY_SERVICE_ID: '1',

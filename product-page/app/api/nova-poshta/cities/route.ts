@@ -1,8 +1,18 @@
-import { findNovaPoshtaCities } from '@/lib/nova-poshta';
+import {
+  extractClientIp,
+  findNovaPoshtaCities,
+  isNovaPoshtaRateLimited,
+} from '@/lib/nova-poshta';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
+  if (isNovaPoshtaRateLimited(extractClientIp(request))) {
+    return Response.json(
+      { error: 'Забагато запитів. Спробуйте за хвилину.' },
+      { status: 429 },
+    );
+  }
   const query = new URL(request.url).searchParams.get('q') || '';
   try {
     const cities = await findNovaPoshtaCities(query);

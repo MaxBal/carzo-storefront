@@ -26,6 +26,7 @@ export async function GET() {
     '## Основні сторінки',
     '',
     `- [Головна](${absoluteSiteUrl('/')}): Огляд бренду CARZO та перехід до вибору автокейсу.`,
+    `- [Автокилимки CARZO](${absoluteSiteUrl('/catalog-carmat')}): Преміальні автокилимки на замовлення з німецької еко-шкіри.`,
     ...publishedPages
       .filter(page => page.slug !== 'home')
       .map(page => `- [${inlineMarkdown(page.title)}](${absoluteSiteUrl(pagePath(page.slug))}): ${inlineMarkdown(page.seoDescription || `Інформаційна сторінка ${page.title}.`)}`),

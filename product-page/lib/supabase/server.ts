@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { assertSafeSupabaseTarget } from './environment';
 
 export class SupabaseConfigError extends Error {
   readonly code = 'CONFIG' as const;
@@ -22,9 +23,14 @@ function requireEnv(name: string): string {
 /**
  * Server-only admin client (elevated secret key).
  * Never import from client components — the secret must not reach the browser bundle.
+ *
+ * Enforces `cache: 'no-store'` on all requests so orders, checkout attempt probes,
+ * customer PII, loyalty checks, notification settings, and live checkout price quotes
+ * are never stored in the Next.js Data Cache (NEW-02).
  */
 export function createSupabaseAdminClient(): SupabaseClient {
   const url = requireEnv('SUPABASE_URL');
+  assertSafeSupabaseTarget(url);
   const secretKey = requireEnv('SUPABASE_SECRET_KEY');
 
   return createClient(url, secretKey, {
@@ -32,6 +38,9 @@ export function createSupabaseAdminClient(): SupabaseClient {
       persistSession: false,
       autoRefreshToken: false,
       detectSessionInUrl: false,
+    },
+    global: {
+      fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
     },
   });
 }
@@ -43,4 +52,9 @@ export function getSupabaseAdminClient(): SupabaseClient {
     cached = createSupabaseAdminClient();
   }
   return cached;
+}
+
+/** Test helper to reset the cached admin client singleton when mocking fetch/env. */
+export function resetSupabaseAdminClientForTests(): void {
+  cached = null;
 }

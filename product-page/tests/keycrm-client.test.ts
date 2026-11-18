@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'node:test';
+import { afterEach, beforeEach, describe, it } from 'node:test';
 
 import { createKeyCrmOrder, getKeyCrmOrder, KeyCrmApiError } from '../lib/keycrm/client';
 import type { KeyCrmOrderPayload } from '../lib/keycrm/types';
@@ -20,6 +20,12 @@ function mockFetch(status: number, body: unknown = { ok: true }) {
 }
 
 describe('keyCRM API client', () => {
+  let saved: string | undefined;
+  beforeEach(() => { saved = process.env.VERCEL_ENV; process.env.VERCEL_ENV = 'production'; });
+  afterEach(() => {
+    if (saved === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = saved;
+  });
   it('sends authorized JSON and returns the parsed response', async () => {
     let seen: { url?: string; auth?: string; method?: string; body?: string } = {};
     const result = await createKeyCrmOrder(PAYLOAD, {

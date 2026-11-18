@@ -14,6 +14,8 @@ import {
   type TelegramCredentials,
 } from '@/lib/data/notifications';
 import { resolveTelegramRecipients } from '@/lib/data/notifications/recipients';
+import { isVercelProduction } from '@/lib/production-integrations';
+import { isSharedSupabasePreview } from '@/lib/supabase/environment';
 
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
@@ -290,6 +292,11 @@ export async function notifyNewOrder(order: NewOrderNotification) {
   if (resolveOrderStoreBackend() === 'supabase') {
     return notifyNewOrderSupabase(order);
   }
+  // Block before reading legacy bot credentials or starting email/Telegram requests.
+  if (!isVercelProduction()) {
+    console.warn('Directus order notifications blocked outside Vercel Production');
+    return;
+  }
   try {
     const settings = await readSettings();
     if (settings.channel === 'off') return;
@@ -339,6 +346,8 @@ export async function notifyNewOrder(order: NewOrderNotification) {
  * delivery plus an explicit UNSUPPORTED log; never claim emails sent.
  */
 async function notifyNewOrderSupabase(order: NewOrderNotification) {
+  // Prelaunch Preview shares the real database; do not read or use its send settings.
+  if (isSharedSupabasePreview()) return;
   try {
     const repository = getNotificationSettingsRepository();
     const settings = await repository.readSettings();
@@ -425,6 +434,7 @@ export async function deliverCarMatQuoteViaTelegram(
   deps: CarMatQuoteDeliveryDeps,
 ): Promise<boolean> {
   const { settings, credentials, env, sendTelegramText } = deps;
+  if (isSharedSupabasePreview(env)) return false;
   if (settings.channel === 'off') return false;
 
   if (settings.channel === 'email' || settings.channel === 'both') {
@@ -473,6 +483,7 @@ export async function deliverCarMatQuoteViaTelegram(
 async function notifyNewCarMatQuoteSupabase(
   request: NewCarMatQuoteNotification,
 ): Promise<boolean> {
+  if (isSharedSupabasePreview()) return false;
   try {
     const repository = getNotificationSettingsRepository();
     const [settings, credentials] = await Promise.all([
@@ -496,6 +507,11 @@ async function notifyNewCarMatQuoteSupabase(
 export async function notifyNewCarMatQuote(request: NewCarMatQuoteNotification) {
   if (resolveNotificationSettingsBackend() === 'supabase') {
     return notifyNewCarMatQuoteSupabase(request);
+  }
+
+  if (!isVercelProduction()) {
+    console.warn('Directus carmat notifications blocked outside Vercel Production');
+    return false;
   }
 
   // Legacy Directus path — Production until the Stage 9 cutover.

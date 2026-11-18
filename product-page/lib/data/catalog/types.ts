@@ -7,6 +7,18 @@ import type {
   SizeInfo,
 } from '@/lib/content/types';
 
+export type CatalogCacheMode = 'no-store' | 'revalidate';
+
+export interface LoadCatalogOptions {
+  /**
+   * Cache policy for catalog reads:
+   * - `'no-store'` (default): live uncached read for checkout and cart quotes.
+   * - `'revalidate'`: bounded 60s ISR revalidation for public page rendering
+   *   (automatically falls back to `'no-store'` in Draft Mode).
+   */
+  cache?: CatalogCacheMode;
+}
+
 export interface CatalogData {
   designs: DesignInfo[];
   sizes: SizeInfo[];
@@ -30,8 +42,8 @@ export interface QuoteCatalogInput {
 
 export interface CatalogRepository {
   /**
-   * Load commerce/catalog dataset for cart quotes and checkout.
+   * Load commerce/catalog dataset for cart quotes, checkout, or public pages.
    * Fail-closed: infrastructure errors throw; never silently fall back to another backend.
    */
-  loadCatalog(): Promise<CatalogData>;
+  loadCatalog(options?: LoadCatalogOptions): Promise<CatalogData>;
 }

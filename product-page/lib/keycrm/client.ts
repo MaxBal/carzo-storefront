@@ -7,6 +7,7 @@
  */
 
 import { readKeyCrmConfig } from './config';
+import { isVercelProduction } from '@/lib/production-integrations';
 import type { KeyCrmOrderPayload } from './types';
 
 const DEFAULT_BASE_URL = 'https://openapi.keycrm.app/v1';
@@ -27,6 +28,7 @@ export class KeyCrmApiError extends Error {
 export type KeyCrmFetch = typeof fetch;
 
 export interface KeyCrmClientOptions {
+  env?: NodeJS.ProcessEnv;
   apiKey?: string | null;
   baseUrl?: string;
   timeoutMs?: number;
@@ -98,10 +100,13 @@ function classifyStatus(status: number): string {
   return 'HTTP';
 }
 
-export function createKeyCrmOrder(
+export async function createKeyCrmOrder(
   payload: KeyCrmOrderPayload,
   options: KeyCrmClientOptions = {},
 ): Promise<unknown> {
+  if (!isVercelProduction(options.env)) {
+    throw new KeyCrmApiError('keyCRM writes are disabled outside Vercel Production', 0, 'DISABLED');
+  }
   return keyCrmRequest('/order', { ...options, method: 'POST', body: payload });
 }
 

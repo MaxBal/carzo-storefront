@@ -4,20 +4,24 @@ import type {
   BrandInfo,
   DesignInfo,
   FixationInfo,
+  GalleryImage,
   ProductCatalog,
   ProductParams,
   SizeId,
   SizeInfo,
+  ProductVariant,
 } from '@/lib/content/types';
 
 export type {
   BrandInfo,
   DesignInfo,
   FixationInfo,
+  GalleryImage,
   ProductCatalog,
   ProductParams,
   SizeId,
   SizeInfo,
+  ProductVariant,
 } from '@/lib/content/types';
 
 export const DEFAULT_CATALOG = getProductCatalog(DEFAULT_CONTENT_SOURCE);
@@ -150,3 +154,86 @@ export function parseRouteSegments(
 
   return { params: { size, designSlug, brandId: brand.id } };
 }
+
+export interface ProductJsonLdOffer {
+  '@type': 'Offer';
+  price: number;
+  priceCurrency: 'UAH';
+  availability: 'https://schema.org/InStock' | 'https://schema.org/OutOfStock';
+  url: string;
+}
+
+export interface ProductJsonLd {
+  '@context': 'https://schema.org';
+  '@type': 'Product';
+  name: string;
+  description: string;
+  image: string;
+  brand: {
+    '@type': 'Brand';
+    name: 'CARZO';
+  };
+  url: string;
+  offers: ProductJsonLdOffer;
+}
+
+export interface BuildProductJsonLdInput {
+  params: ProductParams;
+  catalog?: ProductCatalog;
+  variant: Pick<ProductVariant, 'price' | 'inStock'>;
+  gallery?: ReadonlyArray<Pick<GalleryImage, 'src' | 'isPlaceholder'>>;
+  toAbsoluteUrl: (path: string) => string;
+}
+
+/**
+ * Builds canonical Schema.org Product JSON-LD for a product route.
+ * Branded routes (/case/design/{size}/{design}/{brand}) are canonicalized to
+ * brandId: 'none', so name, description, url, offers.url, and offers.price
+ * always describe the canonical base product page.
+ */
+export function buildProductJsonLd({
+  params,
+  catalog = DEFAULT_CATALOG,
+  variant,
+  gallery = [],
+  toAbsoluteUrl,
+}: BuildProductJsonLdInput): {
+  canonicalPath: string;
+  canonicalUrl: string;
+  schema: ProductJsonLd;
+} {
+  const canonicalParams: ProductParams = { ...params, brandId: 'none' };
+  const canonicalPath = buildProductUrl(canonicalParams, catalog);
+  const canonicalUrl = toAbsoluteUrl(canonicalPath);
+  const productTitle = buildProductTitle(canonicalParams, catalog);
+  const productDescription = buildMetaDescription(canonicalParams, catalog);
+  const firstImage = gallery.find(img => !img.isPlaceholder && img.src);
+  const productImage = firstImage ? toAbsoluteUrl(firstImage.src) : toAbsoluteUrl('/case.jpg');
+
+  return {
+    canonicalPath,
+    canonicalUrl,
+    schema: {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: productTitle,
+      description: productDescription,
+      image: productImage,
+      brand: {
+        '@type': 'Brand',
+        name: 'CARZO',
+      },
+      url: canonicalUrl,
+      offers: {
+        '@type': 'Offer',
+        price: variant.price,
+        priceCurrency: 'UAH',
+        availability: variant.inStock
+          ? 'https://schema.org/InStock'
+          : 'https://schema.org/OutOfStock',
+        url: canonicalUrl,
+      },
+    },
+  };
+}
+

@@ -8,6 +8,7 @@ import {
 } from '../lib/keycrm/webhook';
 
 const ENV = {
+  VERCEL_ENV: 'production', // Injected dependencies, no live customer writes.
   KEYCRM_WEBHOOK_SECRET: 'wh-secret',
   KEYCRM_LOYALTY_STATUS_IDS: '21,12',
 } as unknown as NodeJS.ProcessEnv;
@@ -65,7 +66,7 @@ describe('keyCRM completed-order webhook (loyalty statuses)', () => {
       { KEYCRM_WEBHOOK_SECRET: 'wh-secret', KEYCRM_LOYALTY_STATUS_IDS: '' },
       { KEYCRM_WEBHOOK_SECRET: 'wh-secret', KEYCRM_LOYALTY_STATUS_IDS: 'abc,x' },
     ] as unknown as NodeJS.ProcessEnv[]) {
-      const result = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', deps({ env }));
+      const result = await handleKeyCrmOrderStatusWebhook(orderEvent(), 'wh-secret', deps({ env: { ...env, VERCEL_ENV: 'production' } }));
       assert.equal(result.status, 503);
       assert.equal(result.body.error, 'not_configured');
     }

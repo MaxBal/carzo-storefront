@@ -9,12 +9,28 @@ interface ProductGalleryProps {
   selectionKey: string;
 }
 
+/**
+ * Determines whether a slide inside the mobile horizontal carousel should mount
+ * its <img> immediately. Deferring offscreen slides (i >= 1) until user
+ * interaction prevents Chromium's horizontal lazy-load root margin from
+ * eagerly downloading slides 2..3 on initial mobile page load (375px).
+ */
+export function shouldRenderMobileSlideImage(
+  index: number,
+  activeIndex: number,
+  hasInteracted: boolean,
+): boolean {
+  return index === 0 || index === activeIndex || hasInteracted;
+}
+
 export default function ProductGallery({ images, selectionKey }: ProductGalleryProps) {
   const [active, setActive] = useState(0);
+  const [mobileInteracted, setMobileInteracted] = useState(false);
   const touchStartX = useRef<number | null>(null);
 
   useEffect(() => {
     setActive(0);
+    setMobileInteracted(false);
   }, [selectionKey]);
 
   if (images.length === 0) return null;
@@ -22,6 +38,7 @@ export default function ProductGallery({ images, selectionKey }: ProductGalleryP
   const activeImage = images[safeActive];
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    setMobileInteracted(true);
     touchStartX.current = e.touches[0].clientX;
   };
 
@@ -70,6 +87,8 @@ export default function ProductGallery({ images, selectionKey }: ProductGalleryP
                 isPlaceholder={image.isPlaceholder}
                 alt={image.alt}
                 fill
+                loading="lazy"
+                decoding="async"
               />
             </button>
           ))}
@@ -83,7 +102,8 @@ export default function ProductGallery({ images, selectionKey }: ProductGalleryP
             isPlaceholder={activeImage.isPlaceholder}
             alt={activeImage.alt}
             fill
-            priority
+            priority={safeActive === 0}
+            decoding="async"
           />
         </div>
       </div>
@@ -93,6 +113,7 @@ export default function ProductGallery({ images, selectionKey }: ProductGalleryP
         className="md:hidden relative w-full overflow-hidden bg-gray-100 aspect-square"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
+        onPointerDown={() => setMobileInteracted(true)}
         data-product-gallery="mobile"
         data-gallery-selection={selectionKey}
         data-gallery-active-index={safeActive}
@@ -104,14 +125,18 @@ export default function ProductGallery({ images, selectionKey }: ProductGalleryP
         >
           {images.map((image, i) => (
             <div key={image.key} className="relative h-full flex-shrink-0" style={{ width: `${100 / images.length}%` }}>
-              <ManagedProductImage
-                src={image.src}
-                fallbackSrc={image.fallbackSrc}
-                isPlaceholder={image.isPlaceholder}
-                alt={image.alt}
-                fill
-                priority={i === 0}
-              />
+              {shouldRenderMobileSlideImage(i, safeActive, mobileInteracted) && (
+                <ManagedProductImage
+                  src={image.src}
+                  fallbackSrc={image.fallbackSrc}
+                  isPlaceholder={image.isPlaceholder}
+                  alt={image.alt}
+                  fill
+                  priority={i === 0}
+                  loading={i === 0 ? undefined : 'lazy'}
+                  decoding="async"
+                />
+              )}
             </div>
           ))}
         </div>
@@ -122,7 +147,10 @@ export default function ProductGallery({ images, selectionKey }: ProductGalleryP
             {images.map((image, i) => (
               <button
                 key={image.key}
-                onClick={() => setActive(i)}
+                onClick={() => {
+                  setMobileInteracted(true);
+                  setActive(i);
+                }}
                 aria-label={`Показати фото ${i + 1}`}
                 aria-current={i === safeActive ? 'true' : undefined}
                 className="rounded-full transition-all duration-200"

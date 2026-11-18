@@ -1,6 +1,13 @@
 import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
-import { parseRouteSegments, buildProductTitle, buildMetaDescription, buildProductUrl, getDesignBySlug } from '@/lib/product-data';
+import {
+  parseRouteSegments,
+  buildProductTitle,
+  buildMetaDescription,
+  buildProductUrl,
+  buildProductJsonLd,
+  getDesignBySlug,
+} from '@/lib/product-data';
 import { getContentSource } from '@/lib/data/content';
 import { getProductCatalog, resolveProductContent } from '@/lib/content/resolver';
 import { absoluteSiteUrl } from '@/lib/seo';
@@ -73,34 +80,17 @@ export default async function Page({ params }: PageProps) {
 
   const content = resolveProductContent(parsed.params, source);
 
-  const productUrl = absoluteSiteUrl(buildProductUrl(parsed.params, catalog));
-  const productTitle = buildProductTitle(parsed.params, catalog);
-  const productDescription = buildMetaDescription(parsed.params, catalog);
-  const { selectedVariant } = content.pricing;
-  const firstImage = content.gallery.find(img => !img.isPlaceholder);
-  const productImage = firstImage ? absoluteSiteUrl(firstImage.src) : absoluteSiteUrl('/case.jpg');
-
-  const productSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: productTitle,
-    description: productDescription,
-    image: productImage,
-    brand: {
-      '@type': 'Brand',
-      name: 'CARZO',
-    },
-    url: productUrl,
-    offers: {
-      '@type': 'Offer',
-      price: selectedVariant.price,
-      priceCurrency: 'UAH',
-      availability: selectedVariant.inStock
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      url: productUrl,
-    },
-  };
+  // JSON-LD must describe the canonical (unbranded) page: branded URLs are
+  // canonicalized away, and the UI price includes the logo surcharge that the
+  // base variant price does not. Aligning name/url/price with canonical keeps
+  // microdata consistent with the visible canonical page.
+  const { schema: productSchema } = buildProductJsonLd({
+    params: parsed.params,
+    catalog,
+    variant: content.pricing.selectedVariant,
+    gallery: content.gallery,
+    toAbsoluteUrl: absoluteSiteUrl,
+  });
 
   return (
     <>

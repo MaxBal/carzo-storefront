@@ -1,6 +1,8 @@
 import 'server-only';
 
+import { draftMode } from 'next/headers';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { assertSafeSupabaseTarget } from '@/lib/supabase/environment';
 import { DEFAULT_CONTENT_SOURCE } from '@/lib/content/default-source';
 import {
   DEFAULT_ABOUT,
@@ -32,10 +34,28 @@ import type {
   VideoReviewItem,
   VideoReviewsData,
 } from '@/lib/content/types';
+import { CACHE_REVALIDATE_SECONDS, CACHE_TAGS } from '../config';
 import type { EditorialContent, ContentRepository } from './types';
 import { MAGNETIC_POSTER_SLOTS, PRODUCT_MEDIA_REQUIRED_SLOTS } from './media-slots';
 
 export { PRODUCT_MEDIA_REQUIRED_SLOTS, MAGNETIC_POSTER_SLOTS };
+
+export const __CONTENT_CACHE = {
+  revalidate: CACHE_REVALIDATE_SECONDS,
+  tags: [CACHE_TAGS.content, CACHE_TAGS.settings],
+} as const;
+
+type NextFetchInit = RequestInit & {
+  next?: { revalidate?: number | false; tags?: string[] };
+};
+
+function isDraftModeEnabled(): boolean {
+  try {
+    return draftMode().isEnabled;
+  } catch {
+    return false;
+  }
+}
 
 type SupabaseRow = Record<string, unknown>;
 
@@ -76,11 +96,11 @@ function supabaseMediaUrl(external: unknown, _file: unknown, fallback: string): 
 }
 
 /**
- * Editorial-scoped Supabase client. Unlike the shared admin client, every read
- * bypasses the Next data cache: the default fetch cache stores PostgREST
- * responses with a one-year TTL, so CMS edits (car-mat promo media, design
- * photos) would stay invisible until deploy. The shared admin client is
- * deliberately untouched — catalog, cart and orders keep their fetch behaviour.
+ * Editorial-scoped Supabase client. Published reads use bounded 60s ISR
+ * revalidation (`next: { revalidate: 60 }`) so public pages can be statically
+ * generated and cached without `Dynamic server usage: no-store fetch` errors,
+ * while CMS edits still propagate within a minute. In Draft Mode, reads bypass
+ * cache (`cache: 'no-store'`).
  */
 let cachedContentClient: SupabaseClient | null = null;
 
@@ -91,6 +111,7 @@ function getContentClient(): SupabaseClient {
     if (!url || !secretKey) {
       throw new EditorialUnavailableError('Missing required Supabase environment variables');
     }
+    assertSafeSupabaseTarget(url);
     cachedContentClient = createClient(url, secretKey, {
       auth: {
         persistSession: false,
@@ -98,11 +119,28 @@ function getContentClient(): SupabaseClient {
         detectSessionInUrl: false,
       },
       global: {
-        fetch: (input, init) => fetch(input, { ...init, cache: 'no-store' }),
+        fetch: (input, init) => {
+          if (isDraftModeEnabled()) {
+            return fetch(input, { ...init, cache: 'no-store' });
+          }
+          const { cache: _cache, ...rest } = init ?? {};
+          return fetch(input, {
+            ...rest,
+            next: {
+              revalidate: __CONTENT_CACHE.revalidate,
+              tags: [...__CONTENT_CACHE.tags],
+            },
+          } as NextFetchInit);
+        },
       },
     });
   }
   return cachedContentClient;
+}
+
+/** Test helper to reset the content client singleton in unit tests. */
+export function resetSupabaseContentClientForTests(): void {
+  cachedContentClient = null;
 }
 
 async function selectRows(

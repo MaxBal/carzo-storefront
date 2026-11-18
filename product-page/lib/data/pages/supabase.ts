@@ -1,7 +1,9 @@
 import 'server-only';
 
 import { cache } from 'react';
+import { draftMode } from 'next/headers';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { assertSafeSupabaseTarget } from '@/lib/supabase/environment';
 import type {
   CmsBlockItem,
   CmsBlockTheme,
@@ -25,10 +27,18 @@ type NextFetchInit = RequestInit & {
   next?: { revalidate?: number | false; tags?: string[] };
 };
 
+function isDraftModeEnabled(): boolean {
+  try {
+    return draftMode().isEnabled;
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Pages-scoped Supabase clients only. Published reads go through the Next data * cache with a 60s TTL so CMS edits appear within a minute; preview reads are
- * never cached. The shared admin client is deliberately untouched — catalog,
- * cart and orders keep their existing fetch behaviour.
+ * Pages-scoped Supabase clients only. Published reads go through the Next data
+ * cache with a 60s TTL so CMS edits appear within a minute; preview and Draft Mode
+ * reads are never cached (`cache: 'no-store'`).
  */
 function createPageClient(fetchImpl: typeof fetch): SupabaseClient {
   const url = process.env.SUPABASE_URL?.trim();
@@ -36,6 +46,7 @@ function createPageClient(fetchImpl: typeof fetch): SupabaseClient {
   if (!url || !secretKey) {
     throw new Error('Missing required Supabase environment variable for pages client');
   }
+  assertSafeSupabaseTarget(url);
   return createClient(url, secretKey, {
     auth: {
       persistSession: false,
@@ -51,16 +62,16 @@ function createPageClient(fetchImpl: typeof fetch): SupabaseClient {
 let cachedPageClient: SupabaseClient | null = null;
 function getCachedPageClient(): SupabaseClient {
   if (!cachedPageClient) {
-    cachedPageClient = createPageClient((input, init) =>
-      fetch(input, {
-        ...init,
-        // `init.cache` is part of the fetch-cache key while `init.next` is not
-        // (next@14 incremental-cache fetchCacheKey) — set cache explicitly so
-        // pre-fix no-TTL entries stop matching, and give the entry a 60s TTL.
-        cache: 'force-cache',
+    cachedPageClient = createPageClient((input, init) => {
+      if (isDraftModeEnabled()) {
+        return fetch(input, { ...init, cache: 'no-store' });
+      }
+      const { cache: _cache, ...rest } = init ?? {};
+      return fetch(input, {
+        ...rest,
         next: { revalidate: __PAGE_CACHE.revalidate, tags: [...__PAGE_CACHE.tags] },
-      } as NextFetchInit),
-    );
+      } as NextFetchInit);
+    });
   }
   return cachedPageClient;
 }
@@ -76,7 +87,13 @@ function getPreviewPageClient(): SupabaseClient {
 }
 
 function getPageClient(preview: boolean): SupabaseClient {
-  return preview ? getPreviewPageClient() : getCachedPageClient();
+  return preview || isDraftModeEnabled() ? getPreviewPageClient() : getCachedPageClient();
+}
+
+/** Test helper to reset singleton clients when mocking fetch/env in unit tests. */
+export function resetSupabasePageClientsForTests(): void {
+  cachedPageClient = null;
+  previewPageClient = null;
 }
 
 const PAGE_TYPES = new Set<CmsPageType>(['landing', 'content', 'legal']);
@@ -211,48 +228,54 @@ async function readPage(
   };
 }
 
+const loadPublishedSupabasePage = cache(async (slug: string) => {
+  try {
+    return await readPage('slug', slug, false);
+  } catch (error) {
+    console.error('Unable to load published Supabase page', error);
+    return null;
+  }
+});
+
+const loadPublishedSupabasePageSummaries = cache(async (): Promise<CmsPageSummary[]> => {
+  try {
+    const { data, error } = await getPageClient(false)
+      .from('pages')
+      .select('id,key,title,slug,seo_description,no_index')
+      .eq('status', 'published')
+      .order('slug', { ascending: true });
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as SupabaseRow[]).map(row => ({
+      id: text(row.id),
+      key: text(row.key),
+      title: text(row.title),
+      slug: text(row.slug),
+      seoDescription: text(row.seo_description),
+      noIndex: bool(row.no_index, false),
+    }));
+  } catch (error) {
+    console.error('Unable to list published Supabase pages', error);
+    return [];
+  }
+});
+
+const supabasePageRepository: PageRepository = {
+  getPublishedPage: loadPublishedSupabasePage,
+  getPublishedPageSummaries: loadPublishedSupabasePageSummaries,
+  getPreviewPage: async (id: string) => {
+    try {
+      return await readPage('id', id, true);
+    } catch (error) {
+      console.error('Unable to load Supabase page preview', error);
+      return null;
+    }
+  },
+};
+
 /**
- * Supabase pages adapter. Published reads use ~60s cache; preview is no-store
- * and may read draft rows. R2 media only. No Directus fallback.
+ * Supabase pages adapter. Published reads use ~60s cache; preview/Draft Mode
+ * is no-store and may read draft rows. R2 media only. No Directus fallback.
  */
 export function createSupabasePageRepository(): PageRepository {
-  return {
-    getPublishedPage: cache(async (slug: string) => {
-      try {
-        return await readPage('slug', slug, false);
-      } catch (error) {
-        console.error('Unable to load published Supabase page', error);
-        return null;
-      }
-    }),
-    getPublishedPageSummaries: cache(async (): Promise<CmsPageSummary[]> => {
-      try {
-        const { data, error } = await getCachedPageClient()
-          .from('pages')
-          .select('id,key,title,slug,seo_description,no_index')
-          .eq('status', 'published')
-          .order('slug', { ascending: true });
-        if (error) throw new Error(error.message);
-        return ((data ?? []) as SupabaseRow[]).map(row => ({
-          id: text(row.id),
-          key: text(row.key),
-          title: text(row.title),
-          slug: text(row.slug),
-          seoDescription: text(row.seo_description),
-          noIndex: bool(row.no_index, false),
-        }));
-      } catch (error) {
-        console.error('Unable to list published Supabase pages', error);
-        return [];
-      }
-    }),
-    getPreviewPage: async (id: string) => {
-      try {
-        return await readPage('id', id, true);
-      } catch (error) {
-        console.error('Unable to load Supabase page preview', error);
-        return null;
-      }
-    },
-  };
+  return supabasePageRepository;
 }
