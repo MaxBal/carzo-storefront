@@ -7,6 +7,7 @@ import type {
   OrderSnapshot,
 } from './types';
 import { OrderStoreError } from './types';
+import { isVercelProduction } from '@/lib/production-integrations';
 
 /**
  * Directus order writer — preserves the legacy POST semantics of checkout.ts
@@ -78,6 +79,9 @@ function toDirectusBody(snapshot: OrderSnapshot) {
 export function createDirectusOrderRepository(): OrderRepository {
   return {
     async createOrder(snapshot: OrderSnapshot): Promise<CreateOrderResult> {
+      if (!isVercelProduction()) {
+        throw new OrderStoreError('Directus order writes are disabled outside Vercel Production', 'WRITE_FAILED');
+      }
       const url = process.env.DIRECTUS_URL?.replace(/\/$/, '');
       const token = process.env.DIRECTUS_READ_TOKEN?.trim();
       if (!url || !token) {

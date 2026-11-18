@@ -10,6 +10,7 @@
 
 import { createHash, timingSafeEqual as cryptoTimingSafeEqual } from 'node:crypto';
 import { normalizeCustomerPhone } from '@/lib/cart/customer-phone';
+import { isVercelProduction } from '@/lib/production-integrations';
 import { parseStatusIdList } from './config';
 
 export interface KeyCrmWebhookOrder {
@@ -133,6 +134,9 @@ export async function handleKeyCrmOrderStatusWebhook(
   deps: KeyCrmWebhookDeps,
 ): Promise<KeyCrmWebhookResult> {
   const env = deps.env ?? process.env;
+  if (!isVercelProduction(env)) {
+    return { status: 503, body: { error: 'disabled_environment' } };
+  }
   const logError = deps.logError ?? (() => {});
   const auth = verifyKeyCrmWebhookAuth(secret, env);
   if (!auth.ok) {

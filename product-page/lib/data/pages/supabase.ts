@@ -3,6 +3,7 @@ import 'server-only';
 import { cache } from 'react';
 import { draftMode } from 'next/headers';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { assertSafeSupabaseTarget } from '@/lib/supabase/environment';
 import type {
   CmsBlockItem,
   CmsBlockTheme,
@@ -45,6 +46,7 @@ function createPageClient(fetchImpl: typeof fetch): SupabaseClient {
   if (!url || !secretKey) {
     throw new Error('Missing required Supabase environment variable for pages client');
   }
+  assertSafeSupabaseTarget(url);
   return createClient(url, secretKey, {
     auth: {
       persistSession: false,

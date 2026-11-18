@@ -145,12 +145,24 @@ describe('car mat quote — Supabase/Telegram delivery core', () => {
   it('production routes to the settings chat ids', async () => {
     let used: string[] = [];
     const ok = await deliverCarMatQuoteViaTelegram(REQUEST, deps({
+      env: { ...deps().env, SUPABASE_ALLOW_SHARED_PREVIEW: 'true' },
       sendTelegramText: async (_t, chatIds) => {
         used = chatIds;
       },
     }));
     assert.equal(ok, true);
     assert.deepEqual(used, WORK_CHAT_IDS);
+  });
+
+  it('shared Preview blocks delivery even with a bot and valid test recipients', async () => {
+    let sent = false;
+    const ok = await deliverCarMatQuoteViaTelegram(REQUEST, deps({
+      env: { VERCEL_ENV: 'preview', SUPABASE_ALLOW_SHARED_PREVIEW: 'true',
+        TELEGRAM_BOT_TOKEN: 'synthetic-only', TELEGRAM_TEST_CHAT_IDS: TEST_CHAT_IDS.join(',') },
+      sendTelegramText: async () => { sent = true; },
+    }));
+    assert.equal(ok, false);
+    assert.equal(sent, false);
   });
 
   it('delivery core performs no network of its own — sender is injected', async () => {

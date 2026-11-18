@@ -1,4 +1,5 @@
 import { normalizeCustomerPhone } from '../customer-phone';
+import { isVercelProduction } from '@/lib/production-integrations';
 import {
   CustomerStoreError,
   type CustomerRecord,
@@ -172,11 +173,17 @@ export function createDirectusCustomerStore(
 
   return {
     async findCustomerByPhone(rawPhone) {
+      if (!isVercelProduction()) {
+        throw new CustomerStoreError('Directus customers are disabled outside Vercel Production', 'UNAVAILABLE');
+      }
       const phone = normalizeCustomerPhone(rawPhone);
       if (!phone) return null;
       return findByPhone(phone, doFetch);
     },
     async upsertCustomerByPhone(input) {
+      if (!isVercelProduction()) {
+        throw new CustomerStoreError('Directus customers are disabled outside Vercel Production', 'WRITE_FAILED');
+      }
       const phone = normalizeCustomerPhone(input.phone);
       if (!phone) return null;
       return upsertByPhone(input, phone, doFetch);

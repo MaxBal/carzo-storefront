@@ -34,7 +34,8 @@
     "test:supabase-editorial": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/supabase-editorial-integration.test.ts",
     "test:editorial-fallback": "tsx --env-file=.env.local --require ./tests/helpers/server-only-stub.cjs --test tests/editorial-fallback-detection.test.ts",
     "test:stage8b-import": "tsx --test tests/stage8b-historical-import.test.ts tests/stage8b-import-paginate-verify.test.ts",
-    "stage8b:import": "tsx scripts/stage8b-historical-import/index.ts"
+    "stage8b:import": "tsx scripts/stage8b-historical-import/index.ts",
+    "test:preview-safety": "node --import tsx --require ./tests/helpers/server-only-stub.cjs --test tests/preview-integration-safety.test.ts tests/preview-backend-safety.test.ts tests/carmat-quote-telegram.test.ts tests/carmat-quote-notifications.test.ts tests/telegram-recipients.test.ts tests/customer-store.test.ts tests/keycrm-client.test.ts tests/keycrm-sync.test.ts tests/keycrm-webhook.test.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.758.0",
