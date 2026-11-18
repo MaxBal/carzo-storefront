@@ -225,6 +225,8 @@
 
   .vr-scroller {
     padding: 0 0 8px;
+    overflow-x: hidden;
+    scroll-snap-type: none;
   }
 
   .vr-track {

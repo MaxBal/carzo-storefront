@@ -210,3 +210,40 @@ Deployments: `npx vercel --prod --yes` for production, `npx vercel --prod --yes 
 ### Spacing
 - Container max-width: `max-w-[1280px]` or `max-w-7xl`
 - Section padding: `py-[88px]` to `py-[112px]` (desktop), `py-[56px]` to `py-[72px]` (mobile)
+
+## Agent Work Rules
+
+Efficiency rules for Xiaomi MiMo agents working in this repository:
+
+1. **Minimal sufficient analysis** — investigate just enough to understand the problem. Don't re-audit what is already known from context or memory.
+2. **Move from diagnosis to implementation quickly** — once the cause is clear, fix it; don't stall in endless exploration.
+3. **Never repeat failed operations endlessly** — after two identical failures, change the approach instead of retrying.
+4. **No meaningless commands** — every command must serve a concrete purpose for the current task.
+5. **Re-read files only when necessary** — trust earlier reads within the same task unless the file may have changed.
+6. **Scale verification to the task** — small change → quick check; large change → full validation (`tsc`, `lint`, `build`).
+7. **Stop as soon as a verified result is achieved** — no extra refactoring, cleanup, or "improvements" beyond the task.
+8. **Keep final reports short** — what changed, what's next, nothing else.
+9. **Perform standard technical actions independently** within the allowed scope — no unnecessary approvals for routine work.
+
+## Git Workflow Rules
+
+- `~/Documents/GitHub/carzo-storefront` is the **single permanent repository**. Keep it in place; don't move, rename, or duplicate it.
+- For simultaneous/parallel tasks, use **separate Git worktrees** (`git worktree add ../carzo-<task> <branch>`).
+- After a task is merged and its worktree is verified to contain no unique changes, remove the temporary worktree and delete the merged local branch. Don't leave unnecessary working copies.
+- Don't touch others' unfinished changes (uncommitted files, stashes, work-in-progress branches).
+- **Never force push.**
+- Before publishing or pushing, re-check the current state of `main`.
+- Keep long-lived branches to `main` and `dev` only; feature branches are short-lived.
+
+## Safety Rules
+
+Preserve existing rules for working with production systems and data:
+
+- **Production / Vercel** — no deployments unless the task explicitly authorizes them.
+- **Supabase** — no schema migrations or destructive SQL outside an authorized task.
+- **Cloudflare R2** — treat media buckets and credentials as production assets.
+- **Telegram** — bots, chat IDs, and notification flows are production integrations.
+- **KeyCRM** — order sync and catalog exports are production data; don't alter exports (e.g. `Keycrm/*.csv`) in place.
+- **Secrets and personal data** — secrets stay server-side (never `NEXT_PUBLIC_`, never commit `.env*`); treat customer contacts in orders/leads as personal data.
+- No destructive operations outside the scope of the assigned task.
+- Never delete archives or unique files without verifying their contents are preserved elsewhere.

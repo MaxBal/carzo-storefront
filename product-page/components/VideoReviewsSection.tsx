@@ -40,12 +40,14 @@ function VideoOverlay({ item, onClose }: { item: VideoReviewItem; onClose: () =>
         <video
           ref={videoRef}
           className="vr-overlay-video"
-          src={item.videoUrl}
           poster={item.coverUrl}
           playsInline
           controls
           autoPlay
-        />
+          preload="none"
+        >
+          <source src={item.videoUrl} type="video/webm" />
+        </video>
       </div>
     </div>
   );
