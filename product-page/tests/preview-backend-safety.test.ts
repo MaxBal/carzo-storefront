@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, it } from 'node:test';
 import { assertSafeSupabaseTarget } from '../lib/supabase/environment';
 import { createSupabaseAdminClient } from '../lib/supabase/server';
 import { createSupabaseOrderRepository } from '../lib/data/orders/supabase';
+import { createSupabaseCatalogRepository, resetSupabaseCatalogClientForTests } from '../lib/data/catalog/supabase';
 import { createCustomerStore } from '../lib/cart/customer-store';
 import { createDirectusCustomerStore } from '../lib/cart/customer-store/directus';
 import { loadSupabaseHomepageSettings } from '../lib/data/content/supabase';
@@ -73,6 +74,7 @@ describe('non-production backend boundaries with accidental credentials', () => 
   let requests: number;
   let expectedRequests: number;
   beforeEach(() => {
+    resetSupabaseCatalogClientForTests();
     saved = keys.map(key => process.env[key]);
     originalFetch = globalThis.fetch;
     requests = 0;
@@ -108,6 +110,29 @@ describe('non-production backend boundaries with accidental credentials', () => 
     assert.deepEqual(await pages.getPublishedPageSummaries(), []);
     assert.equal(await pages.getPreviewPage('synthetic'), null);
   });
+  it('blocks cached catalog reads to the shared project without opt-in before network', async () => {
+    await assert.rejects(() => createSupabaseCatalogRepository().loadCatalog({ cache: 'revalidate' }), /disabled outside/);
+  });
+  it('blocks cached catalog reads to an unapproved origin even with shared opt-in', async () => {
+    process.env.SUPABASE_ALLOW_SHARED_PREVIEW = 'true';
+    process.env.SUPABASE_URL = 'https://unapproved.invalid';
+    await assert.rejects(() => createSupabaseCatalogRepository().loadCatalog({ cache: 'revalidate' }), /disabled outside/);
+  });
+  for (const mode of ['shared Preview', 'Production']) {
+    it(`preserves allowed cached catalog reads in ${mode} with mock fetch`, async () => {
+      if (mode === 'Production') process.env.VERCEL_ENV = 'production';
+      else process.env.SUPABASE_ALLOW_SHARED_PREVIEW = 'true';
+      expectedRequests = 8;
+      globalThis.fetch = async (input, init) => {
+        requests += 1;
+        assert.equal(new URL(String(input)).origin, productionUrl);
+        assert.equal(init?.method, 'GET');
+        return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
+      };
+      const catalog = await createSupabaseCatalogRepository().loadCatalog({ cache: 'revalidate' });
+      assert.deepEqual(catalog.designs, []);
+    });
+  }
   it('blocks both Directus customer POST and registry PATCH paths before any reads', async () => {
     const customers = createDirectusCustomerStore();
     await assert.rejects(() => customers.findCustomerByPhone('+380501112233'), /disabled outside/);

@@ -3,6 +3,7 @@ import 'server-only';
 import { draftMode } from 'next/headers';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { getSupabaseAdminClient } from '@/lib/supabase/server';
+import { assertSafeSupabaseTarget } from '@/lib/supabase/environment';
 import type {
   BrandInfo,
   DesignInfo,
@@ -58,6 +59,7 @@ function getRevalidatingCatalogClient(): SupabaseClient {
     if (!url || !secretKey) {
       throw new CatalogUnavailableError('Missing required Supabase environment variables for catalog');
     }
+    assertSafeSupabaseTarget(url);
     cachedRevalidateCatalogClient = createClient(url, secretKey, {
       auth: {
         persistSession: false,
