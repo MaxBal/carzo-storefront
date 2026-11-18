@@ -1,0 +1,210 @@
+# CARZO — Production baseline patch
+# Range: baf997e4359bfd41cdacf315ceefdc15ce956c82..437f399187a79be4d22422252b3fe5fd4600792c
+# Generated: 2026-11-16
+# Secrets/PII check: PASS (only git author email + public media URLs)
+# Dirty snapshot: UNKNOWN — this patch does NOT restore the dirty deployment state.
+
+# Commit 1 of 2:
+commit f8e0e63c9cda807d13a30b0b90970d4717298893
+parent baf997e4359bfd41cdacf315ceefdc15ce956c82
+author MaxBal <max.baulin15@gmail.com>
+date   2026-11-12T19:20:13+02:00
+subject chore: organize Carzo agent workflow and gitignore
+
+# Commit 2 of 2:
+commit 437f399187a79be4d22422252b3fe5fd4600792c
+parent f8e0e63c9cda807d13a30b0b90970d4717298893
+author MaxBal <max.baulin15@gmail.com>
+date   2026-11-15T00:35:43+02:00
+subject Update video reviews block (3 WebM), logo FAQ, badge styles
+body   - Video reviews: 3 WebM videos with new covers, centered on desktop
+body   - Logo modal FAQ: updated custom logo questions/answers
+body   - Badge Max зносостійкість: green fill, no border
+body   - SALE badge: red (#ca423d) matching cart indicator
+body   - Caption font size increased to 14px
+
+# Combined diff (8 files, +78/-9):
+diff --git a/.gitignore b/.gitignore
+index 110a92e..eea0fc2 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -5,3 +5,6 @@ opencode.json
+ # macOS Finder metadata
+ .DS_Store
+ **/.DS_Store
++
++# Local KeyCRM catalog exports
++/Keycrm/
+diff --git a/AGENTS.md b/AGENTS.md
+index 65436e0..07b11d4 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -210,3 +210,40 @@ Deployments: `npx vercel --prod --yes` for production, `npx vercel --prod --yes
+ ### Spacing
+ - Container max-width: `max-w-[1280px]` or `max-w-7xl`
+ - Section padding: `py-[88px]` to `py-[112px]` (desktop), `py-[56px]` to `py-[72px]` (mobile)
++
++## Agent Work Rules
++
++Efficiency rules for Xiaomi MiMo agents working in this repository:
++
++1. **Minimal sufficient analysis** — investigate just enough to understand the problem. Don't re-audit what is already known from context or memory.
++2. **Move from diagnosis to implementation quickly** — once the cause is clear, fix it; don't stall in endless exploration.
++3. **Never repeat failed operations endlessly** — after two identical failures, change the approach instead of retrying.
++4. **No meaningless commands** — every command must serve a concrete purpose for the current task.
++5. **Re-read files only when necessary** — trust earlier reads within the same task unless the file may have changed.
++6. **Scale verification to the task** — small change → quick check; large change → full validation (`tsc`, `lint`, `build`).
++7. **Stop as soon as a verified result is achieved** — no extra refactoring, cleanup, or "improvements" beyond the task.
++8. **Keep final reports short** — what changed, what's next, nothing else.
++9. **Perform standard technical actions independently** within the allowed scope — no unnecessary approvals for routine work.
++
++## Git Workflow Rules
++
++- `~/Documents/GitHub/carzo-storefront` is the **single permanent repository**. Keep it in place; don't move, rename, or duplicate it.
++- For simultaneous/parallel tasks, use **separate Git worktrees** (`git worktree add ../carzo-<task> <branch>`).
++- After a task is merged and its worktree is verified to contain no unique changes, remove the temporary worktree and delete the merged local branch. Don't leave unnecessary working copies.
++- Don't touch others' unfinished changes (uncommitted files, stashes, work-in-progress branches).
++- **Never force push.**
++- Before publishing or pushing, re-check the current state of `main`.
++- Keep long-lived branches to `main` and `dev` only; feature branches are short-lived.
++
++## Safety Rules
++
++Preserve existing rules for working with production systems and data:
++
++- **Production / Vercel** — no deployments unless the task explicitly authorizes them.
++- **Supabase** — no schema migrations or destructive SQL outside an authorized task.
++- **Cloudflare R2** — treat media buckets and credentials as production assets.
++- **Telegram** — bots, chat IDs, and notification flows are production integrations.
++- **KeyCRM** — order sync and catalog exports are production data; don't alter exports (e.g. `Keycrm/*.csv`) in place.
++- **Secrets and personal data** — secrets stay server-side (never `NEXT_PUBLIC_`, never commit `.env*`); treat customer contacts in orders/leads as personal data.
++- No destructive operations outside the scope of the assigned task.
++- Never delete archives or unique files without verifying their contents are preserved elsewhere.
+diff --git a/product-page/app/globals.css b/product-page/app/globals.css
+index 73a57b0..45c0fee 100644
+--- a/product-page/app/globals.css
++++ b/product-page/app/globals.css
+@@ -354,7 +354,7 @@
+   gap: 8px;
+   color: #858585;
+   font: inherit;
+-  font-size: 13px;
++  font-size: 14px;
+   font-weight: 400;
+   line-height: 1.45;
+ }
+diff --git a/product-page/app/video-reviews.css b/product-page/app/video-reviews.css
+index 78ef976..b9753ec 100644
+--- a/product-page/app/video-reviews.css
++++ b/product-page/app/video-reviews.css
+@@ -225,6 +225,8 @@
+ 
+   .vr-scroller {
+     padding: 0 0 8px;
++    overflow-x: hidden;
++    scroll-snap-type: none;
+   }
+ 
+   .vr-track {
+diff --git a/product-page/components/ProductOptions.tsx b/product-page/components/ProductOptions.tsx
+index 0ac9bd0..ed1f657 100644
+--- a/product-page/components/ProductOptions.tsx
++++ b/product-page/components/ProductOptions.tsx
+@@ -224,7 +224,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
+             <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-white min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
+               Магнітна система
+             </span>
+-            <span className="inline-flex shrink-0 rounded-[8px] border border-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
++            <span className="inline-flex shrink-0 rounded-[8px] bg-[#5ce4ab] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
+               Max зносостійкість
+             </span>
+           </div>
+@@ -234,7 +234,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
+         <div className="mt-4 flex flex-wrap items-center gap-[14px]">
+           <span className="text-[30px] font-bold leading-none tracking-[-0.06em] text-[#080808] md:text-[38px]">{currentPrice} ₴</span>
+           <span className="ml-2 text-[16px] font-medium text-[#777777] line-through md:text-[18px]">{oldPrice} ₴</span>
+-          <span className="inline-flex whitespace-nowrap rounded-full bg-[#5ce4ab] px-2.5 py-1 text-[12px] font-semibold uppercase leading-none tracking-[0.04em] text-[#080808]">
++          <span className="inline-flex whitespace-nowrap rounded-full bg-[#ca423d] px-2.5 py-1 text-[12px] font-semibold uppercase leading-none tracking-[0.04em] text-white">
+             SALE {oldPrice - currentPrice}₴
+           </span>
+         </div>
+diff --git a/product-page/components/VideoReviewsSection.tsx b/product-page/components/VideoReviewsSection.tsx
+index df20522..c4dffee 100644
+--- a/product-page/components/VideoReviewsSection.tsx
++++ b/product-page/components/VideoReviewsSection.tsx
+@@ -40,12 +40,14 @@ function VideoOverlay({ item, onClose }: { item: VideoReviewItem; onClose: () =>
+         <video
+           ref={videoRef}
+           className="vr-overlay-video"
+-          src={item.videoUrl}
+           poster={item.coverUrl}
+           playsInline
+           controls
+           autoPlay
+-        />
++          preload="none"
++        >
++          <source src={item.videoUrl} type="video/webm" />
++        </video>
+       </div>
+     </div>
+   );
+diff --git a/product-page/content/carzo-content.seed.json b/product-page/content/carzo-content.seed.json
+index c998088..b35c481 100644
+--- a/product-page/content/carzo-content.seed.json
++++ b/product-page/content/carzo-content.seed.json
+@@ -441,14 +441,14 @@
+       "key": "logo-custom",
+       "group": "logo",
+       "question": "Чи можна нанести кастомний логотип?",
+-      "answer": "Так, ми можемо нанести ваш власний логотип або зображення. Потрібно надіслати векторний файл (AI, EPS, SVG) або растрове зображення високої якості.",
++      "answer": "Так, ми можемо нанести ваш власний логотип або зображення. Для цього потрібно надіслати зображення вашого логотипа, і менеджер розрахує вартість.",
+       "sort": 1
+     },
+     {
+       "key": "logo-time",
+       "group": "logo",
+-      "question": "Скільки часу займає нанесення логотипу?",
+-      "answer": "Нанесення логотипу не впливає на час виготовлення. Стандартний термін виробництва залишається 3-5 робочих днів незалежно від наявності логотипу.",
++      "question": "Скільки часу займає виготовлення кастомного логотипу?",
++      "answer": "Замовлення з кастомним логотипом буде відправлено через 2–3 дні після оформлення замовлення.",
+       "sort": 2
+     },
+     {
+diff --git a/product-page/lib/content/default-source.ts b/product-page/lib/content/default-source.ts
+index 0071683..8ebaab6 100644
+--- a/product-page/lib/content/default-source.ts
++++ b/product-page/lib/content/default-source.ts
+@@ -199,6 +199,31 @@ export const DEFAULT_CONTENT_SOURCE: ContentSource = {
+       { value: '<1%', text: 'клієнтів у 2025 році скористалися обміном або поверненням' },
+       { value: '100%', text: 'знаються на якості' },
+     ],
+-    videos: [],
++    videos: [
++      {
++        id: 'vr-01',
++        title: 'Відеовідгук 01',
++        videoUrl: 'https://media.carzo.com.ua/content/products/case/reviews/video/01.webm',
++        coverUrl: 'https://media.carzo.com.ua/content/products/case/reviews/cover/01.webp',
++        sort: 1,
++        isActive: true,
++      },
++      {
++        id: 'vr-02',
++        title: 'Відеовідгук 02',
++        videoUrl: 'https://media.carzo.com.ua/content/products/case/reviews/video/02.webm',
++        coverUrl: 'https://media.carzo.com.ua/content/products/case/reviews/cover/02.webp',
++        sort: 2,
++        isActive: true,
++      },
++      {
++        id: 'vr-03',
++        title: 'Відеовідгук 03',
++        videoUrl: 'https://media.carzo.com.ua/content/products/case/reviews/video/03.webm',
++        coverUrl: 'https://media.carzo.com.ua/content/products/case/reviews/cover/03.webp',
++        sort: 3,
++        isActive: true,
++      },
++    ],
+   },
+ };
