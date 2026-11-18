@@ -2,9 +2,15 @@
 
 Дата: 16.11.2026. Пакет подготовлен по поручению владельца продолжить защиту Directus/carmat и план изоляции. База: origin/main baf997e4359bfd41cdacf315ceefdc15ce956c82. Собственная ветка codex/preview-legacy-integration-guards; production-baseline patch и чужие ветки в этот PR не включаются.
 
+## Актуальное дополнение — одна база до запуска, 18 ноября 2026
+
+По решению владельца отдельный hosted-проект сейчас не требуется. Актуальная процедура общей базы — PREVIEW_ISOLATION_HANDOFF.md. Ниже сохранено описание первоначального пакета и варианта полной изоляции.
+
+Новый SUPABASE_ALLOW_SHARED_PREVIEW=true разрешает существующую Supabase только при target=preview, совпадающем точном ref и HTTPS origin. Он не разрешает другие интеграции. В этом режиме Supabase order/quote notifications блокируются до чтения настроек/credentials; delivery core блокируется даже с test chat IDs. Default остаётся fail-closed. Production routing сохраняется. Это доступ к общей БД, а не изоляция; env и rollout в этом дополнении не применялись.
+
 ## Изменения кода
 
-Один predicate isVercelProduction разрешает legacy рабочие операции только при точном VERCEL_ENV=production. NODE_ENV=production, unset, preview, development и custom-staging не дают разрешения. Новых переменных для обхода guard нет.
+Один predicate isVercelProduction разрешает legacy рабочие операции только при точном VERCEL_ENV=production. NODE_ENV=production, unset, preview, development и custom-staging не дают разрешения. SUPABASE_ALLOW_SHARED_PREVIEW не изменяет этот predicate и не разрешает legacy интеграции.
 
 | Граница | Production | Остальные окружения |
 |---|---|---|
@@ -18,16 +24,25 @@ Guard не скрывает ошибку заявки на коврики усп
 
 После дополнительной проверки пакет расширен в том же PR №12:
 
-- Общая проверка Supabase target применяется ко всем трём клиентам: admin, editorial и pages. Вне Production удалённый backend требует SUPABASE_PREVIEW_PROJECT_REF и точного HTTPS origin этого проекта. Рабочий project ref kmhegysmtsjqtwwaacht запрещён даже при ошибочном включении в эту настройку. Это защищает order RPC, customer upsert/lookup и чтения через отдельные клиенты.
+- Общая проверка Supabase target применяется ко всем трём клиентам: admin, editorial и pages. Вне Production удалённый backend требует SUPABASE_PREVIEW_PROJECT_REF и точного HTTPS origin этого проекта. Рабочий project ref kmhegysmtsjqtwwaacht по умолчанию запрещён даже при включении в эту настройку; shared Preview является явным исключением, описанным выше. Это защищает order RPC, customer upsert/lookup и чтения через отдельные клиенты.
 - Локальные loopback URL разрешены только без VERCEL и VERCEL_ENV: для Supabase CLI/Docker или synthetic server. На Vercel loopback запрещён. Другие custom domains/proxy URL по умолчанию не разрешены.
 - Directus customer lookup и обе ветки регистрации (collection POST и singleton registry PATCH) блокируются до чтения credentials/клиентских данных.
 - keyCRM: checkout sync возвращает disabled, непосредственное создание заказа отклоняется, webhook возвращает 503 disabled_environment до чтения keyCRM и записи клиента. Только VERCEL_ENV=production сохраняет прежнюю обработку.
 
-Изолированные Supabase order/customer writes доступны с собственным тестовым ключом и явно указанным отдельным проектом; blanket bypass-флага нет. Telegram через Supabase по-прежнему использует только TELEGRAM_TEST_CHAT_IDS вне Production. Dedicated carmat и legacy Directus sender остаются отключены; для них использовать mocks.
+Изолированные Supabase order/customer writes доступны с собственным тестовым ключом и явно указанным отдельным проектом; флаг общей базы не разрешает другие интеграции. Telegram через Supabase по-прежнему использует только TELEGRAM_TEST_CHAT_IDS вне Production. Dedicated carmat и legacy Directus sender остаются отключены; для них использовать mocks.
 
 Это защита текущих приложенческих границ, не отзыв credentials и не сетевая песочница. Отдельный staging-проект, развёрнутый с VERCEL_ENV=production, пройдёт predicate; его изоляция должна обеспечиваться собственными credentials и отдельной проверкой целевого проекта. Не подменять системное VERCEL_ENV ради тестов с рабочими ключами. При смене рабочего Supabase-проекта обновить защищённый публичный ref в lib/supabase/environment.ts.
 
-## Проверки
+## Проверки дополнения 18 ноября
+
+- 467 safe unit/mock tests / 74 suites — PASS.
+- 138 tests команды test:preview-safety — PASS, включая opt-in, отклонение других targets/origins, mock RPC/customer POST и отсутствие отправок при унаследованных credentials.
+- Production notification routing проверен с shared-флагом через mocks; поведение сохраняется.
+- TypeScript — PASS; ESLint — без ошибок, 10 прежних warnings.
+- Build — PASS с synthetic localhost backend и ожидаемым editorial fallback. Первый запуск не загрузил Google Fonts без сетевых proxy-настроек; повтор с восстановленными proxy-настройками прошёл. Это не проверка живого контента или браузерного checkout.
+- Реальные заказы, внешние уведомления, SQL, Vercel env и deployments в этом дополнении не изменялись.
+
+## Проверки первоначального пакета
 
 - До guard: первые 9 новых тестов дали 8 FAIL / 1 PASS (production compatibility). В частности, Preview разрешал Directus POST и вызывал carmat sender.
 - Новая suite содержит 13 проверок: preview, development, unknown/unset; отдельные write и notification assertions; NODE_ENV=production при non-production target; случайно присутствующие credentials; запрет diagnostics; production destinations через mocks.

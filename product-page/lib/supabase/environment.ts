@@ -1,7 +1,14 @@
 import { isVercelProduction } from '@/lib/production-integrations';
 
-// Public project identifier, not a credential. Never allow it as a Preview target.
+// Public project identifier, not a credential. Shared Preview access is opt-in.
 const PRODUCTION_PROJECT_REF = 'kmhegysmtsjqtwwaacht';
+
+/** Temporary prelaunch mode; never grants access to development/custom targets. */
+export function isSharedSupabasePreview(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
+  return env.VERCEL_ENV === 'preview' && env.SUPABASE_ALLOW_SHARED_PREVIEW === 'true';
+}
 
 /** One policy for every Supabase client, including SELECT-only content clients. */
 export function assertSafeSupabaseTarget(
@@ -24,7 +31,9 @@ export function assertSafeSupabaseTarget(
   const previewRef = env.SUPABASE_PREVIEW_PROJECT_REF?.trim();
   const isolatedProject = previewRef && /^[a-z0-9]+$/.test(previewRef) &&
     previewRef !== PRODUCTION_PROJECT_REF && url.origin === `https://${previewRef}.supabase.co`;
-  if (!plainOrigin || (!local && !isolatedProject)) {
+  const sharedProject = isSharedSupabasePreview(env) && previewRef === PRODUCTION_PROJECT_REF &&
+    url.origin === `https://${PRODUCTION_PROJECT_REF}.supabase.co`;
+  if (!plainOrigin || (!local && !isolatedProject && !sharedProject)) {
     throw new Error('Supabase target is disabled outside Vercel Production');
   }
 }

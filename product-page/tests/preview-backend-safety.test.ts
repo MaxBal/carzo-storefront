@@ -44,11 +44,30 @@ describe('Supabase target policy', () => {
   it('preserves Production configuration without connecting', () => {
     assert.doesNotThrow(() => assertSafeSupabaseTarget(productionUrl, { VERCEL_ENV: 'production' }));
   });
+  it('allows the exact shared project only with an explicit Preview opt-in and matching ref', () => {
+    const env = { VERCEL_ENV: 'preview', SUPABASE_PREVIEW_PROJECT_REF: productionRef,
+      SUPABASE_ALLOW_SHARED_PREVIEW: 'true' };
+    assert.doesNotThrow(() => assertSafeSupabaseTarget(productionUrl, env));
+    for (const SUPABASE_ALLOW_SHARED_PREVIEW of [undefined, '', 'false', '1', 'TRUE']) {
+      assert.throws(() => assertSafeSupabaseTarget(productionUrl, { ...env, SUPABASE_ALLOW_SHARED_PREVIEW }));
+    }
+    for (const VERCEL_ENV of ['development', 'staging', undefined]) {
+      assert.throws(() => assertSafeSupabaseTarget(productionUrl, { ...env, VERCEL_ENV }));
+    }
+    for (const SUPABASE_PREVIEW_PROJECT_REF of [undefined, '', testRef]) {
+      assert.throws(() => assertSafeSupabaseTarget(productionUrl, { ...env, SUPABASE_PREVIEW_PROJECT_REF }));
+    }
+    for (const url of [`${productionUrl}.evil.invalid`, `${productionUrl}/proxy`, `${productionUrl}?x=1`,
+      `${productionUrl}#fragment`, `https://user:pass@${productionRef}.supabase.co`,
+      productionUrl.replace('https:', 'http:'), productionUrl.replace('.co', '.co:8443')]) {
+      assert.throws(() => assertSafeSupabaseTarget(url, env));
+    }
+  });
 });
 
 describe('non-production backend boundaries with accidental credentials', () => {
   const keys = ['VERCEL_ENV', 'VERCEL', 'SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'SUPABASE_PREVIEW_PROJECT_REF',
-    'DIRECTUS_URL', 'DIRECTUS_READ_TOKEN'] as const;
+    'SUPABASE_ALLOW_SHARED_PREVIEW', 'DIRECTUS_URL', 'DIRECTUS_READ_TOKEN'] as const;
   let saved: Array<string | undefined>;
   let originalFetch: typeof fetch;
   let requests: number;
@@ -58,6 +77,7 @@ describe('non-production backend boundaries with accidental credentials', () => 
     originalFetch = globalThis.fetch;
     requests = 0;
     expectedRequests = 0;
+    delete process.env.SUPABASE_ALLOW_SHARED_PREVIEW;
     process.env.VERCEL_ENV = 'preview';
     process.env.SUPABASE_URL = productionUrl;
     process.env.SUPABASE_SECRET_KEY = 'synthetic-only';
@@ -101,7 +121,8 @@ describe('non-production backend boundaries with accidental credentials', () => 
   for (const VERCEL_ENV of ['preview', 'development', 'staging', undefined]) {
     it(`blocks keyCRM sync, direct create and valid webhook in ${VERCEL_ENV}`, async () => {
       let called = 0;
-      const env = { NODE_ENV: 'test', VERCEL_ENV, KEYCRM_SYNC_ENABLED: 'true', KEYCRM_API_KEY: 'synthetic',
+      const env = { NODE_ENV: 'test', VERCEL_ENV, SUPABASE_ALLOW_SHARED_PREVIEW: 'true',
+        KEYCRM_SYNC_ENABLED: 'true', KEYCRM_API_KEY: 'synthetic',
         KEYCRM_SOURCE_ID: '1', KEYCRM_DELIVERY_SERVICE_ID: '1', KEYCRM_WEBHOOK_SECRET: 'synthetic',
         KEYCRM_LOYALTY_STATUS_IDS: '21' } as NodeJS.ProcessEnv;
       const fetchImpl: typeof fetch = async () => { called += 1; throw new Error('unexpected CRM call'); };
@@ -116,6 +137,26 @@ describe('non-production backend boundaries with accidental credentials', () => 
       assert.equal(called, 0);
     });
   }
+  it('allows shared client RPC and customer POST only after opt-in (mock fetch)', async () => {
+    process.env.SUPABASE_ALLOW_SHARED_PREVIEW = 'true';
+    expectedRequests = 2;
+    const paths: string[] = [];
+    globalThis.fetch = async (input, init) => {
+      requests += 1;
+      const url = new URL(String(input));
+      assert.equal(url.origin, productionUrl);
+      assert.equal(init?.method, 'POST');
+      paths.push(url.pathname);
+      return new Response(JSON.stringify({ id: 'synthetic', created: true }), {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    };
+    // Use an uncached client: runtime env switching is a test fixture only.
+    const client = createSupabaseAdminClient();
+    assert.equal((await client.rpc('create_order_with_items', {})).error, null);
+    assert.equal((await client.from('customers').insert({ phone: '+380501112233' })).error, null);
+    assert.deepEqual(paths, ['/rest/v1/rpc/create_order_with_items', '/rest/v1/customers']);
+  });
   it('routes allowed Preview order/customer writes only to the isolated project (mock fetch)', async () => {
     process.env.SUPABASE_URL = testUrl;
     process.env.SUPABASE_PREVIEW_PROJECT_REF = testRef;

@@ -15,6 +15,7 @@ import {
 } from '@/lib/data/notifications';
 import { resolveTelegramRecipients } from '@/lib/data/notifications/recipients';
 import { isVercelProduction } from '@/lib/production-integrations';
+import { isSharedSupabasePreview } from '@/lib/supabase/environment';
 
 type NotificationChannel = 'off' | 'email' | 'telegram' | 'both';
 
@@ -345,6 +346,8 @@ export async function notifyNewOrder(order: NewOrderNotification) {
  * delivery plus an explicit UNSUPPORTED log; never claim emails sent.
  */
 async function notifyNewOrderSupabase(order: NewOrderNotification) {
+  // Prelaunch Preview shares the real database; do not read or use its send settings.
+  if (isSharedSupabasePreview()) return;
   try {
     const repository = getNotificationSettingsRepository();
     const settings = await repository.readSettings();
@@ -431,6 +434,7 @@ export async function deliverCarMatQuoteViaTelegram(
   deps: CarMatQuoteDeliveryDeps,
 ): Promise<boolean> {
   const { settings, credentials, env, sendTelegramText } = deps;
+  if (isSharedSupabasePreview(env)) return false;
   if (settings.channel === 'off') return false;
 
   if (settings.channel === 'email' || settings.channel === 'both') {
@@ -479,6 +483,7 @@ export async function deliverCarMatQuoteViaTelegram(
 async function notifyNewCarMatQuoteSupabase(
   request: NewCarMatQuoteNotification,
 ): Promise<boolean> {
+  if (isSharedSupabasePreview()) return false;
   try {
     const repository = getNotificationSettingsRepository();
     const [settings, credentials] = await Promise.all([

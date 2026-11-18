@@ -30,7 +30,9 @@ const quote = { customerName: snapshot.customerName, customerPhone: snapshot.cus
 const carmat: CarMatQuoteTelegramRequest = { ...quote, photoLabels: [], informationLabels: [], requestedAt: new Date(0) };
 
 describe('legacy integrations fail closed outside explicit Vercel production', () => {
-  const keys = ['VERCEL_ENV', 'NODE_ENV', 'DIRECTUS_URL', 'DIRECTUS_READ_TOKEN', 'ORDER_STORE', 'NOTIFICATION_SETTINGS_STORE', 'TELEGRAM_TEST_CHAT_IDS'] as const;
+  const keys = ['VERCEL_ENV', 'NODE_ENV', 'DIRECTUS_URL', 'DIRECTUS_READ_TOKEN', 'ORDER_STORE',
+    'NOTIFICATION_SETTINGS_STORE', 'TELEGRAM_TEST_CHAT_IDS', 'TELEGRAM_BOT_TOKEN',
+    'SUPABASE_ALLOW_SHARED_PREVIEW', 'SUPABASE_URL', 'SUPABASE_SECRET_KEY', 'SUPABASE_PREVIEW_PROJECT_REF'] as const;
   let saved: Array<string | undefined>;
   let originalFetch: typeof fetch;
   let calls: Array<{ url: string; method: string }>;
@@ -40,6 +42,7 @@ describe('legacy integrations fail closed outside explicit Vercel production', (
     Object.assign(process.env, { NODE_ENV: 'production' }); // build/start is not evidence of a Production target
     delete process.env.ORDER_STORE; delete process.env.NOTIFICATION_SETTINGS_STORE;
     process.env.TELEGRAM_TEST_CHAT_IDS = '-999';
+    delete process.env.SUPABASE_ALLOW_SHARED_PREVIEW;
     globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input); calls.push({ url, method: init?.method ?? 'GET' });
       const data = url.includes('carzo_notification_settings')
@@ -75,8 +78,24 @@ describe('legacy integrations fail closed outside explicit Vercel production', (
     });
   }
 
+  it('blocks Supabase notification reads and sends in shared Preview even with bot and test recipients', async () => {
+    Object.assign(process.env, {
+      VERCEL_ENV: 'preview', SUPABASE_ALLOW_SHARED_PREVIEW: 'true',
+      SUPABASE_URL: 'https://kmhegysmtsjqtwwaacht.supabase.co',
+      SUPABASE_PREVIEW_PROJECT_REF: 'kmhegysmtsjqtwwaacht', SUPABASE_SECRET_KEY: 'synthetic-only',
+      ORDER_STORE: 'supabase', NOTIFICATION_SETTINGS_STORE: 'supabase',
+      TELEGRAM_BOT_TOKEN: 'synthetic-only', TELEGRAM_TEST_CHAT_IDS: '-999',
+    });
+    await notifyNewOrder(order);
+    assert.equal(await notifyNewCarMatQuote(quote), false);
+    assert.deepEqual(calls, [], 'no settings reads or notification sends');
+    await assert.rejects(() => createDirectusOrderRepository().createOrder(snapshot), /disabled outside/);
+    assert.deepEqual(calls, [], 'the shared Supabase flag never unlocks Directus');
+  });
+
   it('keeps explicit Production legacy writes and destinations (mocked)', async () => {
     process.env.VERCEL_ENV = 'production';
+    process.env.SUPABASE_ALLOW_SHARED_PREVIEW = 'true';
     const result = await createDirectusOrderRepository().createOrder(snapshot);
     assert.equal(result.created, true);
     await notifyNewOrder(order);

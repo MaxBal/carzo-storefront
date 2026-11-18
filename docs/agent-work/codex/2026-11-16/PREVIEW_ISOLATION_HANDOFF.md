@@ -1,39 +1,44 @@
-# CARZO: решение по Preview и передача инфраструктуры Xiaomi
+# CARZO — Preview с общей базой до запуска
 
-Дата: 16 ноября 2026. Код проверен в ветке codex/preview-legacy-integration-guards, Draft PR №12. Production/main не менялись.
+Актуальное решение: 18 ноября 2026. Дополнение к Draft PR №12.
 
-## Техническое заключение
+## Решение
 
-Первоначальный PR №12 закрывал только legacy Directus order write и два пути уведомлений. Сохранялись Supabase RPC create_order_with_items (lib/data/orders/supabase.ts), customer upsert/update (lib/cart/customer-store/supabase.ts), Directus customer POST/PATCH (lib/cart/customer-store/directus.ts), keyCRM order POST и webhook, изменяющий клиентов (lib/keycrm/{client,sync,webhook}.ts).
+Магазин ещё не запущен. Отдельный hosted Supabase не создаём; существующий проект kmhegysmtsjqtwwaacht используется для синтетических проверок. Прежний план обязательного отдельного backend заменён этим режимом. Это общая база, а не изолированная среда.
 
-Дополнение в том же PR закрывает эти пути для рабочего backend вне Production. Все три Supabase client factory проверяют цель: отдельный явно указанный hosted project либо локальный loopback без Vercel. Изолированные Supabase записи остаются доступны. Directus customer операции, keyCRM запись/webhook и dedicated carmat delivery в Preview отключены. Для Supabase Telegram обязательны тестовые chat IDs; рабочий бот в Preview всё равно не нужен. Nova Poshta использует адресные справочники (HTTP POST является транспортом чтения), создания ТТН в проверенном модуле нет. R2 используется приложением для чтения медиа; upload/admin scripts не запускать с рабочими ключами.
+Default остаётся fail-closed. Исключение требует точного VERCEL_ENV=preview, SUPABASE_ALLOW_SHARED_PREVIEW=true, SUPABASE_PREVIEW_PROJECT_REF=kmhegysmtsjqtwwaacht и точного HTTPS origin этого проекта. Development, unset и custom environments флагом не разрешаются. VERCEL_ENV вручную не подменять.
 
-Код и env нужны вместе: удалить рабочие credentials из Preview обязательно. Elevated Supabase secret обходит RLS; отдельная схема/табличный префикс при том же service key не создаёт полноценную изоляцию. Guard не отзывает ключ и не исправляет старые deployments. VERCEL_ENV=production в другом Vercel-проекте также разрешает Production path; не использовать --prod для обхода Preview ограничений.
+Исключение разрешает обычные операции приложения с общей БД: создание заказов, customer upsert и чтение существующих данных. Код не ограничивает записи тестовой маркировкой. Preview должен быть доступен только участникам проверки; тестовые записи учитывать по точным ID. Существующие данные не менять/удалять. Reset, seed и миграции общей базы в этап не входят.
 
-## Бесплатная изоляция
+## Интеграции
 
-Для локальной разработки: Supabase CLI + Docker, локальная схема/RPC и только synthetic seed. Hosted Supabase-проект не обязателен. Обычный PostgreSQL отдельно не воспроизводит PostgREST и Supabase API; mocks удобны для большинства unit-тестов, но не доказывают SQL atomicity/concurrency.
+В shared Preview оба Supabase notification entrypoints завершаются до чтения настроек/credentials и отправки. Car-mat delivery core возвращает false даже с bot token и корректными test chat IDs. Отключённая доставка заявки не объявляется успешной.
 
-Для общего Vercel Preview: отдельный Free Supabase project, если доступна бесплатная квота. Указать SUPABASE_URL, его собственный SUPABASE_SECRET_KEY и SUPABASE_PREVIEW_PROJECT_REF. Базу владельца не клонировать с PII/уведомлениями. Локальный Docker недоступен Vercel напрямую; публичный туннель сейчас не нужен. Платное branching не требуется. Актуальную квоту/условия проверить перед созданием ресурса.
+Directus orders/customers и legacy notifications, dedicated carmat sender, keyCRM outbound и inbound webhook остаются заблокированы вне Production. Флаг их не включает. Production routing сохраняется даже при случайном наличии shared-флага в Production env.
 
-## Старые deployments и production key
+## Предлагаемый diff Vercel — НЕ применён
 
-1. Read-only инвентаризация: Production deployment/aliases, Preview deployment IDs/ветки/SHA, env scopes и branch overrides. Не раскрывать значения секретов. Исторические сведения о Production+Preview scope считать основанием проверки, не свежим подтверждением.
-2. Подготовить точный diff scopes: SUPABASE_SECRET_KEY оставить Production, убрать только Preview/Development assignments с рабочим значением; не удалять общий env объект целиком. Проверить оставшиеся branch overrides. Удаление Preview assignment влияет на будущие сборки, не отзывает ключ и не изменяет snapshots существующих deployments.
-3. Подготовить список старых deployments с рабочими credentials или неизвестным snapshot, исключив активный Production и необходимые rollback deployments. Предложить удаление/отключение их исполнения только после согласования конкретных IDs. Удаление alias не закрывает deployment URL. Deployment Protection — временное ограничение доступа, не отзыв выданного секрета.
-4. Если нельзя гарантировать прекращение использования ключа старыми deployments или возможна утечка, нужен согласованный отзыв/ротация. Для современного отдельного secret key сначала создать замену, обновить все подтверждённые Production consumers, выполнить разрешённый Production redeploy и проверить доступность без заказа, затем отозвать старый key. Не ротировать JWT signing secret вслепую. Полный отзыв старого рабочего ключа затрагивает Production и требует владельца.
-5. После подтверждения отсутствия рабочих credentials и всех внешних маршрутов — новый чистый Preview build из согласованного SHA. Зафиксировать deployment ID/SHA/target и назначения, затем isolated checkout/retry/concurrency тесты. Новый deploy не обезвреживает старые URL.
+Только branch-specific Preview assignments для codex/preview-legacy-integration-guards:
 
-## Полномочия Xiaomi
+| Переменная | Значение |
+|---|---|
+| SUPABASE_URL | https://kmhegysmtsjqtwwaacht.supabase.co |
+| SUPABASE_SECRET_KEY | существующий ключ проекта, server-side; значение не выводить |
+| SUPABASE_PREVIEW_PROJECT_REF | kmhegysmtsjqtwwaacht |
+| SUPABASE_ALLOW_SHARED_PREVIEW | true |
+| CATALOG_STORE, CONTENT_STORE, PAGE_STORE, ORDER_STORE, CUSTOMER_STORE, NOTIFICATION_SETTINGS_STORE | все supabase |
+| KEYCRM_SYNC_ENABLED | false |
+| TELEGRAM_TEST_CHAT_IDS | пусто |
+| Telegram, keyCRM, Directus credentials | не добавлять; проверить унаследованные assignments |
 
-Самостоятельно: read-only инвентаризация через уже авторизованный локальный MCP/CLI; сверка PR/SHA; таблица scopes без значений; подготовка env diff и списка старых deployment IDs; локальные tests/build с mocks или Docker; synthetic seed для локальной БД; документация. После доказанной изоляции может работать с изолированным Preview в пределах уже выданных полномочий.
+Production assignments сохраняются. Не менять target на Production ради обхода проверки. Перед checkout подтвердить Deployment Protection, SHA и branch overrides. Отсутствие защиты доступа — причина отложить write-тест.
 
-Сначала согласование владельца: merge в main, Production deploy/promote/rollback; любые записи/миграции рабочей Supabase; изменение/отзыв рабочих credentials и интеграций; изменение assignments общего рабочего ключа; удаление/отключение старых deployments до подтверждения их назначения; платные ресурсы/новая подписка. До изоляции не запускать Preview checkout или Telegram/keyCRM webhook. Создание hosted Free проекта согласовать по организации и доступной квоте; локальная изоляция такого решения не требует.
+## Порядок
 
-## Организация работы
+1. Read-only проверить PR head и Vercel team/project, branch overrides и Deployment Protection. Ранее Cloud MCP возвращал 403; новый доступ не подтверждён.
+2. Применить согласованный branch-specific diff и создать Preview из дополненного PR №12. Push сам по себе не включает общий backend: новый флаг по умолчанию отсутствует/false.
+3. Подтвердить target=preview, SHA, Supabase origin и отсутствие внешних отправок. Секреты не выводить.
+4. Проверить карточка → корзина → checkout → сохранённый synthetic заказ. SQL replay/concurrency отдельно уже проверены; повторять без причины не нужно. PR №12 сам по себе не включает другие checkout/UI исправления.
+5. До публичного запуска убрать shared opt-in и прекратить исполнение Preview deployments, содержащих этот режим. Для дальнейших тестов использовать mocks либо отдельный backend. Удаление env assignment не меняет старые snapshots; удаления alias недостаточно.
 
-Оставить один PR №12 для кода безопасности, без включения UI, кеширования, миграций и других PR. Xiaomi ведёт инфраструктурный чек-лист в этом пакете, не создаёт PR для env-only изменений. До согласованной очистки общих секретов и старых deployment snapshots — только read-only и local synthetic tests. Не возвращать рабочие credentials в Preview как rollback; безопасное состояние — закрытый checkout.
-
-Vercel MCP в данной Cloud-сессии вернул 403 forbidden для yevgens-projects. Свежие env scopes, deployment snapshots и логи здесь не подтверждены. Для инфраструктурных шагов использовать авторизованный локальный MCP владельца с явным team/project scope; не заменять его другим аккаунтом/командой.
-
-Источники: https://supabase.com/docs/guides/local-development ; https://supabase.com/docs/guides/database/postgres/row-level-security ; https://vercel.com/docs/environment-variables .
+Unit/mock-проверки не подтверждают актуальные Vercel scopes или отсутствие отправок из старых deployments. В этом дополнении инфраструктура, основной deployment, credentials и БД не менялись.
