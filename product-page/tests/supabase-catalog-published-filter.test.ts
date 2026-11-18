@@ -63,7 +63,8 @@ describe('C-07 discount_tiers published filter (mock PostgREST, no DB)', () => {
   const originalSecret = process.env.SUPABASE_SECRET_KEY;
 
   before(async () => {
-    process.env.SUPABASE_URL = 'http://supabase.invalid';
+    // Synthetic loopback target: passes assertSafeSupabaseTarget local policy while fetch is mocked.
+    process.env.SUPABASE_URL = 'http://127.0.0.1:54321';
     process.env.SUPABASE_SECRET_KEY = 'test-secret';
     globalThis.fetch = fakeFetch as unknown as typeof fetch;
 

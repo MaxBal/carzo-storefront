@@ -136,10 +136,14 @@ describe('C-12 — Nova Poshta timeouts, bounded cache, rate limit, and error ha
 describe('C-08 — keyCRM webhook constant-time secret verification & DoS protection', () => {
   const originalSecret = process.env.KEYCRM_WEBHOOK_SECRET;
   const originalStatuses = process.env.KEYCRM_LOYALTY_STATUS_IDS;
+  const originalVercelEnv = process.env.VERCEL_ENV;
 
   beforeEach(() => {
     process.env.KEYCRM_WEBHOOK_SECRET = 'prod-webhook-secret-2026';
     process.env.KEYCRM_LOYALTY_STATUS_IDS = '12,21';
+    // Simulate Vercel Production so these cases exercise auth/rate-limit ordering;
+    // the non-production fail-closed gate is covered by test:preview-safety.
+    process.env.VERCEL_ENV = 'production';
     resetKeyCrmWebhookRateLimitForTests();
   });
 
@@ -148,6 +152,8 @@ describe('C-08 — keyCRM webhook constant-time secret verification & DoS protec
     else process.env.KEYCRM_WEBHOOK_SECRET = originalSecret;
     if (originalStatuses === undefined) delete process.env.KEYCRM_LOYALTY_STATUS_IDS;
     else process.env.KEYCRM_LOYALTY_STATUS_IDS = originalStatuses;
+    if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = originalVercelEnv;
     resetKeyCrmWebhookRateLimitForTests();
   });
 

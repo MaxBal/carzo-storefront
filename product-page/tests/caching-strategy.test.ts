@@ -52,7 +52,8 @@ describe('Package B — Next.js & Supabase domain caching strategy (NEW-01, NEW-
 
   beforeEach(() => {
     captured = [];
-    process.env.SUPABASE_URL = 'http://supabase.invalid';
+    // Synthetic loopback target: passes assertSafeSupabaseTarget local policy while fetch is mocked.
+    process.env.SUPABASE_URL = 'http://127.0.0.1:54321';
     process.env.SUPABASE_SECRET_KEY = 'test-secret';
     resetSupabaseAdminClientForTests();
     resetSupabaseCatalogClientForTests();
