@@ -423,7 +423,11 @@ export default function NovaPoshtaSelector({
             id={`${id}-city`}
             value={cityQuery}
             onChange={event => changeCityQuery(event.target.value)}
-            onBlur={() => markTouched('city')}
+            onBlur={event => {
+              const container = event.currentTarget.closest('[data-keyboard-dropdown]');
+              if (event.relatedTarget instanceof Node && container?.contains(event.relatedTarget)) return;
+              markTouched('city');
+            }}
             onKeyDown={event => {
               if (event.key === 'Escape') {
                 setCities([]);
@@ -461,7 +465,7 @@ export default function NovaPoshtaSelector({
         </div>
         {cityInvalid && <p id={`${id}-city-error`} className="mt-1.5 text-xs text-red-600">Оберіть місто зі списку.</p>}
         {cities.length > 0 && (
-          <div id={`${id}-city-listbox`} className="mt-1 max-h-56 overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white p-1 shadow-xl" role="listbox" aria-label="Міста Нової пошти">
+          <div id={`${id}-city-listbox`} className="checkout-options mt-1 max-h-56 overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white p-1 shadow-xl" role="listbox" aria-label="Міста Нової пошти">
             {cities.map((city, index) => (
               <button key={city.ref} id={`${id}-city-option-${index}`} type="button" role="option" aria-selected={index === cityActiveIndex} onMouseEnter={() => setCityActiveIndex(index)} onClick={() => chooseCity(city)} className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline-none aria-selected:bg-gray-100">
                 <span className="font-medium">{city.type} {city.name}</span>
@@ -507,12 +511,12 @@ export default function NovaPoshtaSelector({
                 ? `${selectedPoint.name}${selectedPoint.address !== selectedPoint.name ? ` — ${selectedPoint.address}` : ''}`
                 : pointPlaceholder}
             </span>
-            <ChevronDown aria-hidden="true" className={`shrink-0 text-gray-400 transition-transform ${pointOpen ? 'rotate-180' : ''}`} size={18} />
+            <ChevronDown aria-hidden="true" className={`checkout-disclosure-chevron shrink-0 text-gray-400 ${pointOpen ? 'rotate-180' : ''}`} size={18} />
           </button>
           {pointInvalid && <p id={`${id}-point-error`} className="mt-1.5 text-xs text-red-600">{pointPlaceholder}.</p>}
 
           {pointOpen && value.cityRef && (
-            <div className="mt-1 rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
+            <div className="checkout-options mt-1 rounded-xl border border-gray-200 bg-white p-1 shadow-xl">
               <div className="relative m-1">
                 <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-gray-400" size={17} />
                 <input
@@ -631,7 +635,7 @@ export default function NovaPoshtaSelector({
             </div>
             {streetInvalid && <p className="mt-1.5 text-xs text-red-600">Оберіть вулицю зі списку.</p>}
             {streets.length > 0 && (
-              <div id={`${id}-street-listbox`} className="mt-1 max-h-52 overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white p-1 shadow-xl" role="listbox" aria-label="Вулиці Нової пошти">
+              <div id={`${id}-street-listbox`} className="checkout-options mt-1 max-h-52 overflow-y-auto overscroll-contain rounded-xl border border-gray-200 bg-white p-1 shadow-xl" role="listbox" aria-label="Вулиці Нової пошти">
                 {streets.map((street, index) => (
                   <button key={street.ref} id={`${id}-street-option-${index}`} type="button" role="option" aria-selected={index === streetActiveIndex || street.ref === value.streetRef} onMouseEnter={() => setStreetActiveIndex(index)} onClick={() => chooseStreet(street)} className="w-full rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline-none aria-selected:bg-gray-100">
                     <span className="font-medium">{street.type} {street.name}</span>

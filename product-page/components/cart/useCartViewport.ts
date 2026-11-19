@@ -95,7 +95,8 @@ export function useCartViewport(open: boolean, checkoutActive = false) {
       }
 
       if (Math.abs(delta) > 1) {
-        scrollNode.scrollBy({ top: delta, behavior: 'smooth' });
+        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        scrollNode.scrollBy({ top: delta, behavior: reduceMotion ? 'auto' : 'smooth' });
       }
     };
 

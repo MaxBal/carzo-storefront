@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Check, CheckCircle2, ChevronDown, Info, Loader2, ShoppingCart, X } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 import { createOrder } from '@/app/actions/checkout';
@@ -15,6 +15,7 @@ import NovaPoshtaSelector from './NovaPoshtaSelector';
 import NovaPoshtaTrustRow from './NovaPoshtaTrustRow';
 import { useCart } from './cart-context';
 import { useCartViewport } from './useCartViewport';
+import CheckoutCollapse from './CheckoutCollapse';
 
 const MOBILE_MEDIA_QUERY = '(max-width: 639px)';
 const MOBILE_SURFACE_FADE_MS = 150;
@@ -29,6 +30,7 @@ function deliveryIsComplete(delivery: CheckoutDelivery) {
 
 export default function CartDrawer() {
   const cart = useCart();
+  const id = useId();
   const { isOpen, closeCart } = cart;
   // One-step checkout: «Купити» opens the drawer directly on the checkout
   // view (openView is set before mount, so no cart screen can flash).
@@ -255,15 +257,16 @@ export default function CartDrawer() {
                       type="button"
                       onClick={() => setDetailsOpen(value => !value)}
                       aria-expanded={detailsOpen}
+                      aria-controls={`${id}-details`}
                       aria-label="Деталі замовлення"
-                      className="flex w-full flex-col gap-1.5 px-4 py-3 text-left"
+                      className="checkout-disclosure-trigger flex w-full flex-col px-4 py-3 text-left"
                     >
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-semibold leading-5 text-gray-900">Деталі замовлення</p>
-                        <ChevronDown size={18} className={`shrink-0 text-gray-400 transition-transform ${detailsOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={18} className={`checkout-disclosure-chevron shrink-0 text-gray-400 ${detailsOpen ? 'rotate-180' : ''}`} />
                       </div>
-                      {!detailsOpen && (
-                        <div>
+                      <CheckoutCollapse open={!detailsOpen}>
+                        <div className="pt-1.5">
                           <div className="flex items-baseline justify-between gap-3">
                             <span className="text-[13px] leading-[1.4] text-gray-600">
                               {itemsCountLabel(cart.quote?.itemsQuantity ?? cart.itemsQuantity)}
@@ -278,10 +281,10 @@ export default function CartDrawer() {
                             </p>
                           )}
                         </div>
-                      )}
+                      </CheckoutCollapse>
                     </button>
 
-                    {detailsOpen && (
+                    <CheckoutCollapse id={`${id}-details`} open={detailsOpen}>
                       <div className="border-t border-gray-100 px-4 pb-4 pt-3">
                         {cart.quoteLoading && !cart.quote && (
                           <div className="flex items-center justify-center gap-2 py-6 text-sm text-gray-500">
@@ -303,25 +306,31 @@ export default function CartDrawer() {
                                 type="button"
                                 onClick={() => setLoyaltyOpen(value => !value)}
                                 aria-expanded={loyaltyOpen}
-                                className="flex w-full items-center justify-between gap-2 text-left"
+                                aria-controls={`${id}-loyalty`}
+                                className="checkout-disclosure-trigger flex w-full items-center justify-between gap-2 text-left"
                                 aria-label="Знижка постійного клієнта"
                               >
                                 <div className="min-w-0">
                                   <p className="text-[14px] font-semibold leading-[1.3] text-gray-900">Знижка постійного клієнта</p>
                                   <p className="mt-0.5 text-[12px] leading-[1.35] text-gray-500">
-                                    {loyaltyOpen ? 'Введіть номер телефону, щоб застосувати знижку.' : 'Вже замовляли у Carzo? Отримайте −5%'}
+                                    Вже замовляли у Carzo? Отримайте −5%
                                   </p>
                                 </div>
-                                <ChevronDown size={17} className={`shrink-0 text-gray-400 transition-transform ${loyaltyOpen ? 'rotate-180' : ''}`} />
+                                <ChevronDown size={17} className={`checkout-disclosure-chevron shrink-0 text-gray-400 ${loyaltyOpen ? 'rotate-180' : ''}`} />
                               </button>
-                              {loyaltyOpen && (
-                                <div className="mt-2.5">
+                              <CheckoutCollapse id={`${id}-loyalty`} open={loyaltyOpen}>
+                                <div className="px-1 pb-1 pt-2.5">
+                                  <p id={`${id}-loyalty-help`} className="mb-2 text-[12px] leading-[1.35] text-gray-500">
+                                    Введіть номер телефону, щоб застосувати знижку.
+                                  </p>
                                   <div className="flex items-center gap-2.5">
                                     <div className="min-w-0 flex-1">
                                       <PhoneInput
                                         value={loyaltyPhone}
                                         onChange={value => { setLoyaltyPhone(value); setLoyaltyError(null); setLoyaltyPercent(null); }}
                                         placeholder="(00) 000-00-00"
+                                        aria-label="Телефон для знижки постійного клієнта"
+                                        aria-describedby={`${id}-loyalty-help`}
                                         onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); applyLoyalty(); } }}
                                       />
                                     </div>
@@ -334,7 +343,7 @@ export default function CartDrawer() {
                                     <p className="mt-2 text-xs font-medium text-[#00a382]">Знижку {loyaltyPercent}% застосовано</p>
                                   )}
                                 </div>
-                              )}
+                              </CheckoutCollapse>
                             </div>
 
                             <div className="mt-3 space-y-2 border-t border-gray-100 pt-3 text-sm">
@@ -351,7 +360,7 @@ export default function CartDrawer() {
                           </>
                         )}
                       </div>
-                    )}
+                    </CheckoutCollapse>
                   </div>
 
                   <div className="grid gap-3">
@@ -439,20 +448,24 @@ export default function CartDrawer() {
             </div>
 
             {cart.items.length > 0 && cart.quote && checkout && (
-              <div data-checkout-submit-footer className="shrink-0 border-t border-gray-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-4">
-                <button
-                  form="checkout-form"
-                  type="submit"
-                  disabled={submitting || !cart.quote.canCheckout}
-                  aria-busy={submitting}
-                  className={`form-cta checkout-submit${submitting ? ' is-submitting' : ''}`}
-                >
-                  <span className="checkout-submit__content">
-                    {submitting && <span className="checkout-submit__spinner" aria-hidden="true" />}
-                    <span role="status" aria-live="polite">{submitting ? 'Оформлюємо замовлення…' : 'Підтвердити'}</span>
-                  </span>
-                </button>
-                <NovaPoshtaTrustRow />
+              <div data-checkout-submit-footer className="shrink-0 bg-white">
+                <div className="checkout-submit-footer__inner">
+                  <div className="border-t border-gray-200 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-4">
+                    <button
+                      form="checkout-form"
+                      type="submit"
+                      disabled={submitting || !cart.quote.canCheckout}
+                      aria-busy={submitting}
+                      className={`form-cta checkout-submit${submitting ? ' is-submitting' : ''}`}
+                    >
+                      <span className="checkout-submit__content">
+                        {submitting && <span className="checkout-submit__spinner" aria-hidden="true" />}
+                        <span role="status" aria-live="polite">{submitting ? 'Оформлюємо замовлення…' : 'Підтвердити'}</span>
+                      </span>
+                    </button>
+                    <NovaPoshtaTrustRow />
+                  </div>
+                </div>
               </div>
             )}
 
