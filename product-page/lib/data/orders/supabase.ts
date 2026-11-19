@@ -68,6 +68,7 @@ function rpcParams(snapshot: OrderSnapshot) {
       quantity: item.quantity,
       line_total: item.lineTotal,
       quantity_discount_eligible: item.quantityDiscountEligible,
+      ...(item.catalogItem ? { catalog_item: item.catalogItem } : {}),
     })),
   };
 }

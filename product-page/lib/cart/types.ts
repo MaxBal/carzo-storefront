@@ -2,11 +2,15 @@ import type { ProductParams } from '@/lib/content/types';
 import type { ContactMethod } from './contact-method';
 import type { PaymentOption } from './payment-option';
 import type { OrderPackage, WarehouseLimits } from './shipping';
+import type { CatalogCartItem, CatalogItemSnapshot } from '@/lib/commerce/types';
 
-export interface CartInputItem extends ProductParams {
+export interface CaseCartItem extends ProductParams {
   fixation: string;
   quantity: number;
 }
+
+export type CartInputItem = CaseCartItem | CatalogCartItem;
+export type NewCartItem = Omit<CaseCartItem, 'quantity'> | Omit<CatalogCartItem, 'quantity'>;
 
 export interface CartQuoteLine {
   itemKey: string;
@@ -18,7 +22,7 @@ export interface CartQuoteLine {
   brandName: string;
   fixationLabel: string;
   unitPrice: number;
-  /** Price split backing unitPrice (= base + logo + fixation). Used by keyCRM sync. */
+  /** Case split: base + logo + fixation. Generic products: base + catalogItem.selectedOptions extras. */
   basePrice: number;
   logoExtra: number;
   fixationExtra: number;
@@ -26,6 +30,8 @@ export interface CartQuoteLine {
   lineTotal: number;
   inStock: boolean;
   quantityDiscountEligible: boolean;
+  /** Present for non-legacy products; legacy labels above remain empty for these lines. */
+  catalogItem?: CatalogItemSnapshot;
 }
 
 export interface CartQuote {

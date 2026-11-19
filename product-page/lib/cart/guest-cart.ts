@@ -1,31 +1,22 @@
-import type { CartInputItem } from './types';
+import type { CartInputItem, NewCartItem } from './types';
+import { cartItemSchema } from './validation';
+import { cartItemKey } from './item-identity';
 
 export type GuestCartItem = CartInputItem;
 
 const STORAGE_KEY = 'carzo:guest-cart:v1';
 
 function isCartItem(value: unknown): value is GuestCartItem {
-  if (!value || typeof value !== 'object') return false;
-  const item = value as Record<string, unknown>;
-  return (
-    ['S', 'M', 'L', 'XL'].includes(String(item.size))
-    && typeof item.designSlug === 'string'
-    && typeof item.brandId === 'string'
-    && typeof item.fixation === 'string'
-    && Number.isInteger(item.quantity)
-    && Number(item.quantity) > 0
-  );
+  return cartItemSchema.safeParse(value).success;
 }
 
-export function guestCartItemKey(item: Omit<GuestCartItem, 'quantity'>) {
-  return [item.size, item.designSlug, item.brandId, item.fixation].join(':');
-}
+export const guestCartItemKey = cartItemKey;
 
 export function readGuestCart(): GuestCartItem[] {
   if (typeof window === 'undefined') return [];
   try {
     const parsed: unknown = JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter(isCartItem) : [];
+    return Array.isArray(parsed) ? parsed.filter(isCartItem).map(item => cartItemSchema.parse(item)) : [];
   } catch {
     return [];
   }
@@ -33,18 +24,19 @@ export function readGuestCart(): GuestCartItem[] {
 
 export function writeGuestCart(items: GuestCartItem[]) {
   if (typeof window === 'undefined') return;
-  const safeItems = items.filter(isCartItem).map(item => ({ ...item, quantity: Math.trunc(item.quantity) }));
+  const safeItems = items.filter(isCartItem).map(item => cartItemSchema.parse(item));
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(safeItems));
 }
 
-export function addGuestCartItem(item: Omit<GuestCartItem, 'quantity'>, quantity = 1) {
+export function addGuestCartItem(item: NewCartItem, quantity = 1) {
   const items = readGuestCart();
-  const key = guestCartItemKey(item);
-  const safeQuantity = Math.max(1, Math.trunc(quantity));
+  const safeQuantity = Number.isFinite(quantity) ? Math.max(1, Math.min(20, Math.trunc(quantity))) : 1;
+  const normalized = cartItemSchema.parse({ ...item, quantity: safeQuantity });
+  const key = guestCartItemKey(normalized);
   const existing = items.find(candidate => guestCartItemKey(candidate) === key);
 
-  if (existing) existing.quantity += safeQuantity;
-  else items.push({ ...item, quantity: safeQuantity });
+  if (existing) existing.quantity = Math.min(20, existing.quantity + safeQuantity);
+  else items.push(normalized);
 
   writeGuestCart(items);
   return items;

@@ -15,6 +15,7 @@ import {
   PAID_FIXATION_KEY,
   paidFixationSku,
 } from './sku';
+import { catalogConfiguration } from '@/lib/commerce/types';
 import type {
   KeyCrmOrderConfig,
   KeyCrmOrderInput,
@@ -123,10 +124,29 @@ export function buildKeyCrmOrder(
   const cases = new Map<string, CaseGroup>();
   const fixations = new Map<string, { sku: string; price: number; quantity: number }>();
   const badges = new Map<string, { sku: string; price: number; quantity: number }>();
+  const catalogProducts: KeyCrmProductLine[] = [];
   let positionsSum = 0;
 
   for (const line of input.lines) {
     if (line.quantity < 1) throw new KeyCrmPayloadError('INVALID_QUANTITY');
+
+    if (line.catalogItem) {
+      const snapshot = line.catalogItem;
+      if (!snapshot.sku.trim()) throw new KeyCrmPayloadError('MISSING_PRODUCT_SKU');
+      let separateExtras = 0;
+      for (const option of snapshot.selectedOptions) {
+        if (option.crmSku && option.priceExtra > 0) {
+          catalogProducts.push({ sku: option.crmSku, price: option.priceExtra, quantity: line.quantity, comment: `${line.title ?? snapshot.productType}: ${option.label}: ${option.value}` });
+          separateExtras += option.priceExtra;
+        }
+      }
+      if (line.unitPrice !== line.basePrice + snapshot.selectedOptions.reduce((sum, option) => sum + option.priceExtra, 0)
+        || separateExtras > line.unitPrice) throw new KeyCrmPayloadError('UNIT_PRICE_SPLIT_MISMATCH');
+      catalogProducts.push({ sku: snapshot.sku, price: line.unitPrice - separateExtras, quantity: line.quantity,
+        comment: [line.title, ...catalogConfiguration(snapshot)].filter(Boolean).join('; ') });
+      positionsSum += line.unitPrice * line.quantity;
+      continue;
+    }
 
     const base = caseSku(line.sizeCode, line.designSlug);
     if (!base) {
@@ -166,10 +186,10 @@ export function buildKeyCrmOrder(
     }
   }
 
-  const products: KeyCrmProductLine[] = [];
+  const products: KeyCrmProductLine[] = [...catalogProducts];
   for (const group of Array.from(cases.values())) {
     const comment = buildCompositionComment(
-      input.lines.filter((item) => caseSku(item.sizeCode, item.designSlug) === group.sku),
+      input.lines.filter((item) => !item.catalogItem && caseSku(item.sizeCode, item.designSlug) === group.sku),
     );
     products.push({
       sku: group.sku,
