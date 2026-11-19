@@ -250,7 +250,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
             <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-white min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
               Магнітна система
             </span>
-            <span className="inline-flex shrink-0 rounded-[8px] bg-[#5ce4ab] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#080808] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
+            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#5ce4ab] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
               Max зносостійкість
             </span>
           </div>
