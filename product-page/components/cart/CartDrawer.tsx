@@ -440,9 +440,17 @@ export default function CartDrawer() {
 
             {cart.items.length > 0 && cart.quote && checkout && (
               <div data-checkout-submit-footer className="shrink-0 border-t border-gray-200 bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pb-4">
-                <button form="checkout-form" type="submit" disabled={submitting || !cart.quote.canCheckout} className="form-cta">
-                  {submitting && <Loader2 className="animate-spin" size={17} />}
-                  <span>Підтвердити</span>
+                <button
+                  form="checkout-form"
+                  type="submit"
+                  disabled={submitting || !cart.quote.canCheckout}
+                  aria-busy={submitting}
+                  className={`form-cta checkout-submit${submitting ? ' is-submitting' : ''}`}
+                >
+                  <span className="checkout-submit__content">
+                    {submitting && <span className="checkout-submit__spinner" aria-hidden="true" />}
+                    <span role="status" aria-live="polite">{submitting ? 'Оформлюємо замовлення…' : 'Підтвердити'}</span>
+                  </span>
                 </button>
                 <NovaPoshtaTrustRow />
               </div>

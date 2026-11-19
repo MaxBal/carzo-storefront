@@ -1,7 +1,7 @@
 /**
  * Checkout transaction boundary after a successful order write.
  *
- * Order persistence is the business transaction. Once Directus accepted the
+ * Order persistence is the business transaction. Once the store accepted the
  * order, checkout MUST return success - notification and customer upsert are
  * best-effort follow-ups. A follow-up failure must never surface as a client
  * checkout failure (that invites duplicate submits).
@@ -73,7 +73,20 @@ export async function runPostOrderSideEffects(
 export async function runPostOrderSideEffectsOnCreate(
   created: boolean,
   input: PostOrderSideEffectsInput,
+  defer?: (task: Promise<void>) => void,
 ): Promise<void> {
   if (!created) return;
-  await runPostOrderSideEffects(input);
+  const task = runPostOrderSideEffects(input);
+  if (defer) {
+    try {
+      // Register the already-started promise with the request lifetime. Never
+      // detach an untracked promise in a serverless runtime.
+      defer(task);
+      return;
+    } catch (error) {
+      input.logError('Background registration failed; awaiting order follow-ups', safeErrorDetail(error));
+      // Await the SAME task: registration failure must not resend anything.
+    }
+  }
+  await task;
 }

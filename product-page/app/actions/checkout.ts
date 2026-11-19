@@ -1,6 +1,7 @@
 'use server';
 
 import { headers } from 'next/headers';
+import { waitUntil } from '@vercel/functions';
 import { checkoutSchema } from '@/lib/cart/validation';
 import { CHECKOUT_MAINTENANCE_MESSAGE, isCheckoutMaintenance } from '@/lib/checkout-maintenance';
 import { CartQuoteError, quoteCartItems } from '@/lib/cart/server';
@@ -425,7 +426,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
           logError: (message, detail) => {
             console.error(message, { orderNumber: result.orderNumber, detail });
           },
-        });
+        }, process.env.VERCEL === '1' ? waitUntil : undefined);
 
         return {
           ok: true,

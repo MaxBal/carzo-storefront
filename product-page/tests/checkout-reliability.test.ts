@@ -135,6 +135,94 @@ describe('post-order side effects (transaction boundary)', () => {
   });
 });
 
+describe('request-lifetime scheduling after order persistence', () => {
+  function pending() {
+    let resolve!: () => void;
+    const promise = new Promise<void>(done => { resolve = done; });
+    return { promise, resolve };
+  }
+
+  it('acknowledges a committed order while slow integrations remain tracked', async () => {
+    const telegram = pending();
+    const crm = pending();
+    const calls: string[] = [];
+    let tracked!: Promise<void>;
+    await runPostOrderSideEffectsOnCreate(true, {
+      notify: async () => { calls.push('telegram'); await telegram.promise; },
+      pushToKeyCrm: async () => { calls.push('crm'); await crm.promise; },
+      logError: () => assert.fail('unexpected integration failure'),
+    }, task => { tracked = task; });
+    assert.ok(tracked instanceof Promise);
+    assert.deepEqual(calls, ['telegram']);
+    let finished = false;
+    tracked.then(() => { finished = true; });
+    await Promise.resolve();
+    assert.equal(finished, false);
+    telegram.resolve();
+    await new Promise<void>(done => setImmediate(done));
+    assert.deepEqual(calls, ['telegram', 'crm']);
+    assert.equal(finished, false);
+    crm.resolve();
+    await tracked;
+    assert.equal(finished, true);
+  });
+
+  it('does not schedule or start any integration on a replay', async () => {
+    await runPostOrderSideEffectsOnCreate(false, {
+      notify: async () => assert.fail('replayed notification'),
+      pushToKeyCrm: async () => assert.fail('replayed CRM push'),
+      logError: () => assert.fail('unexpected log'),
+    }, () => assert.fail('replayed background task'));
+  });
+
+  it('waits for integrations when no platform scheduler is supplied', async () => {
+    const notification = pending();
+    let returned = false;
+    const completion = runPostOrderSideEffectsOnCreate(true, {
+      notify: async () => { await notification.promise; },
+      logError: () => assert.fail('unexpected integration failure'),
+    }).then(() => { returned = true; });
+    await Promise.resolve();
+    assert.equal(returned, false);
+    notification.resolve();
+    await completion;
+    assert.equal(returned, true);
+  });
+
+  it('awaits the same task when registration fails without double sending', async () => {
+    const notification = pending();
+    let calls = 0;
+    let returned = false;
+    const logs: string[] = [];
+    const completion = runPostOrderSideEffectsOnCreate(true, {
+      notify: async () => { calls += 1; await notification.promise; },
+      logError: message => { logs.push(message); },
+    }, () => { throw new Error('runtime unavailable'); }).then(() => { returned = true; });
+    await Promise.resolve();
+    assert.equal(returned, false);
+    assert.equal(calls, 1);
+    assert.equal(logs.length, 1);
+    notification.resolve();
+    await completion;
+    assert.equal(returned, true);
+    assert.equal(calls, 1);
+  });
+
+  it('keeps background failures isolated and continues to CRM', async () => {
+    const logs: string[] = [];
+    let tracked!: Promise<void>;
+    let crmCalls = 0;
+    await runPostOrderSideEffectsOnCreate(true, {
+      notify: async () => { throw new Error('telegram unavailable'); },
+      pushToKeyCrm: async () => { crmCalls += 1; throw new Error('CRM unavailable'); },
+      logError: message => { logs.push(message); },
+    }, task => { tracked = task; });
+    await tracked;
+    assert.equal(crmCalls, 1);
+    assert.equal(logs.length, 2);
+  });
+});
+
 describe('replayed orders never notify again', () => {
   function spies() {
     const calls = { notify: 0, upsert: 0 };
