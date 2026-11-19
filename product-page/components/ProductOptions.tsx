@@ -247,11 +247,11 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           data-product-characteristics
         >
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 [font-family:Inter,Arial,sans-serif]">
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] font-medium uppercase leading-[1.3] tracking-[0.025em] text-[#080808]">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[14px] font-medium uppercase leading-[1.3] tracking-[0.025em] text-[#080808]">
               <Magnet className="h-4 w-4 shrink-0 text-[#5ce4ab]" aria-hidden="true" />
               <span>Магнітна система</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] font-medium uppercase leading-[1.3] tracking-[0.025em] text-[#080808]">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[14px] font-medium uppercase leading-[1.3] tracking-[0.025em] text-[#080808]">
               <ShieldCheck className="h-4 w-4 shrink-0 text-[#5ce4ab]" aria-hidden="true" />
               <span>Max зносостійкість</span>
             </span>
