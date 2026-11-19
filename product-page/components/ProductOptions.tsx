@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Camera, ShoppingCart, Check, ArrowUpRight, ChevronRight, Info, Minus, Plus } from 'lucide-react';
+import { Camera, ShoppingCart, Check, ArrowUpRight, ChevronRight, Info, Minus, Plus, Magnet, ShieldCheck } from 'lucide-react';
 import BenefitCards from './BenefitCards';
 import InfoModal from './InfoModal';
 import LogoModal from './LogoModal';
@@ -246,12 +246,14 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           aria-label="Ключові характеристики"
           data-product-characteristics
         >
-          <div className="flex flex-row flex-nowrap items-center gap-1.5 [font-family:Inter,Arial,sans-serif]">
-            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#5ce4ab] ring-1 ring-inset ring-[#333333] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
-              Магнітна система
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 [font-family:Inter,Arial,sans-serif]">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] font-medium uppercase leading-[1.3] tracking-[0.025em] text-[#080808]">
+              <Magnet className="h-4 w-4 shrink-0 text-[#5ce4ab]" aria-hidden="true" />
+              <span>Магнітна система</span>
             </span>
-            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#5ce4ab] ring-1 ring-inset ring-[#333333] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
-              Max зносостійкість
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] font-medium uppercase leading-[1.3] tracking-[0.025em] text-[#080808]">
+              <ShieldCheck className="h-4 w-4 shrink-0 text-[#5ce4ab]" aria-hidden="true" />
+              <span>Max зносостійкість</span>
             </span>
           </div>
         </section>
