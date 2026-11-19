@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Camera, ShoppingCart, Check, ArrowUpRight, ChevronRight, Info } from 'lucide-react';
+import { Camera, ShoppingCart, Check, ArrowUpRight, ChevronRight, Info, Minus, Plus } from 'lucide-react';
 import BenefitCards from './BenefitCards';
 import InfoModal from './InfoModal';
 import LogoModal from './LogoModal';
@@ -17,6 +17,9 @@ import {
 import type { ProductParams, ResolvedProductContent, SizeId } from '@/lib/content/types';
 import { useCart } from '@/components/cart/cart-context';
 import MobileStickyBuy from '@/components/MobileStickyBuy';
+import { useProductQuantity } from '@/components/ProductQuantityProvider';
+import { calculateCartTotals } from '@/lib/cart/pricing';
+import { availableCartQuantity } from '@/lib/cart/quantity';
 
 const selectClasses =
   'w-full appearance-none rounded-[12px] border border-gray-200 bg-white px-4 py-3 pr-10 text-sm text-[#111111] cursor-pointer focus:border-gray-400 focus:outline-none';
@@ -102,7 +105,9 @@ interface ProductOptionsProps {
 
 export default function ProductOptions({ params, content }: ProductOptionsProps) {
   const router = useRouter();
-  const { addItem, openCheckout } = useCart();
+  const { addItem, openCheckout, items, isOpen, hydrated } = useCart();
+  const { quantity, setQuantity } = useProductQuantity();
+  const buyStartedRef = useRef(false);
   const { size, designSlug, brandId } = params;
   const { catalog, pricing, siteSettings } = content;
 
@@ -166,6 +171,25 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
 
   const currentPrice = basePrice + logoExtra + fixExtra;
   const oldPrice = baseOldPrice + logoExtra + fixExtra;
+  const selectedItem = { size, designSlug, brandId, fixation: selectedFixation };
+  const maximumQuantity = availableCartQuantity(items, selectedItem);
+  const purchaseQuantity = Math.max(1, Math.min(quantity, maximumQuantity));
+  const canBuy = hydrated && maximumQuantity > 0;
+  const purchaseTotals = calculateCartTotals([{
+    unitPrice: currentPrice,
+    quantity: purchaseQuantity,
+    quantityDiscountEligible: pricing.selectedVariant.quantityDiscountEligible,
+  }], content.discountTiers);
+  const money = (value: number) => new Intl.NumberFormat('uk-UA').format(value);
+  const buyLabel = 'Купити ' + money(purchaseTotals.total) + ' ₴';
+  const discountHint = pricing.selectedVariant.quantityDiscountEligible
+    ? content.discountTiers.filter(tier => tier.minQuantity > 1).sort((a, b) => a.minQuantity - b.minQuantity)
+      .slice(0, 2).map(tier => 'Від ' + tier.minQuantity + ' шт. −' + money(tier.amount) + ' ₴').join(' · ')
+    : '';
+
+  useEffect(() => {
+    if (!isOpen) buyStartedRef.current = false;
+  }, [isOpen]);
 
   const productTitle = buildProductTitle(params, catalog);
   const selectedDesign = catalog.designs.find(design => design.slug === designSlug);
@@ -201,7 +225,9 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   };
 
   const handleBuy = () => {
-    addItem({ size, designSlug, brandId, fixation: selectedFixation });
+    if (!canBuy || isOpen || buyStartedRef.current) return;
+    buyStartedRef.current = true;
+    addItem(selectedItem, purchaseQuantity);
     // One-step checkout: skip the intermediate cart screen entirely.
     openCheckout();
   };
@@ -431,20 +457,56 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           )}
         </div>
 
+        <section className="mt-6 border-t border-gray-100 pt-4" data-product-quantity aria-label="Кількість товару">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <ConfiguratorHeading>Кількість</ConfiguratorHeading>
+              <p className="mt-1 text-[12px] leading-[1.5] text-[#777777]" data-product-unit-price>{money(currentPrice)} ₴ / шт.</p>
+            </div>
+            <div className="-mr-1 flex shrink-0 items-center" role="group" aria-label="Вибір кількості">
+              <button
+                type="button"
+                onClick={() => setQuantity(Math.max(1, purchaseQuantity - 1))}
+                disabled={!canBuy || purchaseQuantity <= 1}
+                aria-label="Зменшити кількість товару"
+                className="flex h-9 w-9 touch-manipulation items-center justify-center rounded-full text-[#111111] hover:bg-gray-50 disabled:opacity-25 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
+              ><Minus size={17} strokeWidth={1.7} /></button>
+              <span className="min-w-[26px] text-center text-[15px] font-semibold tabular-nums" aria-live="polite" data-product-quantity-value>{purchaseQuantity}</span>
+              <button
+                type="button"
+                onClick={() => setQuantity(Math.min(maximumQuantity, purchaseQuantity + 1))}
+                disabled={!canBuy || purchaseQuantity >= maximumQuantity}
+                aria-label="Збільшити кількість товару"
+                className="flex h-9 w-9 touch-manipulation items-center justify-center rounded-full text-[#111111] hover:bg-gray-50 disabled:opacity-25 [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:w-11"
+              ><Plus size={17} strokeWidth={1.7} /></button>
+            </div>
+          </div>
+          <div className="mt-3 min-h-[20px] text-[12px] leading-[1.5]" aria-live="polite" data-product-quantity-discount>
+            {!canBuy && hydrated ? (
+              <p className="text-[#777777]">У кошику вже максимальна кількість. Змініть її в кошику.</p>
+            ) : purchaseTotals.quantityDiscount > 0 ? (
+              <p className="flex justify-between gap-3 text-[#11856d]"><span>Разом дешевше</span><span className="font-semibold tabular-nums">−{money(purchaseTotals.quantityDiscount)} ₴</span></p>
+            ) : <p className="text-[#777777]">{discountHint}</p>}
+          </div>
+        </section>
+
         {/* CTA Button */}
         <button
+          type="button"
           onClick={handleBuy}
+          disabled={!canBuy}
           data-product-buy
-          className="mt-6 flex h-[48px] w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#080808] text-[15px] font-semibold tracking-[-0.01em] text-white transition-colors hover:bg-gray-800 active:bg-gray-900"
+          className="mt-3 flex h-[48px] w-full items-center justify-center gap-2.5 rounded-[12px] bg-[#080808] text-[15px] font-semibold tracking-[-0.01em] text-white transition-colors hover:bg-gray-800 active:bg-gray-900 disabled:opacity-40"
         >
           <ShoppingCart size={19} strokeWidth={2} />
-          Купити {currentPrice} ₴
+          {buyLabel}
         </button>
 
         {/* Mobile sticky CTA — only after static CTA fully leaves viewport */}
         <MobileStickyBuy
-          label={`Купити ${currentPrice} ₴`}
+          label={buyLabel}
           onBuy={handleBuy}
+          disabled={!canBuy}
           triggerSelector="[data-product-buy]"
         />
 

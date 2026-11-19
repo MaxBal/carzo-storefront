@@ -22,7 +22,7 @@ export interface CartContextValue {
   confirmation: OrderConfirmation | null;
   /** View requested by the last openCart/openCheckout call; read on drawer mount. */
   openView: CartOpenView;
-  addItem: (item: NewCartItem) => void;
+  addItem: (item: NewCartItem, quantity?: number) => void;
   setQuantity: (itemKey: string, quantity: number) => void;
   removeItem: (itemKey: string) => void;
   /** Opens the drawer on the ordinary «Кошик» screen. */

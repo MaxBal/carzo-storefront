@@ -9,6 +9,7 @@ import { cartItemKey, isCatalogCartItem } from './item-identity';
 import { loadCommerceProducts } from '@/lib/data/products/supabase';
 import { quoteCatalogItem } from '@/lib/commerce/pricing';
 import { resolveCatalogStoreBackend } from '@/lib/data/config';
+import { MAX_CART_QUANTITY } from './quantity';
 
 export class CartQuoteError extends Error {
   constructor(message: string, public readonly code: 'INVALID' | 'UNAVAILABLE' = 'INVALID') {
@@ -54,7 +55,7 @@ function consolidateItems(items: CartInputItem[]) {
 export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuote> {
   const items = consolidateItems(rawItems);
   const totalRequestedQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  if (items.length === 0 || totalRequestedQuantity > 30) {
+  if (items.length === 0 || totalRequestedQuantity > MAX_CART_QUANTITY) {
     throw new CartQuoteError('Кошик порожній або містить забагато товарів.');
   }
 
