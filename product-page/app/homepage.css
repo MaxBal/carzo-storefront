@@ -148,6 +148,8 @@
 .hp-product-case img {
   /* Raise the case within the square, above the caption gradient. */
   object-position: 50% 75%;
+  /* Clip the light outermost pixels of the source photo. */
+  transform: scale(1.02);
 }
 
 .hp-product-mats img {
