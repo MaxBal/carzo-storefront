@@ -120,8 +120,8 @@ export const DEFAULT_HOMEPAGE: HomepageData = {
     lead: 'Німецька автомобільна еко-шкіра створена для авто',
     materialTag: 'ВИСОКОЯКІСНА ТА ЗНОСОСТІЙКА',
     products: [
-      { image: '/case.jpg', alt: 'Чорний автокейс Carzo у багажнику', href: '/case/design/l/4-0', tag: 'Магнітна система', title: 'Premium автокейси' },
-      { image: '/mats.png', alt: 'Комплект чорних автокилимків Carzo', href: '/catalog-carmat', tag: 'Точність лекал', title: 'Premium автокилимки' },
+      { image: 'https://media.carzo.com.ua/content/pages/home/case.webp', alt: 'Чорний автокейс Carzo у багажнику', href: '/case/design/l/4-0', tag: 'Магнітна система', title: 'Premium автокейси' },
+      { image: 'https://media.carzo.com.ua/content/pages/home/car-mats.webp', alt: 'Комплект чорних автокилимків Carzo', href: '/catalog-carmat', tag: 'Точність лекал', title: 'Premium автокилимки' },
     ],
     logoVideoUrl: '',
   },
@@ -129,7 +129,7 @@ export const DEFAULT_HOMEPAGE: HomepageData = {
     eyebrow: 'Власне виробництво',
     title: 'Високоякісні\nшильди',
     description: 'Від фрезування металу до готової деталі — усе контролюємо самі.',
-    videoUrl: '/carzo-badges.mp4',
+    videoUrl: 'https://media.carzo.com.ua/content/pages/home/logo-video.mp4',
     sizeLabel: '20 × 80 мм',
     features: [
       { number: '01', title: 'Фрезування металу', description: 'Основний процес виготовлення — точне фрезування металевої основи.' },

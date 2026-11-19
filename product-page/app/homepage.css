@@ -139,10 +139,15 @@
   transition: transform .7s, filter .5s;
 }
 
+.hp-product-case {
+  min-height: 0;
+  aspect-ratio: 1 / 1;
+  align-self: start;
+}
+
 .hp-product-case img {
-  object-position: 50% 63%;
-  /* Crop light edges of the source photo without distorting the case */
-  transform: scale(1.02);
+  /* Raise the case within the square, above the caption gradient. */
+  object-position: 50% 75%;
 }
 
 .hp-product-mats img {
@@ -407,6 +412,10 @@
     min-height: 440px;
   }
 
+  .hp-product-case {
+    min-height: 0;
+  }
+
   .hp-product-mats {
     min-height: 560px;
     background: #111;
@@ -460,18 +469,8 @@
     border-radius: 12px;
   }
 
-  /* Mobile case card: taller 4:3 so the whole case stays visible (like desktop) */
   .hp-product-case {
     min-height: 0;
-    aspect-ratio: 4 / 3;
-    height: auto;
-  }
-
-  .hp-product-case img {
-    object-fit: cover;
-    /* Same framing as desktop: keeps lid, front, side and bottom in view */
-    object-position: 50% 63%;
-    transform: scale(1.02);
   }
 
   .hp-product-case small {

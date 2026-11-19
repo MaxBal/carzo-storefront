@@ -72,15 +72,9 @@ export default function CarmatPageContent({
         {/* Cover */}
         <div className="cm-cover">
           <img
-            className="cm-cover-img cm-cover-img--mobile"
-            src="/carmat-mobile.png"
-            alt="Автокилимки Carzo — мобільна обкладинка"
-            draggable={false}
-          />
-          <img
-            className="cm-cover-img cm-cover-img--desktop"
+            className="cm-cover-img"
             src={promoCoverUrl}
-            alt="Автокилимки Carzo — десктоп обкладинка"
+            alt="Автокилимки Carzo"
             draggable={false}
           />
           <span className="cm-cover-gradient" />
