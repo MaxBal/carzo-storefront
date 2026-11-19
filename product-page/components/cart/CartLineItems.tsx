@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import type { CartQuoteLine } from '@/lib/cart/types';
+import { catalogConfiguration } from '@/lib/commerce/types';
 
 export function money(value: number) {
   return new Intl.NumberFormat('uk-UA').format(value);
@@ -44,9 +45,7 @@ export default function CartLineItems({ lines, onQuantityChange, onRemove, onNav
                 {line.title}
               </Link>
               <p className="mt-0.5 text-[13px] leading-[1.35] text-gray-500">
-                {line.sizeLabel} · {line.brandName}
-                <br />
-                {line.fixationLabel}
+                {line.catalogItem ? catalogConfiguration(line.catalogItem).join(' · ') : <>{line.sizeLabel} · {line.brandName}<br />{line.fixationLabel}</>}
               </p>
             </div>
             <button

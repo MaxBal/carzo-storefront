@@ -13,6 +13,8 @@
  *   whether that attempt already created an order.
  */
 
+import { fingerprintItemLine, type IdentityItem } from './item-identity';
+
 export const CHECKOUT_ATTEMPT_STORAGE_KEY = 'carzo:checkout-attempt:v1';
 export const CHECKOUT_ATTEMPT_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -38,22 +40,10 @@ export function isValidAttemptUuid(value: unknown): value is string {
 }
 
 export function computeCartItemsSignature(
-  items: ReadonlyArray<{
-    size: string;
-    designSlug: string;
-    brandId: string;
-    fixation: string;
-    quantity: number;
-  }>,
+  items: ReadonlyArray<IdentityItem>,
 ): string {
   return items
-    .map(item => [
-      item.size.trim(),
-      item.designSlug.trim(),
-      item.brandId.trim(),
-      item.fixation.trim(),
-      String(Math.trunc(item.quantity)),
-    ].join(':'))
+    .map(item => fingerprintItemLine(item, ':'))
     .sort()
     .join('|');
 }

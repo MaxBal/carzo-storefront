@@ -1,4 +1,5 @@
 import type { ContactMethod } from '@/lib/cart/contact-method';
+import type { CatalogItemSnapshot } from '@/lib/commerce/types';
 
 export type OrderStoreBackend = 'directus' | 'supabase';
 
@@ -22,18 +23,19 @@ export interface OrderItemSnapshot {
   sort: number;
   itemKey: string;
   title: string;
-  designSlug: string;
+  designSlug: string | null;
   designLabel: string;
-  sizeCode: string;
+  sizeCode: string | null;
   sizeLabel: string;
-  brandSlug: string;
+  brandSlug: string | null;
   brandName: string;
-  fixationKey: string;
+  fixationKey: string | null;
   fixationLabel: string;
   unitPrice: number;
   quantity: number;
   lineTotal: number;
   quantityDiscountEligible: boolean;
+  catalogItem?: CatalogItemSnapshot;
 }
 
 export interface OrderLoyaltySnapshot {

@@ -8,7 +8,8 @@ import {
   type CheckoutAttemptOutcomeInput,
 } from '@/lib/cart/checkout-attempt-client';
 import { clearGuestCart, guestCartItemKey, readGuestCart, writeGuestCart } from '@/lib/cart/guest-cart';
-import type { CartInputItem, CartQuote } from '@/lib/cart/types';
+import type { CartInputItem, CartQuote, NewCartItem } from '@/lib/cart/types';
+import { cartItemSchema } from '@/lib/cart/validation';
 import { CartContext, type CartOpenView, type OrderConfirmation } from './cart-context';
 
 const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false });
@@ -91,7 +92,8 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     });
   }, []);
 
-  const addItem = useCallback((item: Omit<CartInputItem, 'quantity'>) => {
+  const addItem = useCallback((input: NewCartItem) => {
+    const item = cartItemSchema.parse({ ...input, quantity: 1 });
     // Additive only — opening the drawer is a separate intent (openCart /
     // openCheckout) so callers pick the surface and no intermediate cart
     // screen can flash before checkout.

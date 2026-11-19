@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
+import { fingerprintItemLine, type IdentityItem } from './item-identity';
 
 export {
   CHECKOUT_ATTEMPT_STORAGE_KEY,
@@ -60,13 +61,7 @@ export interface FingerprintInput {
   apartment?: string | null;
   /** Payment terms are part of buyer intent — same attempt with a different option must not match. */
   paymentOption?: string | null;
-  items: Array<{
-    size: string;
-    designSlug: string;
-    brandId: string;
-    fixation: string;
-    quantity: number;
-  }>;
+  items: IdentityItem[];
 }
 
 function buildDeliveryTargetLine(input: FingerprintInput): string {
@@ -98,13 +93,7 @@ function buildDeliveryTargetLine(input: FingerprintInput): string {
  */
 export function computeRequestFingerprint(input: FingerprintInput): string {
   const lines = input.items
-    .map(item => [
-      item.size.trim(),
-      item.designSlug.trim(),
-      item.brandId.trim(),
-      item.fixation.trim(),
-      String(Math.trunc(item.quantity)),
-    ].join('|'))
+    .map(item => fingerprintItemLine(item, '|'))
     .sort();
   const canonical = [
     input.customerPhone.trim(),

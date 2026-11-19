@@ -1,4 +1,5 @@
 /** keyCRM order-create payload shapes (openapi.keycrm.app/v1, `createNewOrder`). */
+import type { CatalogItemSnapshot } from '@/lib/commerce/types';
 
 export interface KeyCrmBuyer {
   full_name: string | null;
@@ -45,6 +46,8 @@ export interface KeyCrmOrderPayload {
 
 /** One cart line with the price split needed to avoid double-charging add-ons. */
 export interface KeyCrmSourceLine {
+  catalogItem?: CatalogItemSnapshot;
+  title?: string;
   sizeCode: string;
   designSlug: string;
   brandSlug: string;

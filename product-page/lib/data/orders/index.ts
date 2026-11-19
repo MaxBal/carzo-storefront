@@ -7,6 +7,7 @@ import type {
   OrderRepository,
   OrderSnapshot,
 } from './types';
+import { OrderStoreError } from './types';
 
 export type {
   CreateOrderResult,
@@ -38,6 +39,9 @@ export function createOrderRepository(
 export async function createOrderRecord(
   body: OrderSnapshot,
 ): Promise<CreateOrderResult> {
+  if (body.items.some(item => item.catalogItem) && resolveOrderStoreBackend() !== 'supabase') {
+    throw new OrderStoreError('Product orders require the supported order store', 'CONFIG');
+  }
   return createOrderRepository(resolveOrderStoreBackend()).createOrder(body);
 }
 

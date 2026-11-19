@@ -5,6 +5,10 @@ import type { CartInputItem, CartQuote, CartQuoteLine } from './types';
 import type { DiscountTier, FixationInfo, SizeId } from '@/lib/content/types';
 import { loadCatalogData, CatalogUnavailableError } from '@/lib/data/catalog';
 import { calculateOrderPackage, checkPostomatPackage } from './shipping';
+import { cartItemKey, isCatalogCartItem } from './item-identity';
+import { loadCommerceProducts } from '@/lib/data/products/supabase';
+import { quoteCatalogItem } from '@/lib/commerce/pricing';
+import { resolveCatalogStoreBackend } from '@/lib/data/config';
 
 export class CartQuoteError extends Error {
   constructor(message: string, public readonly code: 'INVALID' | 'UNAVAILABLE' = 'INVALID') {
@@ -32,14 +36,10 @@ function fixationExtraForSize(fixation: FixationInfo, size: string) {
   return number(fixation.extra);
 }
 
-function itemKey(item: Omit<CartInputItem, 'quantity'>) {
-  return [item.size, item.designSlug, item.brandId, item.fixation].join(':');
-}
-
 function consolidateItems(items: CartInputItem[]) {
   const consolidated = new Map<string, CartInputItem>();
   for (const item of items) {
-    const key = itemKey(item);
+    const key = cartItemKey(item);
     const existing = consolidated.get(key);
     if (existing) existing.quantity += item.quantity;
     else consolidated.set(key, { ...item });
@@ -78,7 +78,23 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
   );
   const tiers: DiscountTier[] = catalog.discountTiers;
 
+  const catalogItems = items.filter(isCatalogCartItem);
+  let products;
+  try {
+    if (catalogItems.length && resolveCatalogStoreBackend() !== 'supabase') throw new Error('Unsupported product backend');
+    products = await loadCommerceProducts(catalogItems.map(item => item.productId));
+  } catch {
+    throw new CartQuoteError('Не вдалося перевірити товар. Спробуйте ще раз.', 'UNAVAILABLE');
+  }
+  const productsById = new Map(products.map(product => [product.id, product]));
+
   const lines: CartQuoteLine[] = items.map(item => {
+    if (isCatalogCartItem(item)) {
+      const product = productsById.get(item.productId);
+      if (!product) throw new CartQuoteError('Товар зараз недоступний для замовлення.', 'UNAVAILABLE');
+      try { return quoteCatalogItem(item, product); }
+      catch { throw new CartQuoteError('Перевірте обрані параметри товару.', 'UNAVAILABLE'); }
+    }
     const design = designBySlug.get(item.designSlug);
     const size = sizeByCode.get(item.size as SizeId);
     const brand = brandBySlug.get(item.brandId);
@@ -99,7 +115,7 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     const brandPath = item.brandId === 'none' ? '' : `/${item.brandId}`;
 
     return {
-      itemKey: itemKey(item),
+      itemKey: cartItemKey(item),
       item,
       title,
       productUrl: `/case/design/${sizeSlug}/${item.designSlug}${brandPath}`,
@@ -123,10 +139,13 @@ export async function quoteCartItems(rawItems: CartInputItem[]): Promise<CartQuo
     quantity: line.quantity,
     quantityDiscountEligible: line.quantityDiscountEligible,
   })), tiers);
+  if (!Number.isSafeInteger(totals.subtotal) || totals.subtotal > 2_147_483_647) {
+    throw new CartQuoteError('Сума замовлення перевищує допустиму. Зверніться до менеджера.');
+  }
   const shippingPackage = calculateOrderPackage(lines.map(line => ({
-    size: line.item.size,
+    size: isCatalogCartItem(line.item) ? undefined : line.item.size,
     quantity: line.quantity,
-    shippingProfile: sizeByCode.get(line.item.size as SizeId)?.shippingProfile ?? null,
+    shippingProfile: line.catalogItem?.shippingProfile ?? (isCatalogCartItem(line.item) ? null : sizeByCode.get(line.item.size as SizeId)?.shippingProfile ?? null),
   })));
   const postomatAllowed = shippingPackage
     ? checkPostomatPackage(shippingPackage).status === 'fits'

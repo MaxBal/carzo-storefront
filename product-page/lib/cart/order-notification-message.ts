@@ -61,6 +61,7 @@ function itemBlock(item: NotificationOrderItem, index: number, numbered: boolean
     lines.push(`Автомобіль: ${escapeTelegramHtml(brandName)}`);
   }
   lines.push(`Кількість: ${item.quantity} шт.`);
+  for (const detail of item.configuration ?? []) lines.push(escapeTelegramHtml(detail));
   const fixation = item.fixationLabel?.trim();
   if (fixation) {
     lines.push(`Фіксація: ${escapeTelegramHtml(fixation)}`);

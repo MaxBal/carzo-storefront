@@ -23,7 +23,7 @@ export interface OrderPackage {
 }
 
 export interface PackageLineInput {
-  size: string;
+  size?: string;
   quantity: number;
   shippingProfile?: ShippingProfile | null;
 }

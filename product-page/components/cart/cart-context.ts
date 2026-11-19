@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import type { CartInputItem, CartQuote } from '@/lib/cart/types';
+import type { CartInputItem, CartQuote, NewCartItem } from '@/lib/cart/types';
 
 export interface OrderConfirmation {
   orderNumber: string;
@@ -22,7 +22,7 @@ export interface CartContextValue {
   confirmation: OrderConfirmation | null;
   /** View requested by the last openCart/openCheckout call; read on drawer mount. */
   openView: CartOpenView;
-  addItem: (item: Omit<CartInputItem, 'quantity'>) => void;
+  addItem: (item: NewCartItem) => void;
   setQuantity: (itemKey: string, quantity: number) => void;
   removeItem: (itemKey: string) => void;
   /** Opens the drawer on the ordinary «Кошик» screen. */

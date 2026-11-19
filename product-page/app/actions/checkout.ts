@@ -2,6 +2,8 @@
 
 import { headers } from 'next/headers';
 import { waitUntil } from '@vercel/functions';
+import { isCatalogCartItem } from '@/lib/cart/item-identity';
+import { catalogConfiguration } from '@/lib/commerce/types';
 import { checkoutSchema } from '@/lib/cart/validation';
 import { CHECKOUT_MAINTENANCE_MESSAGE, isCheckoutMaintenance } from '@/lib/checkout-maintenance';
 import { CartQuoteError, quoteCartItems } from '@/lib/cart/server';
@@ -193,18 +195,19 @@ function buildOrderSnapshot(input: {
       sort: index + 1,
       itemKey: line.itemKey,
       title: line.title,
-      designSlug: line.item.designSlug,
+      designSlug: isCatalogCartItem(line.item) ? null : line.item.designSlug,
       designLabel: line.designLabel,
-      sizeCode: line.item.size,
+      sizeCode: isCatalogCartItem(line.item) ? null : line.item.size,
       sizeLabel: line.sizeLabel,
-      brandSlug: line.item.brandId,
+      brandSlug: isCatalogCartItem(line.item) ? null : line.item.brandId,
       brandName: line.brandName,
-      fixationKey: line.item.fixation,
+      fixationKey: isCatalogCartItem(line.item) ? null : line.item.fixation,
       fixationLabel: line.fixationLabel,
       unitPrice: line.unitPrice,
       quantity: line.quantity,
       lineTotal: line.lineTotal,
       quantityDiscountEligible: line.quantityDiscountEligible,
+      ...(line.catalogItem ? { catalogItem: line.catalogItem } : {}),
     })),
   };
 }
@@ -238,6 +241,9 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
   }
 
   const orderStore = resolveOrderStoreBackend();
+  if (parsed.data.items.some(isCatalogCartItem) && orderStore !== 'supabase') {
+    return { ok: false, code: 'UNAVAILABLE', message: 'Цей товар тимчасово недоступний для оформлення.' };
+  }
   const attemptId = parsed.data.checkoutAttemptId ?? null;
   let requestFingerprint: string | null = null;
 
@@ -380,6 +386,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
                 lineTotal: line.lineTotal,
                 fixationLabel: line.fixationLabel,
                 brandName: line.brandName,
+                ...(line.catalogItem ? { configuration: catalogConfiguration(line.catalogItem) } : {}),
               })),
             });
           },
@@ -409,17 +416,18 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
               loyaltyDiscountAmount: snapshot.loyalty.discountAmount,
               total: snapshot.total,
               lines: quote.lines.map(line => ({
-                sizeCode: line.item.size,
-                designSlug: line.item.designSlug,
-                brandSlug: line.item.brandId,
+                sizeCode: isCatalogCartItem(line.item) ? '' : line.item.size,
+                designSlug: isCatalogCartItem(line.item) ? '' : line.item.designSlug,
+                brandSlug: isCatalogCartItem(line.item) ? '' : line.item.brandId,
                 brandName: line.brandName,
-                fixationKey: line.item.fixation,
+                fixationKey: isCatalogCartItem(line.item) ? '' : line.item.fixation,
                 fixationLabel: line.fixationLabel,
                 quantity: line.quantity,
                 unitPrice: line.unitPrice,
                 basePrice: line.basePrice,
                 logoExtra: line.logoExtra,
                 fixationExtra: line.fixationExtra,
+                ...(line.catalogItem ? { catalogItem: line.catalogItem, title: line.title } : {}),
               })),
             });
           },
