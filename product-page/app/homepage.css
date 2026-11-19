@@ -139,15 +139,8 @@
   transition: transform .7s, filter .5s;
 }
 
-.hp-product-case {
-  min-height: 0;
-  aspect-ratio: 1 / 1;
-  align-self: start;
-}
-
 .hp-product-case img {
-  /* Raise the case within the square, above the caption gradient. */
-  object-position: 50% 75%;
+  object-position: 50% 63%;
   /* Clip the light outermost pixels of the source photo. */
   transform: scale(1.02);
 }
@@ -414,10 +407,6 @@
     min-height: 440px;
   }
 
-  .hp-product-case {
-    min-height: 0;
-  }
-
   .hp-product-mats {
     min-height: 560px;
     background: #111;
@@ -473,6 +462,13 @@
 
   .hp-product-case {
     min-height: 0;
+    aspect-ratio: 1 / 1;
+    align-self: start;
+  }
+
+  .hp-product-case img {
+    /* Raise the case within the mobile square, above the caption gradient. */
+    object-position: 50% 75%;
   }
 
   .hp-product-case small {
