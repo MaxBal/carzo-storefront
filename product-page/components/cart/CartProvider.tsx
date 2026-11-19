@@ -10,6 +10,7 @@ import {
 import { clearGuestCart, guestCartItemKey, readGuestCart, writeGuestCart } from '@/lib/cart/guest-cart';
 import type { CartInputItem, CartQuote, NewCartItem } from '@/lib/cart/types';
 import { cartItemSchema } from '@/lib/cart/validation';
+import { addCartQuantity } from '@/lib/cart/quantity';
 import { CartContext, type CartOpenView, type OrderConfirmation } from './cart-context';
 
 const CartDrawer = dynamic(() => import('./CartDrawer'), { ssr: false });
@@ -92,23 +93,12 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     });
   }, []);
 
-  const addItem = useCallback((input: NewCartItem) => {
-    const item = cartItemSchema.parse({ ...input, quantity: 1 });
+  const addItem = useCallback((input: NewCartItem, quantity = 1) => {
+    const item = cartItemSchema.parse({ ...input, quantity });
     // Additive only — opening the drawer is a separate intent (openCart /
     // openCheckout) so callers pick the surface and no intermediate cart
     // screen can flash before checkout.
-    updateItems(current => {
-      const key = guestCartItemKey(item);
-      const existing = current.find(candidate => guestCartItemKey(candidate) === key);
-      if (existing) {
-        return current.map(candidate => (
-          guestCartItemKey(candidate) === key
-            ? { ...candidate, quantity: Math.min(20, candidate.quantity + 1) }
-            : candidate
-        ));
-      }
-      return [...current, { ...item, quantity: 1 }];
-    });
+    updateItems(current => addCartQuantity(current, item));
   }, [updateItems]);
 
   const setQuantity = useCallback((key: string, quantity: number) => {
