@@ -247,10 +247,10 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           data-product-characteristics
         >
           <div className="flex flex-row flex-nowrap items-center gap-1.5 [font-family:Inter,Arial,sans-serif]">
-            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-white min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
+            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#5ce4ab] ring-1 ring-inset ring-[#333333] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
               Магнітна система
             </span>
-            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#5ce4ab] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
+            <span className="inline-flex shrink-0 rounded-[8px] bg-[#080808] px-[12px] py-[6px] text-[11px] font-[200] uppercase leading-[1.2] tracking-[0.04em] text-[#5ce4ab] ring-1 ring-inset ring-[#333333] min-[901px]:px-[13px] min-[901px]:py-[5px] min-[901px]:text-[12px]">
               Max зносостійкість
             </span>
           </div>
