@@ -461,7 +461,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
           <div className="flex items-center justify-between gap-3">
             <div>
               <ConfiguratorHeading>Кількість</ConfiguratorHeading>
-              <p className="mt-1 text-[12px] leading-[1.5] text-[#777777]" data-product-unit-price>{money(currentPrice)} ₴ / шт.</p>
+              <p className="mt-1 text-[13px] leading-[1.5] text-[#777777]" data-product-unit-price>{money(currentPrice)} ₴ / шт.</p>
             </div>
             <div className="-mr-1 flex shrink-0 items-center" role="group" aria-label="Вибір кількості">
               <button
@@ -481,11 +481,11 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
               ><Plus size={17} strokeWidth={1.7} /></button>
             </div>
           </div>
-          <div className="mt-3 min-h-[20px] text-[12px] leading-[1.5]" aria-live="polite" data-product-quantity-discount>
+          <div className="mt-3 min-h-[20px] text-[13px] leading-[1.5]" aria-live="polite" data-product-quantity-discount>
             {!canBuy && hydrated ? (
               <p className="text-[#777777]">У кошику вже максимальна кількість. Змініть її в кошику.</p>
             ) : purchaseTotals.quantityDiscount > 0 ? (
-              <p className="flex justify-between gap-3 text-[#11856d]"><span>Разом дешевше</span><span className="font-semibold tabular-nums">−{money(purchaseTotals.quantityDiscount)} ₴</span></p>
+              <p className="flex justify-between gap-3 text-[14px] text-[#11856d]"><span>Разом дешевше</span><span className="font-semibold tabular-nums">−{money(purchaseTotals.quantityDiscount)} ₴</span></p>
             ) : <p className="text-[#777777]">{discountHint}</p>}
           </div>
         </section>
