@@ -339,6 +339,69 @@
   outline-offset: 2px;
 }
 
+.checkout-submit {
+  position: relative;
+  overflow: hidden;
+}
+
+.checkout-submit__content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.checkout-submit__spinner {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  border: 2px solid #ffffff38;
+  border-top-color: #5ce4ab;
+  border-right-color: #5ce4ab;
+  border-radius: 50%;
+  animation: checkout-submit-spin 800ms linear infinite;
+}
+
+.checkout-submit.is-submitting:disabled {
+  background: #111827;
+  color: #fff;
+  opacity: 1;
+  cursor: progress;
+}
+
+.checkout-submit.is-submitting::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 40%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #5ce4ab, transparent);
+  pointer-events: none;
+  animation: checkout-submit-sweep 1400ms ease-in-out infinite;
+}
+
+@keyframes checkout-submit-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes checkout-submit-sweep {
+  from { transform: translateX(-110%); }
+  to { transform: translateX(360%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .checkout-submit__spinner,
+  .checkout-submit.is-submitting::after {
+    animation: none;
+  }
+
+  .checkout-submit.is-submitting::after {
+    width: 100%;
+    opacity: 0.65;
+  }
+}
+
 /* Delivery method toggle buttons — compact, consistent geometry, no size change on state */
 .form-delivery-btn {
   display: flex;
