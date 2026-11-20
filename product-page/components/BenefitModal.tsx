@@ -89,7 +89,7 @@ function InfoCardBlock({ block }: { block: Extract<BenefitBlock, { type: 'info_c
   );
 }
 
-function BenefitBlockView({ block }: { block: BenefitBlock }) {
+function BenefitBlockView({ block, modalType }: { block: BenefitBlock; modalType: BenefitModalData['type'] }) {
   if (block.type === 'info_card') return <InfoCardBlock block={block} />;
 
   if (block.type === 'badges') {
@@ -143,7 +143,7 @@ function BenefitBlockView({ block }: { block: BenefitBlock }) {
   if (block.type === 'loyalty_hero') {
     return (
       <div className="modal-card flex flex-col items-center gap-1 px-4 py-6 text-center">
-        <span className="text-5xl font-black tracking-tight text-[#5ce4ab]">{block.value}</span>
+        <span className={`${modalType === 'warranty' ? 'text-[33.6px] font-extrabold leading-none' : 'text-5xl font-black'} tracking-tight text-[#5ce4ab]`}>{block.value}</span>
         <span className="modal-body-text font-bold">{block.label}</span>
       </div>
     );
@@ -243,7 +243,7 @@ export default function BenefitModal({ data, onClose }: BenefitModalProps) {
           <div className="modal-scroll">
             <div className="modal-content">
               {data.blocks.map((block, index) => (
-                <BenefitBlockView key={`${block.type}-${index}`} block={block} />
+                <BenefitBlockView key={`${block.type}-${index}`} block={block} modalType={data.type} />
               ))}
             </div>
           </div>
