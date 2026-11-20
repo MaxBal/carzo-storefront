@@ -182,10 +182,9 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   }], content.discountTiers);
   const money = (value: number) => new Intl.NumberFormat('uk-UA').format(value);
   const buyLabel = 'Купити ' + money(purchaseTotals.total) + ' ₴';
-  const discountHint = pricing.selectedVariant.quantityDiscountEligible
-    ? content.discountTiers.filter(tier => tier.minQuantity > 1).sort((a, b) => a.minQuantity - b.minQuantity)
-      .slice(0, 2).map(tier => 'Від ' + tier.minQuantity + ' шт. −' + money(tier.amount) + ' ₴'
-        + (tier.minQuantity >= 3 ? ' · Кожна наступна ще −' + money(ADDITIONAL_ITEM_DISCOUNT) + ' ₴' : '')).join(' · ')
+  const secondItemTier = content.discountTiers.find(tier => tier.minQuantity === 2);
+  const discountHint = pricing.selectedVariant.quantityDiscountEligible && secondItemTier
+    ? 'Від 2 шт. −' + money(secondItemTier.amount) + ' ₴ · Кожна наступна ще −' + money(ADDITIONAL_ITEM_DISCOUNT) + ' ₴'
     : '';
 
   useEffect(() => {
