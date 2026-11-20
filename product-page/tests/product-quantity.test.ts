@@ -55,7 +55,10 @@ it('uses the configured unit price and one shared quantity discount', () => {
   assert.equal(quote(1).total, 2619);
   assert.equal(quote(2).total, 5038);
   assert.equal(quote(3).total, 7357);
+  assert.equal(quote(4).total, 9676);
+  assert.equal(quote(5).total, 11995);
   assert.equal(quote(3, false).total, 7857);
+  assert.equal(quote(5, false).total, 13095);
   const combined = addCartQuantity([{ ...item, quantity: 2 }], { ...item, quantity: 3 });
-  assert.equal(calculateCartTotals(combined.map(line => ({ unitPrice: 2249, quantity: line.quantity, quantityDiscountEligible: true })), tiers).quantityDiscount, 500);
+  assert.equal(calculateCartTotals(combined.map(line => ({ unitPrice: 2249, quantity: line.quantity, quantityDiscountEligible: true })), tiers).quantityDiscount, 1100);
 });

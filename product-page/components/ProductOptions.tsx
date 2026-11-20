@@ -18,7 +18,7 @@ import type { ProductParams, ResolvedProductContent, SizeId } from '@/lib/conten
 import { useCart } from '@/components/cart/cart-context';
 import MobileStickyBuy from '@/components/MobileStickyBuy';
 import { useProductQuantity } from '@/components/ProductQuantityProvider';
-import { calculateCartTotals } from '@/lib/cart/pricing';
+import { ADDITIONAL_ITEM_DISCOUNT, calculateCartTotals } from '@/lib/cart/pricing';
 import { availableCartQuantity } from '@/lib/cart/quantity';
 
 const selectClasses =
@@ -184,7 +184,8 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   const buyLabel = 'Купити ' + money(purchaseTotals.total) + ' ₴';
   const discountHint = pricing.selectedVariant.quantityDiscountEligible
     ? content.discountTiers.filter(tier => tier.minQuantity > 1).sort((a, b) => a.minQuantity - b.minQuantity)
-      .slice(0, 2).map(tier => 'Від ' + tier.minQuantity + ' шт. −' + money(tier.amount) + ' ₴').join(' · ')
+      .slice(0, 2).map(tier => 'Від ' + tier.minQuantity + ' шт. −' + money(tier.amount) + ' ₴'
+        + (tier.minQuantity >= 3 ? ' · Кожна наступна ще −' + money(ADDITIONAL_ITEM_DISCOUNT) + ' ₴' : '')).join(' · ')
     : '';
 
   useEffect(() => {
