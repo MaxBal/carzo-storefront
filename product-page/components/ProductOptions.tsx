@@ -408,7 +408,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
             <ConfiguratorHeading>Марка автомобіля</ConfiguratorHeading>
           </div>
           <div className="mb-[11px] mt-[5px] flex items-center gap-1.5">
-            <Info size={13} strokeWidth={1.5} className="flex-shrink-0 text-[#777777]" />
+            <Info size={13} strokeWidth={1.5} className="flex-shrink-0 text-[#5ce4ab]" />
             <span className="text-[12px] font-light leading-[1.45] tracking-[0.06em] text-[#777777] sm:text-[13px]">Оберіть марку, щоб переглянути фото лого</span>
           </div>
 
@@ -489,7 +489,7 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
               <p className="text-[#777777]">У кошику вже максимальна кількість. Змініть її в кошику.</p>
             ) : purchaseTotals.quantityDiscount > 0 ? (
               <p className="flex justify-between gap-3 text-[14px] text-[#11856d]"><span>Разом дешевше</span><span className="font-semibold tabular-nums">−{money(purchaseTotals.quantityDiscount)} ₴</span></p>
-            ) : <p className="text-[#777777]">{discountHint}</p>}
+            ) : <p className="text-[#ca423d]">{discountHint}</p>}
           </div>
         </section>
 
