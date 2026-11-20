@@ -1,5 +1,7 @@
 import type { DiscountTier } from '@/lib/content/types';
 
+export const ADDITIONAL_ITEM_DISCOUNT = 300;
+
 export interface CartPricingLine {
   unitPrice: number;
   quantity: number;
@@ -44,7 +46,16 @@ export function calculateCartTotals(lines: CartPricingLine[], tiers: DiscountTie
   }
 
   const appliedTier = selectQuantityDiscountTier(eligibleQuantity, tiers);
-  const quantityDiscount = Math.min(wholeUah(appliedTier?.amount ?? 0), eligibleSubtotal);
+  // Tiers contain the cumulative discount at their threshold (2: 200, 3: 500).
+  // From the third eligible item onward, each extra unit adds another 300 UAH.
+  // Keep the configured tier as the base, including any explicit higher tiers.
+  const additionalQuantity = appliedTier && appliedTier.minQuantity >= 3
+    ? Math.max(0, eligibleQuantity - wholeUah(appliedTier.minQuantity))
+    : 0;
+  const quantityDiscount = Math.min(
+    wholeUah(appliedTier?.amount ?? 0) + additionalQuantity * ADDITIONAL_ITEM_DISCOUNT,
+    eligibleSubtotal,
+  );
 
   return {
     subtotal,

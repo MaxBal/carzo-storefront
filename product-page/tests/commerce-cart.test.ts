@@ -70,6 +70,19 @@ it('quotes real mixed cart through SELECT-only mock PostgREST; checks published 
     assert.equal(three.itemsQuantity, 3);
     assert.deepEqual(three.shippingPackage, { lengthCm: 50, widthCm: 28, heightCm: 20, weightKg: 3.5 });
     assert.equal(three.lines[2].catalogItem?.selectedOptions[0].value, 'CARZO');
+    const four = await quoteCartItems([{ ...caseItem, quantity: 2 }, capeItem(), pillowItem()]);
+    assert.equal(four.subtotal, 6388);
+    assert.equal(four.quantityDiscount, 800);
+    assert.equal(four.total, 5588);
+    const five = await quoteCartItems([{ ...caseItem, quantity: 2 }, capeItem(), { ...pillowItem(), quantity: 2 }]);
+    assert.equal(five.subtotal, 6988);
+    assert.equal(five.quantityDiscount, 1100);
+    assert.equal(five.total, 5888);
+    rows.products[1].quantity_discount_eligible = false;
+    const ineligiblePillow = await quoteCartItems([{ ...caseItem, quantity: 2 }, capeItem(), { ...pillowItem(), quantity: 2 }]);
+    assert.equal(ineligiblePillow.quantityDiscount, 500, 'ineligible units do not increase the progressive discount');
+    assert.equal(ineligiblePillow.total, 6488);
+    rows.products[1].quantity_discount_eligible = true;
     assert.ok(requests.every(request => request.cache === 'no-store'));
     for (const table of ['products', 'product_variants', 'product_option_groups', 'product_option_choices']) {
       assert.ok(requests.filter(request => request.table === table).every(request => request.url.searchParams.get('status') === 'eq.published'));
