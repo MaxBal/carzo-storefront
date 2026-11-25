@@ -20,6 +20,8 @@ import MobileStickyBuy from '@/components/MobileStickyBuy';
 import { useProductQuantity } from '@/components/ProductQuantityProvider';
 import { ADDITIONAL_ITEM_DISCOUNT, calculateCartTotals } from '@/lib/cart/pricing';
 import { availableCartQuantity } from '@/lib/cart/quantity';
+import { useMetaTrackingReady } from '@/components/MetaTrackingProvider';
+import { trackMetaProduct } from '@/lib/meta/browser';
 
 const selectClasses =
   'w-full appearance-none rounded-[12px] border border-gray-200 bg-white px-4 py-3 pr-10 text-sm text-[#111111] cursor-pointer focus:border-gray-400 focus:outline-none';
@@ -182,6 +184,18 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
   }], content.discountTiers);
   const money = (value: number) => new Intl.NumberFormat('uk-UA').format(value);
   const buyLabel = 'Купити ' + money(purchaseTotals.total) + ' ₴';
+  const metaReady = useMetaTrackingReady();
+  const metaOptionsRef = useRef<HTMLDivElement>(null);
+  const lastMetaView = useRef('');
+  const metaContentId = `case:${designSlug}:${size.toLowerCase()}`;
+  useEffect(() => {
+    if (!metaReady) { lastMetaView.current = ''; return; }
+    const signature = `${metaContentId}:${currentPrice}`;
+    // Desktop and mobile configurators both mount; only the visible one emits.
+    if (!metaOptionsRef.current?.getClientRects().length || lastMetaView.current === signature) return;
+    lastMetaView.current = signature;
+    trackMetaProduct('ViewContent', 'case', { currency: 'UAH', value: currentPrice, content_type: 'product', content_ids: [metaContentId] });
+  }, [metaReady, metaContentId, currentPrice]);
   const secondItemTier = content.discountTiers.find(tier => tier.minQuantity === 2);
   const discountHint = pricing.selectedVariant.quantityDiscountEligible && secondItemTier
     ? 'Від 2 шт. −' + money(secondItemTier.amount) + ' ₴ · Кожна наступна ще −' + money(ADDITIONAL_ITEM_DISCOUNT) + ' ₴'
@@ -228,13 +242,15 @@ export default function ProductOptions({ params, content }: ProductOptionsProps)
     if (!canBuy || isOpen || buyStartedRef.current) return;
     buyStartedRef.current = true;
     addItem(selectedItem, purchaseQuantity);
+    trackMetaProduct('AddToCart', 'case', { currency: 'UAH', value: currentPrice * purchaseQuantity, content_type: 'product',
+      content_ids: [metaContentId], contents: [{ id: metaContentId, quantity: purchaseQuantity, item_price: currentPrice }], num_items: purchaseQuantity });
     // One-step checkout: skip the intermediate cart screen entirely.
     openCheckout();
   };
 
   return (
     <>
-      <div className="flex flex-col">
+      <div ref={metaOptionsRef} className="flex flex-col">
         {/* Title */}
         <h1 className="text-[28px] font-bold leading-[1.08] tracking-[-0.055em] text-[#080808] sm:text-[32px] lg:text-[38px]">
           {productTitle}

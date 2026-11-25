@@ -6,6 +6,7 @@ import PhoneInput from '@/components/PhoneInput';
 import { buildFullPhone } from '@/lib/cart/phone';
 import type { ContactMethod } from '@/lib/cart/contact-method';
 import { submitCarMatQuote } from '@/app/actions/carmat-quote';
+import { trackMetaProduct } from '@/lib/meta/browser';
 import {
   CARMAT_INFORMATION_OPTIONS,
   CARMAT_INTEREST_OPTIONS,
@@ -174,6 +175,7 @@ export default function CarMatQuoteModal({ isOpen, onClose }: CarMatQuoteModalPr
         informationChoices: Array.from(informationChoices),
       });
       if (result.ok) {
+        trackMetaProduct('Lead', 'car-mat');
         setSubmitted(true);
       } else {
         setSubmitError(result.message);

@@ -8,6 +8,8 @@ import Footer from '@/components/Footer';
 import { absoluteSiteUrl, siteOrigin } from '@/lib/seo';
 import { getBenefitModals } from '@/lib/content/global-modals';
 import { getSiteFlag } from '@/lib/content/site-flag';
+import MetaTrackingProvider from '@/components/MetaTrackingProvider';
+import { getMetaPublicConfig } from '@/lib/meta/config';
 
 const inter = Inter({ subsets: ['latin', 'cyrillic'], fallback: ['Arial', 'sans-serif'] });
 
@@ -78,12 +80,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         />
       </head>
       <body className={inter.className}>
-        <CartProvider>
-          <ModalProvider benefitModals={benefitModals}>
-            {children}
-            <Footer siteFlag={siteFlag} />
-          </ModalProvider>
-        </CartProvider>
+        <MetaTrackingProvider config={getMetaPublicConfig()}>
+          <CartProvider>
+            <ModalProvider benefitModals={benefitModals}>
+              {children}
+              <Footer siteFlag={siteFlag} />
+            </ModalProvider>
+          </CartProvider>
+        </MetaTrackingProvider>
       </body>
     </html>
   );
