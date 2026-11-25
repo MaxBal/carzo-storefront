@@ -1,6 +1,11 @@
 # CARZO: Meta Pixel and direct Conversions API
 
-This implementation is dormant by default. It does not switch DNS, disable Tilda,
+This implementation is dormant by default. The outbox migration, recovery extensions
+and guarded Cron job were installed in Production on 2026-11-25 after explicit approval.
+Vercel configuration and publication are still pending; no events have been sent.
+The job has no worker URL/secret and only runs cleanup while the queue is empty.
+
+The code itself does not switch DNS, disable Tilda,
 create Meta assets, apply the SQL migration to a hosted project, install a scheduler,
 or send events to the existing production Dataset by itself.
 
@@ -61,7 +66,7 @@ Meta's `test_event_code` must not be assumed to isolate measurement.
 
 1. Review the PR and run `pnpm run test:meta`, the checkout/commerce/safety suites,
    TypeScript, lint, production build and browser consent/funnel checks.
-2. Apply `supabase/migrations/20261125150208_meta_conversion_outbox.sql` through the
+2. Apply `supabase/migrations/20261125184933_meta_conversion_outbox.sql` through the
    normal hosted migration process. Verify service-role RPCs and denied anon/auth
    access; run Supabase security/performance advisors. No historical orders are changed.
 3. Configure the server secrets securely; keep `META_ENABLED=false`. Check the existing
