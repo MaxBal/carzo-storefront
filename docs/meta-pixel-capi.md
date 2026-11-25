@@ -87,18 +87,14 @@ availability and quotas before activation. In Vault create `carzo_meta_worker_ur
 The job must continue purging when tracking is disabled. Example, run only during
 the reviewed activation step:
 
-```sql
-select cron.schedule('carzo-meta-delivery', '* * * * *', $job$
-  select public.purge_meta_events();
-  select net.http_post(
-    url := (select decrypted_secret from vault.decrypted_secrets where name='carzo_meta_worker_url'),
-    headers := jsonb_build_object('Content-Type','application/json', 'Authorization',
-      'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name='carzo_meta_delivery_secret')),
-    body := '{}'::jsonb,
-    timeout_milliseconds := 100000
-  );
-$job$);
-```
+Use the reviewed operational script
+`supabase/operations/meta-recovery-scheduler.sql` after the extensions and outbox
+migration are installed. It always purges expired matching data, and calls the worker
+only for due pending/reclaimable events with a valid Vault secret and an exact final
+store URL. With an empty queue or missing configuration it makes no HTTP request.
+Do not set `carzo_meta_worker_url` until the final domain serves the new worker.
+The scheduler body is tested locally with recording stubs for pg_net, Vault and Cron;
+installation and extension permissions still need verification on the hosted project.
 
 Monitor only destination/event IDs, status, attempts and sanitized error codes.
 Do not log raw payloads, Graph response messages, tokens, phones or cookies. A Graph
