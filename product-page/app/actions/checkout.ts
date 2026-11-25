@@ -1,6 +1,11 @@
 'use server';
 
 import { headers } from 'next/headers';
+import { getMetaPublicConfig } from '@/lib/meta/config';
+import { readMetaContext } from '@/lib/meta/context';
+import { buildMetaPurchaseDrafts } from '@/lib/meta/purchase';
+import { loadMetaBrowserPurchases } from '@/lib/meta/repository';
+import { deliverMetaEvents } from '@/lib/meta/delivery';
 import { waitUntil } from '@vercel/functions';
 import { isCatalogCartItem } from '@/lib/cart/item-identity';
 import { catalogConfiguration } from '@/lib/commerce/types';
@@ -278,11 +283,14 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
         return { ok: false, code: 'ATTEMPT_REUSED', message: ATTEMPT_REUSED_MESSAGE };
       }
       if (decision.action === 'replay') {
+        const metaContext = readMetaContext(await headers());
+        const metaEvents = metaContext && existing ? await loadMetaBrowserPurchases(existing.id) : [];
         return {
           ok: true,
           orderNumber: decision.orderNumber,
           total: decision.total,
           replayed: true,
+          ...(metaEvents.length ? { metaEvents } : {}),
         };
       }
     } catch (error) {
@@ -356,7 +364,24 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
           quote,
           pricing,
         });
+        const metaContext = orderStore === 'supabase' ? readMetaContext(await headers()) : null;
+        const metaConfig = metaContext ? getMetaPublicConfig() : null;
+        if (metaContext && metaConfig) {
+          try {
+            const events = buildMetaPurchaseDrafts(snapshot, metaContext, metaConfig.destinations);
+            if (events.length) snapshot.meta = { consentId: metaContext.consentId, events };
+          } catch { console.error('Meta purchase preparation failed'); }
+        }
         const result = await createOrderRecord(snapshot);
+
+        // Separate from Telegram/keyCRM: their latency or failure cannot delay CAPI.
+        // Durability comes from the atomic outbox; waitUntil only provides a fast wake-up.
+        if (snapshot.meta) {
+          const delivery = deliverMetaEvents().catch(() => { console.error('Meta delivery deferred'); });
+          if (process.env.VERCEL === '1') {
+            try { waitUntil(delivery); } catch { /* Scheduled worker will recover pending events. */ }
+          }
+        }
 
         // Order write succeeded — that is the success boundary.
         // Notify + keyCRM sync are best-effort and must not flip this to FAILED.
@@ -441,6 +466,7 @@ export async function createOrder(input: CheckoutInput): Promise<CheckoutResult>
           orderNumber: result.orderNumber,
           total: result.total,
           replayed: !result.created,
+          ...(result.metaEvents?.length ? { metaEvents: result.metaEvents } : {}),
         };
       },
     });

@@ -1,0 +1,67 @@
+# Продолжение подключения Meta — CARZO
+
+Код: PR https://github.com/MaxBal/carzo-storefront/pull/28,
+ветка `codex/meta-pixel-capi`. Vercel: `yevgens-projects/carzo-storefront`
+(`prj_D6HYKiqCDNcJoMl2rah8ImaPimXW`). Supabase: `kmhegysmtsjqtwwaacht`.
+
+## Выполнено 25 ноября 2026 после явного согласия владельца
+
+- Владелец сообщил о сохранении `META_CARZO_ACCESS_TOKEN` как Secret только для
+  Production. Значение не запрашивалось и не читалось.
+- Применены миграции `20261125184933_meta_conversion_outbox.sql` и
+  `20261125185110_meta_recovery_extensions.sql`. Имена файлов приведены к версиям
+  реальной истории Supabase; ранее созданные CLI файлы содержат тот же SQL.
+- Очередь создана, RLS включён. Anon/authenticated не имеют доступа к таблице и
+  пяти RPC; service_role имеет нужные права. Функции SECURITY INVOKER.
+  Старый `create_order_with_items` не заменялся. Заказы и клиенты не изменялись.
+- Установлены pg_cron 1.6.4 и pg_net 0.20.4; Vault 0.3.1 уже был установлен.
+- Установлено задание `carzo-meta-delivery`, jobid=1, владелец postgres, каждую минуту.
+  Первый запуск succeeded. Очередь и HTTP-очередь пустые. Задание очищает старые
+  данные, но не делает HTTP-запросов без ожидающих событий и полной конфигурации.
+- Advisors после установки: Health без замечаний, Security/Performance только INFO.
+  RLS без публичных политик здесь намеренно: доступ только серверной роли.
+- Служебный ключ планировщика НЕ создан: автоматическая проверка отклонила создание
+  постоянного credential до настройки принимающего worker/Vercel endpoint. Не обходить
+  отказ. Этот пункт отложен до готовности worker и отдельного согласования ключа.
+  `carzo_meta_worker_url` тоже отсутствует.
+
+## Что осталось перед публикацией выключенной интеграции
+
+Подключение Vercel возвращает 403 для команды; восстановление доступа по ID и slug
+возвращало 404 Team not found. Локальная CLI-авторизация отсутствует; инструмент доступа к браузеру не предоставлен.
+Владелец получил просьбу выставить `META_ENABLED=false`, тип Config, Production.
+После подтверждения можно опубликовать согласованный PR обычным merge в main,
+проверить точный commit, Vercel Ready и основной alias. DNS и Tilda не переключать.
+
+Для оператора с рабочим доступом Vercel:
+
+1. Проверить только метаданные `META_CARZO_ACCESS_TOKEN`: Secret, Production.
+   Значение не читать/заменять.
+2. Выставить Production Config `META_ENABLED=false` до выпуска.
+3. Подготовить остальные Production Config-переменные:
+   - `META_ALLOWED_HOSTS=carzo.com.ua,www.carzo.com.ua`;
+   - `META_DESTINATIONS` — JSON ниже.
+4. После обычного merge/build проверить Production Ready, commit и alias.
+   Проверить главную/карточку/корзину; не создавать заказ для проверки выключенного Meta.
+
+```json
+[{"key":"carzo","pixelId":"449610966173734","productTypes":["case","car-mat"],"pagePaths":["/","/about","/catalog-carmat"],"pathPrefixes":["/case/"]}]
+```
+
+## Финальное включение после переноса домена
+
+Пока `carzo.com.ua` обслуживает Tilda, `META_ENABLED` остаётся false.
+После согласованного переноса, проверки сертификата и готовности нового worker,
+а также согласования отдельного служебного ключа, сохранить одно случайное значение
+не менее 32 символов в Vercel Secret `META_DELIVERY_SECRET` (Production) и Vault
+`carzo_meta_delivery_secret`. Само значение не выводить и не сохранять в Git/чат.
+Только после готовности worker задать его точный URL в `carzo_meta_worker_url`.
+
+Проверить права Dataset, настройки событий/каталога, согласие и privacy policy,
+затем включить Meta отдельным redeploy. Принимать Graph success только как приём
+запроса; доставку, дедупликацию и атрибуцию проверять отдельно в Events Manager.
+`test_event_code` не считать гарантией изоляции рекламной статистики.
+
+Подробности данных, маршрутизации, ограничений Lead и отката:
+`docs/meta-pixel-capi.md`. Итоговый отчёт должен разделять выполненные действия,
+непроверенные пункты и заблокированный доступ; не утверждать, что CAPI уже работает.

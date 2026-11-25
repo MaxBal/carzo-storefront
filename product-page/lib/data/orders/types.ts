@@ -85,6 +85,8 @@ export interface OrderSnapshot {
   /** Human freeform note only. Never loyalty JSON on the Supabase path. */
   managerNote: string | null;
   items: OrderItemSnapshot[];
+  /** Optional, server-built advertising events. Never sourced from checkout input. */
+  meta?: { consentId: string; events: import('@/lib/meta/types').MetaEventDraft[] };
 }
 
 /** Persisted result of an order write (create or idempotent replay). */
@@ -94,6 +96,7 @@ export interface CreateOrderResult {
   total: number;
   /** false = idempotent replay of an existing order (no new rows). */
   created: boolean;
+  metaEvents?: import('@/lib/meta/types').MetaBrowserEvent[];
 }
 
 /** Read-only replay probe used before the pricing gate. */

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "test:meta": "node --import tsx --require ./tests/helpers/server-only-stub.cjs --test tests/meta-*.test.ts",
     "test:commerce": "node --import tsx --require ./tests/helpers/server-only-stub.cjs --test tests/commerce-*.test.ts",
     "test:caching": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/caching-strategy.test.ts",
     "test:integrations": "tsx --require ./tests/helpers/server-only-stub.cjs --test tests/integrations-hardening.test.ts",

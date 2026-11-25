@@ -142,7 +142,7 @@ export type CheckoutChangedResult = {
 };
 
 export type CheckoutResult =
-  | { ok: true; orderNumber: string; total: number; replayed?: boolean }
+  | { ok: true; orderNumber: string; total: number; replayed?: boolean; metaEvents?: import('@/lib/meta/types').MetaBrowserEvent[] }
   | CheckoutChangedResult
   | {
     ok: false;

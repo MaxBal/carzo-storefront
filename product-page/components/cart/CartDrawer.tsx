@@ -4,6 +4,8 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Check, CheckCircle2, ChevronDown, Info, Loader2, ShoppingCart, X } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 import { createOrder } from '@/app/actions/checkout';
+import { sendMetaPurchases, trackMetaCheckout } from '@/lib/meta/browser';
+import { useMetaTrackingReady } from '@/components/MetaTrackingProvider';
 import { CONTACT_METHOD_OPTIONS, type ContactMethod } from '@/lib/cart/contact-method';
 import { calculateLoyaltyDiscount, checkLoyaltyDiscount } from '@/lib/cart/loyalty';
 import { buildFullPhone } from '@/lib/cart/phone';
@@ -35,6 +37,14 @@ export default function CartDrawer() {
   // One-step checkout: «Купити» opens the drawer directly on the checkout
   // view (openView is set before mount, so no cart screen can flash).
   const [checkout, setCheckout] = useState(() => cart.openView === 'checkout');
+  const metaReady = useMetaTrackingReady();
+  const metaCheckoutId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!isOpen || !checkout) { metaCheckoutId.current = null; return; }
+    if (!metaReady || !cart.quote || cart.quoteLoading || metaCheckoutId.current) return;
+    metaCheckoutId.current = crypto.randomUUID();
+    trackMetaCheckout(cart.quote, metaCheckoutId.current);
+  }, [isOpen, checkout, metaReady, cart.quote, cart.quoteLoading]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState('');
@@ -212,6 +222,7 @@ export default function CartDrawer() {
     }
     cart.resolveCheckoutAttemptOutcome(result);
     if (result.ok) {
+      sendMetaPurchases(result.metaEvents);
       cart.completeOrder({ orderNumber: result.orderNumber, total: result.total });
       return;
     }

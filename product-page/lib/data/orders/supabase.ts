@@ -17,6 +17,7 @@ interface RpcResult {
   order_number: string;
   total: number;
   created: boolean;
+  meta_events?: import('@/lib/meta/types').MetaBrowserEvent[];
 }
 
 function rpcParams(snapshot: OrderSnapshot) {
@@ -83,6 +84,7 @@ function parseRpcResult(data: unknown): CreateOrderResult {
     orderNumber: row.order_number,
     total: typeof row.total === 'number' ? row.total : 0,
     created: row.created !== false,
+    ...(row.meta_events?.length ? { metaEvents: row.meta_events } : {}),
   };
 }
 
@@ -95,8 +97,11 @@ export function createSupabaseOrderRepository(): OrderRepository {
           'WRITE_FAILED',
         );
       }
-      const { data, error } = await getSupabaseAdminClient()
-        .rpc('create_order_with_items', rpcParams(snapshot));
+      const { data, error } = snapshot.meta?.events.length
+        ? await getSupabaseAdminClient().rpc('create_order_with_meta', {
+          p_order: rpcParams(snapshot), p_events: snapshot.meta.events, p_consent_id: snapshot.meta.consentId,
+        })
+        : await getSupabaseAdminClient().rpc('create_order_with_items', rpcParams(snapshot));
       if (error) {
         if (error.message?.includes('ATTEMPT_FINGERPRINT_MISMATCH')) {
           throw new OrderStoreError(
