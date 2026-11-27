@@ -1,9 +1,17 @@
 # CARZO: Meta Pixel and direct Conversions API
 
-This implementation is dormant by default. The outbox migration, recovery extensions
-and guarded Cron job were installed in Production on 2026-11-25 after explicit approval.
-Vercel configuration and publication are still pending; no events have been sent.
-The job has no worker URL/secret and only runs cleanup while the queue is empty.
+The feature remains disabled unless Production configuration explicitly enables it.
+The owned domain, authenticated recovery worker and minute-based Cron job are live.
+The controlled order `CZ-20261127-A0FFC5` produced one server Purchase for 2649 UAH,
+accepted by Meta on its first attempt. Actual browser/server deduplication and campaign
+attribution still need confirmation in Events Manager.
+
+On 2026-11-28 the owner requested automatic tracking without an initial cookie notice.
+The provider now stores `enabled` for automatic initialization, preserving `granted`
+for explicit user opt-in. A prior `denied` choice and DNT/GPC still disable collection
+and cancel pending events. The footer settings remain available on demand; no panel
+opens automatically, including on the first visit. The anonymous `consentId` field
+is retained for queue cancellation compatibility, not as proof of explicit consent.
 
 The code itself does not switch DNS, disable Tilda,
 create Meta assets, apply the SQL migration to a hosted project, install a scheduler,
@@ -13,7 +21,7 @@ or send events to the existing production Dataset by itself.
 
 - Browser PageView (App Router navigation), ViewContent (visible configurator only),
   AddToCart (actual added quantity), InitiateCheckout (first verified quote on opening),
-  and Purchase paired with the server receipt. Cookie consent is opt-in; refusal,
+  and Purchase paired with the server receipt. Tracking starts automatically; refusal,
   DNT/GPC and technical deployment hosts block tracking.
 - Browser Lead after the existing car-mat quote action reports success. Server-side
   Lead is not yet enabled: the current action's success boundary is Telegram delivery,
@@ -23,7 +31,7 @@ or send events to the existing production Dataset by itself.
   payment intent or a browser-posted price. It includes quantity/loyalty discounts;
   selecting a 200 UAH deposit still reports the full discounted order value.
 - `create_order_with_meta` calls the unchanged `create_order_with_items` RPC and
-  inserts outbox events in the same transaction. Disabled/no-consent checkout keeps
+  inserts outbox events in the same transaction. Disabled/opted-out checkout keeps
   using the original RPC and works before the migration is applied.
 - Original event IDs, timestamps and payloads survive retries. Public browser
   receipts contain only pixel ID, event ID, event name and whitelisted custom data.

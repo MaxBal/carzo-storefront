@@ -3,6 +3,7 @@
 import type { CartQuote } from '@/lib/cart/types';
 import type { MetaBrowserEvent, MetaCustomData, MetaDestination, MetaEventName, MetaPublicConfig } from './types';
 import { allocateDiscount } from './allocation';
+import { isMetaTrackingEnabled } from './preference';
 
 type Fbq = ((...args: unknown[]) => void) & { queue: unknown[][]; loaded: boolean; version: string; push?: Fbq; callMethod?: (...args: unknown[]) => void };
 declare global { interface Window { fbq?: Fbq; _fbq?: Fbq } }
@@ -28,7 +29,7 @@ export function privacySignal(): boolean {
 export function configureMetaBrowser(value: MetaPublicConfig | null) { config = value; }
 
 function allowed(): boolean {
-  return Boolean(config && marketingHostAllowed(config) && !privacySignal() && browserCookie(CONSENT_COOKIE) === 'granted');
+  return Boolean(config && marketingHostAllowed(config) && !privacySignal() && isMetaTrackingEnabled(browserCookie(CONSENT_COOKIE)));
 }
 
 export function writeMarketingCookie(name: string, value: string) {
