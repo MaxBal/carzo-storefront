@@ -21,7 +21,7 @@ it('requires explicit enablement, production, credentials and exact owned hosts;
   assert.equal(getMetaPublicConfig({ ...env, META_DESTINATIONS: JSON.stringify(duplicate) }), null);
 });
 
-it('requires affirmative consent and real same-origin request context; strips query data and rejects opt-out', () => {
+it('accepts automatic or explicit enablement with real same-origin context and rejects opt-out', () => {
   const env = metaEnv();
   const saved = Object.fromEntries(Object.keys(env).map(key => [key, process.env[key]]));
   Object.assign(process.env, env);
@@ -33,6 +33,14 @@ it('requires affirmative consent and real same-origin request context; strips qu
     assert.equal(context.sourceUrl, metaContext.sourceUrl);
     assert.equal(context.fbc, metaContext.fbc);
     assert.equal(context.ip, '192.0.2.1');
+    const originalCookie = headers.get('cookie')!;
+    headers.set('cookie', originalCookie.replace('=granted;', '=enabled;'));
+    assert.deepEqual(readMetaContext(headers), context);
+    for (const value of ['denied', 'unknown', '']) {
+      headers.set('cookie', originalCookie.replace('=granted;', `=${value};`));
+      assert.equal(readMetaContext(headers), null);
+    }
+    headers.set('cookie', originalCookie.replace('=granted;', '=enabled;'));
     for (const key of ['sec-gpc', 'dnt']) { headers.set(key, '1'); assert.equal(readMetaContext(headers), null); headers.delete(key); }
     headers.set('origin', 'https://evil.test'); assert.equal(readMetaContext(headers), null);
     headers.set('origin', 'https://carzo.test'); headers.delete('cookie'); assert.equal(readMetaContext(headers), null);

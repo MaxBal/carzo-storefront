@@ -19,7 +19,7 @@ it('checkout returns the durable receipt before Meta delivery, reuses it on repl
     if (request === 'next/headers') return { headers: () => new Headers({
       origin: 'https://carzo.test', referer: 'https://carzo.test/case/design/m/4-0?private=excluded',
       'user-agent': 'Synthetic browser', 'x-forwarded-for': '192.0.2.1',
-      cookie: `carzo_marketing_v1=${denied ? 'denied' : 'granted'}; carzo_marketing_id=90000000-0000-4000-8000-000000000001`,
+      cookie: `carzo_marketing_v1=${denied ? 'denied' : 'enabled'}; carzo_marketing_id=90000000-0000-4000-8000-000000000001`,
     }) };
     if (request === '@/lib/meta/delivery') return { deliverMetaEvents: async () => {
       assert.equal(state.writes.length, 1, 'Meta cannot run before the order commit');

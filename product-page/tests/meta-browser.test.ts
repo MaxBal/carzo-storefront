@@ -4,14 +4,14 @@ import { configureMetaBrowser, sendMetaPurchases, trackMetaCheckout, trackMetaPr
 import { metaDestinations } from './fixtures/meta';
 import type { CartQuote } from '../lib/cart/types';
 
-it('browser routing is consented, deduplicates receipts and allocates a mixed quote without exposing another owner', () => {
+it('browser routing accepts automatic enablement, preserves opt-out and deduplicates owner receipts', () => {
   const names = ['window', 'document', 'location', 'navigator', 'sessionStorage'] as const;
   const previous = names.map(name => Object.getOwnPropertyDescriptor(globalThis, name));
   const calls: unknown[][] = [];
   const storage = new Map<string, string>();
   const globals = {
     window: { fbq: (...args: unknown[]) => calls.push(args) },
-    document: { cookie: 'carzo_marketing_v1=granted' },
+    document: { cookie: 'carzo_marketing_v1=enabled' },
     location: { protocol: 'https:', hostname: 'carzo.test', pathname: '/case/design/l/4-0' },
     navigator: { doNotTrack: '0' },
     sessionStorage: { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) },
@@ -26,6 +26,18 @@ it('browser routing is consented, deduplicates receipts and allocates a mixed qu
     globals.document.cookie = 'carzo_marketing_v1=denied';
     trackMetaProduct('AddToCart', 'case', { value: 100 });
     assert.equal(calls.filter(call => call[2] === 'AddToCart').length, 0);
+    globals.document.cookie = 'carzo_marketing_v1=unknown';
+    trackMetaProduct('AddToCart', 'case', { value: 100 });
+    assert.equal(calls.filter(call => call[2] === 'AddToCart').length, 0);
+    globals.document.cookie = 'carzo_marketing_v1=enabled';
+    Object.assign(globals.navigator, { globalPrivacyControl: true });
+    trackMetaProduct('AddToCart', 'case', { value: 100 });
+    assert.equal(calls.filter(call => call[2] === 'AddToCart').length, 0);
+    Object.assign(globals.navigator, { globalPrivacyControl: false });
+    globals.navigator.doNotTrack = '1';
+    trackMetaProduct('AddToCart', 'case', { value: 100 });
+    assert.equal(calls.filter(call => call[2] === 'AddToCart').length, 0);
+    globals.navigator.doNotTrack = '0';
     globals.document.cookie = 'carzo_marketing_v1=granted';
     configureMetaBrowser({ allowedHosts: ['carzo.test'], destinations: [metaDestinations[0], { ...metaDestinations[1], pagePaths: ['/case/design/l/4-0'] }] });
     sendMetaPurchases([{ ...receipt, eventId: 'purchase:another:carzo' }]);

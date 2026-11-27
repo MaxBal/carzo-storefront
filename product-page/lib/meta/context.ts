@@ -2,6 +2,7 @@ import 'server-only';
 import { isIP } from 'node:net';
 import { getMetaPublicConfig, metaHostAllowed } from './config';
 import type { MetaTrackingContext } from './types';
+import { isMetaTrackingEnabled } from './preference';
 
 export const META_CONSENT_COOKIE = 'carzo_marketing_v1';
 export const META_CONSENT_ID_COOKIE = 'carzo_marketing_id';
@@ -16,7 +17,7 @@ export function cookieValue(headers: Pick<Headers, 'get'>, name: string): string
 export function readMetaContext(headers: Pick<Headers, 'get'>): MetaTrackingContext | null {
   const config = getMetaPublicConfig();
   if (!config || headers.get('sec-gpc') === '1' || headers.get('dnt') === '1'
-    || cookieValue(headers, META_CONSENT_COOKIE) !== 'granted') return null;
+    || !isMetaTrackingEnabled(cookieValue(headers, META_CONSENT_COOKIE))) return null;
   const consentId = cookieValue(headers, META_CONSENT_ID_COOKIE);
   const referer = headers.get('referer');
   const origin = headers.get('origin');
