@@ -76,7 +76,7 @@ function positiveAmount(value: number): number {
 
 /**
  * Telegram HTML message for a new Carzo order notification, styled like the
- * car-mat quote bot: bold block headings, thematic emoji, one blank line
+ * car-mat quote bot: bold text headings and one blank line
  * between blocks. Every value is escaped; calculations are never recomputed.
  */
 export function formatOrderNotificationHtml(
@@ -86,14 +86,14 @@ export function formatOrderNotificationHtml(
 
   blocks.push(
     [
-      '🛒 <b>НОВЕ ЗАМОВЛЕННЯ CARZO</b>',
-      `<b>Замовлення ${escapeTelegramHtml(order.orderNumber)}</b>`,
+      '<b>НОВЕ ЗАМОВЛЕННЯ CARZO</b>',
+      `<b>${escapeTelegramHtml(order.orderNumber)}</b>`,
     ].join('\n'),
   );
 
   blocks.push(
     [
-      '👤 <b>Покупець</b>',
+      '<b>Покупець</b>',
       `Ім’я: ${escapeTelegramHtml(order.customerName)}`,
       `Телефон: ${escapeTelegramHtml(order.customerPhone)}`,
     ].join('\n'),
@@ -103,10 +103,10 @@ export function formatOrderNotificationHtml(
   const itemBlocks = order.items.map((item, index) =>
     itemBlock(item, index + 1, numbered),
   );
-  blocks.push(['📦 <b>ТОВАРИ</b>', '', itemBlocks.join('\n\n')].join('\n'));
+  blocks.push(['<b>ТОВАРИ</b>', '', itemBlocks.join('\n\n')].join('\n'));
 
   const costLines = [
-    '💰 <b>ВАРТІСТЬ ЗАМОВЛЕННЯ</b>',
+    '<b>ВАРТІСТЬ ЗАМОВЛЕННЯ</b>',
     `Кількість товарів: ${order.itemsQuantity} шт.`,
   ];
   const quantityDiscount = positiveAmount(order.quantityDiscount);
@@ -120,7 +120,7 @@ export function formatOrderNotificationHtml(
   costLines.push(`<b>До сплати: ${money(order.total)}</b>`);
   blocks.push(costLines.join('\n'));
 
-  const deliveryLines = ['🚚 <b>ДОСТАВКА</b>'];
+  const deliveryLines = ['<b>ДОСТАВКА</b>'];
   if (order.deliveryMethod.trim()) {
     deliveryLines.push(escapeTelegramHtml(order.deliveryMethod.trim()));
   }
@@ -134,26 +134,26 @@ export function formatOrderNotificationHtml(
 
   if (order.paymentOption.trim()) {
     blocks.push(
-      ['💳 <b>ОПЛАТА</b>', escapeTelegramHtml(order.paymentOption.trim())].join('\n'),
+      ['<b>ОПЛАТА</b>', escapeTelegramHtml(order.paymentOption.trim())].join('\n'),
     );
   }
 
   if (order.contactMethod.trim()) {
     blocks.push(
-      ['💬 <b>ЗВ\'ЯЗОК</b>', escapeTelegramHtml(order.contactMethod.trim())].join('\n'),
+      ['<b>ЗВ\'ЯЗОК</b>', escapeTelegramHtml(order.contactMethod.trim())].join('\n'),
     );
   }
 
   const comment = order.customerComment?.trim();
   if (comment) {
     blocks.push(
-      ['📝 <b>КОМЕНТАР</b>', escapeTelegramHtml(comment)].join('\n'),
+      ['<b>КОМЕНТАР</b>', escapeTelegramHtml(comment)].join('\n'),
     );
   }
 
   const orderUrl = order.orderUrl?.trim();
   if (orderUrl) {
-    blocks.push(`🔗 <a href="${escapeTelegramHtml(orderUrl)}">Замовлення</a>`);
+    blocks.push(`<a href="${escapeTelegramHtml(orderUrl)}">Замовлення</a>`);
   }
 
   return blocks.join('\n\n');

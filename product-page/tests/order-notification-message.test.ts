@@ -53,32 +53,33 @@ function render(overrides: Partial<OrderNotificationMessageInput>): string {
 describe('order notification message — structure', () => {
   it('renders all blocks for a single-item order without item numbering', () => {
     const text = render({});
+    assert.ok(text.startsWith('<b>НОВЕ ЗАМОВЛЕННЯ CARZO</b>\n<b>A-2026-1142</b>\n\n<b>Покупець</b>\n'));
     for (const marker of [
-      '🛒 <b>НОВЕ ЗАМОВЛЕННЯ CARZO</b>',
-      '<b>Замовлення A-2026-1142</b>',
-      '👤 <b>Покупець</b>',
+      '<b>НОВЕ ЗАМОВЛЕННЯ CARZO</b>',
+      '<b>A-2026-1142</b>',
+      '<b>Покупець</b>',
       'Ім’я: Yevgen Shvets',
       'Телефон: +380931008292',
-      '📦 <b>ТОВАРИ</b>',
+      '<b>ТОВАРИ</b>',
       '<b>Автокейс L — Carzo 4.0</b>',
       'Кількість: 2 шт.',
       'Фіксація: без фіксації',
       'Вартість: 5 180 ₴',
-      '💰 <b>ВАРТІСТЬ ЗАМОВЛЕННЯ</b>',
+      '<b>ВАРТІСТЬ ЗАМОВЛЕННЯ</b>',
       'Кількість товарів: 2 шт.',
       '<b>До сплати: 5 180 ₴</b>',
-      '🚚 <b>ДОСТАВКА</b>',
+      '<b>ДОСТАВКА</b>',
       'У відділення',
       'Київ, Відділення №15: вул. Хрещатик, 1',
-      '💳 <b>ОПЛАТА</b>',
+      '<b>ОПЛАТА</b>',
       'Передоплата 200 ₴',
-      '💬 <b>ЗВ\'ЯЗОК</b>',
+      '<b>ЗВ\'ЯЗОК</b>',
       'Telegram',
     ]) {
       assert.ok(text.includes(marker), `missing: ${marker}`);
     }
     assert.ok(!text.includes('1. Автокейс'), 'single item must not be numbered');
-    assert.ok(!text.includes('📝'), 'comment block must be absent without comment');
+    assert.ok(!text.includes('<b>КОМЕНТАР</b>'), 'comment block must be absent without comment');
   });
 
   it('numbers each position when the order has several different items', () => {
@@ -98,7 +99,7 @@ describe('order notification message — structure', () => {
     assert.ok(text.includes('Разом дешевше: −500 ₴'));
     assert.ok(text.includes('Знижка 5%: −659 ₴'));
     assert.ok(text.includes('<b>До сплати: 12 540 ₴</b>'));
-    assert.ok(text.includes('📝 <b>КОМЕНТАР</b>'));
+    assert.ok(text.includes('<b>КОМЕНТАР</b>'));
     assert.ok(text.includes('Потрібні килимки в салон.'));
   });
 
@@ -182,13 +183,12 @@ describe('order notification message — delivery, payment, contact', () => {
 
   it('renders full payment and a phone contact method', () => {
     const text = render({ paymentOption: 'Повна оплата', contactMethod: 'Зателефонувати' });
-    assert.ok(text.includes('💳 <b>ОПЛАТА</b>\nПовна оплата'));
-    assert.ok(text.includes('💬 <b>ЗВ\'ЯЗОК</b>\nЗателефонувати'));
+    assert.ok(text.includes('<b>ОПЛАТА</b>\nПовна оплата'));
+    assert.ok(text.includes('<b>ЗВ\'ЯЗОК</b>\nЗателефонувати'));
   });
 
   it('omits the payment block when no option was recorded', () => {
     const text = render({ paymentOption: '' });
-    assert.ok(!text.includes('💳'));
     assert.ok(!text.includes('ОПЛАТА'));
   });
 });
@@ -220,7 +220,7 @@ describe('order notification message — safety', () => {
   });
 
   it('includes the order link only when an URL is provided', () => {
-    assert.ok(!render({}).includes('🔗'));
+    assert.ok(!render({}).includes('<a '));
     const withUrl = render({ orderUrl: 'https://admin.example/order/1' });
     assert.ok(withUrl.includes('<a href="https://admin.example/order/1">Замовлення</a>'));
   });
